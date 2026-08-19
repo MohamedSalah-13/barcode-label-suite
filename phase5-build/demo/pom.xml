@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.mohamed.barcodelabel</groupId><artifactId>barcode-label-phase5</artifactId><version>0.5.0-SNAPSHOT</version><relativePath>../../phase5-pom.xml</relativePath></parent>
+    <artifactId>barcode-label-demo-v5</artifactId>
+    <dependencies>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-fx-workbench</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></dependency>
+    </dependencies>
+    <build><plugins>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+        <plugin><groupId>org.openjfx</groupId><artifactId>javafx-maven-plugin</artifactId><version>0.0.8</version><configuration><mainClass>com.mohamed.barcodelabel.demo.v5.Phase5DemoApplication</mainClass></configuration></plugin>
+    </plugins></build>
+</project>

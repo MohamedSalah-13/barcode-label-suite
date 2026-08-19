@@ -1,0 +1,26 @@
+.label-designer {
+    -fx-background-color: #e5e7eb;
+    -fx-padding: 24;
+}
+
+.label-canvas {
+    -fx-background-color: white;
+    -fx-border-color: #94a3b8;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.18), 18, 0.15, 0, 6);
+}
+
+.barcode-placeholder {
+    -fx-background-color: linear-gradient(to right, #111827 0%, #111827 8%, white 8%, white 13%, #111827 13%, #111827 17%, white 17%, white 22%, #111827 22%, #111827 26%, white 26%, white 32%, #111827 32%, #111827 42%, white 42%, white 47%, #111827 47%, #111827 52%, white 52%, white 58%, #111827 58%, #111827 63%, white 63%, white 70%, #111827 70%, #111827 78%, white 78%, white 84%, #111827 84%, #111827 90%, white 90%);
+    -fx-text-fill: #2563eb;
+    -fx-font-size: 10px;
+    -fx-border-color: #cbd5e1;
+}
+
+.image-placeholder {
+    -fx-border-color: #94a3b8;
+    -fx-border-style: segments(6, 4);
+    -fx-text-fill: #64748b;
+    -fx-padding: 8;
+}
+

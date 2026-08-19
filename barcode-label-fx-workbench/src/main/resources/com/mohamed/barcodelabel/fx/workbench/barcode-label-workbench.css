@@ -1,0 +1,28 @@
+.barcode-label-workbench {
+    -fx-font-family: "Segoe UI", "Arial";
+    -fx-font-size: 13px;
+    -fx-background-color: #f4f6f8;
+}
+.workbench-toolbar {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #d8dee6 transparent;
+}
+.status-bar {
+    -fx-background-color: #eef2f6;
+    -fx-border-color: #d8dee6 transparent transparent transparent;
+}
+.print-settings {
+    -fx-padding: 16;
+    -fx-background-color: #f8fafc;
+    -fx-border-color: transparent transparent transparent #d8dee6;
+}
+.primary-button {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 9 18;
+}
+.primary-button:hover { -fx-background-color: #1d4ed8; }
+.validation-error { -fx-text-fill: #b91c1c; -fx-padding: 6 0 0 0; }
+.tab-pane .tab-header-area .tab { -fx-padding: 7 16; }
+.table-view { -fx-background-color: white; -fx-border-color: #d8dee6; }

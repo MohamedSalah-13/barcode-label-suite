@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.mohamed.barcodelabel</groupId><artifactId>barcode-label-phase5-fixed</artifactId><version>0.5.1-SNAPSHOT</version><relativePath>../../phase5-fixed-pom.xml</relativePath></parent>
+    <artifactId>barcode-label-fx-workbench</artifactId>
+    <dependencies>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-workflow</artifactId><version>${phase5.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-fx-designer-fixed</artifactId><version>0.4.1-SNAPSHOT</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-render-java2d</artifactId><version>${phase2.version}</version></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-swing</artifactId></dependency>
+    </dependencies>
+    <build>
+        <sourceDirectory>../../barcode-label-fx-workbench/src/main/java</sourceDirectory>
+        <resources><resource><directory>../../barcode-label-fx-workbench/src/main/resources</directory></resource></resources>
+        <plugins>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId>
+                <configuration><archive><manifestEntries><Automatic-Module-Name>com.mohamed.barcodelabel.fx.workbench</Automatic-Module-Name></manifestEntries></archive></configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.mohamed.barcodelabel</groupId>
+        <artifactId>barcode-label-phase2</artifactId>
+        <version>0.2.0-SNAPSHOT</version>
+        <relativePath>../phase2-pom.xml</relativePath>
+    </parent>
+    <artifactId>barcode-label-render-java2d</artifactId>
+    <dependencies>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-render</artifactId><version>${base.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-data</artifactId><version>${base.version}</version></dependency>
+        <dependency><groupId>net.sf.barcode4j</groupId><artifactId>barcode4j</artifactId></dependency>
+        <dependency><groupId>com.google.zxing</groupId><artifactId>core</artifactId></dependency>
+        <dependency><groupId>com.google.zxing</groupId><artifactId>javase</artifactId></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId></plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId>
+                <configuration><archive><manifestEntries><Automatic-Module-Name>com.mohamed.barcodelabel.render.java2d</Automatic-Module-Name></manifestEntries></archive></configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+

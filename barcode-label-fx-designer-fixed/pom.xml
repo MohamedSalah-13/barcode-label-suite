@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.mohamed.barcodelabel</groupId><artifactId>barcode-label-phase5-fixed</artifactId><version>0.5.1-SNAPSHOT</version><relativePath>../phase5-fixed-pom.xml</relativePath></parent>
+    <artifactId>barcode-label-fx-designer-fixed</artifactId>
+    <version>0.4.1-SNAPSHOT</version>
+    <dependencies>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-model</artifactId><version>${base.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-data</artifactId><version>${base.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-render-java2d</artifactId><version>${phase2.version}</version></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-swing</artifactId></dependency>
+    </dependencies>
+    <build>
+        <sourceDirectory>${project.build.directory}/generated-sources/designer</sourceDirectory>
+        <resources><resource><directory>../barcode-label-fx-designer/src/main/resources</directory></resource></resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.1.0</version>
+                <executions><execution><id>prepare-fixed-designer</id><phase>generate-sources</phase><goals><goal>run</goal></goals>
+                    <configuration><target>
+                        <copy todir="${project.build.directory}/generated-sources/designer">
+                            <fileset dir="../barcode-label-fx-designer/src/main/java" includes="**/*.java"/>
+                        </copy>
+                        <replace dir="${project.build.directory}/generated-sources/designer"
+                                 token="session::deleteSelected" value="() -&gt; session.deleteSelected()">
+                            <include name="**/LabelDesignerPane.java"/>
+                        </replace>
+                    </target></configuration>
+                </execution></executions>
+            </plugin>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId>
+                <configuration><archive><manifestEntries><Automatic-Module-Name>com.mohamed.barcodelabel.fx.designer</Automatic-Module-Name></manifestEntries></archive></configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
