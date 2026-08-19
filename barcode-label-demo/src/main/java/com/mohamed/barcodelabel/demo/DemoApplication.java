@@ -16,6 +16,7 @@ import com.mohamed.barcodelabel.model.geometry.InsetsMm;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
 import com.mohamed.barcodelabel.model.page.PageDefinition;
 import com.mohamed.barcodelabel.model.page.SheetLayout;
+import atlantafx.base.theme.PrimerLight;
 import javafx.application.Application;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
@@ -27,6 +28,7 @@ import java.util.Map;
 public final class DemoApplication extends Application {
     @Override
     public void start(Stage stage) {
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         LabelDesigner designer = new LabelDesigner();
         designer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         designer.setTemplate(createResolvedTemplate());

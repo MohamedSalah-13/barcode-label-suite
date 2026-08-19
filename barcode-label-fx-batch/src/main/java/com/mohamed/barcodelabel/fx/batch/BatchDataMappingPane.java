@@ -19,6 +19,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -42,7 +44,7 @@ public final class BatchDataMappingPane extends BorderPane {
     private final Label fileSummary = new Label("اختر ملف CSV للبدء");
     private final Label resultSummary = new Label("لم يتم إعداد دفعة طباعة");
     private final ProgressIndicator busy = new ProgressIndicator();
-    private final Button prepareButton = new Button("تحقق وجهّز الطباعة");
+    private final Button prepareButton = new Button("تحقق وجهّز الطباعة", new FontIcon(Feather.CHECK_CIRCLE));
     private ColumnMapping loadedProfile;
 
     public BatchDataMappingPane() {
@@ -64,8 +66,9 @@ public final class BatchDataMappingPane extends BorderPane {
 
     private VBox header() {
         Label title = new Label("إعداد بيانات الطباعة الجماعية"); title.getStyleClass().add("batch-title");
-        Button importCsv = new Button("استيراد CSV"); importCsv.getStyleClass().add("primary-button");
-        Button saveProfile = new Button("حفظ المطابقة"); Button loadProfile = new Button("فتح مطابقة");
+        Button importCsv = new Button("استيراد CSV", new FontIcon(Feather.UPLOAD)); importCsv.getStyleClass().add("primary-button");
+        Button saveProfile = new Button("حفظ المطابقة", new FontIcon(Feather.SAVE));
+        Button loadProfile = new Button("فتح مطابقة", new FontIcon(Feather.FOLDER));
         importCsv.setOnAction(event -> importCsv()); saveProfile.setOnAction(event -> saveProfile()); loadProfile.setOnAction(event -> loadProfile());
         HBox toolbar = new HBox(8, importCsv, saveProfile, loadProfile); toolbar.setAlignment(Pos.CENTER_LEFT);
         VBox box = new VBox(7, title, fileSummary, toolbar); box.setPadding(new Insets(14)); return box;

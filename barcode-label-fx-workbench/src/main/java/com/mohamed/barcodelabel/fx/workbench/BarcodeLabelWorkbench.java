@@ -22,6 +22,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,10 +50,15 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private final ProgressIndicator busy = new ProgressIndicator();
     private final TabPane tabs = new TabPane();
     private final ComboBox<PaperPreset> presetBox = new ComboBox<>();
-    private final Button openButton = new Button("فتح قالب");
-    private final Button saveButton = new Button("حفظ");
-    private final Button saveAsButton = new Button("حفظ باسم");
-    private final Button importButton = new Button("استيراد CSV");
+    private final Button openButton = iconButton("فتح قالب", Feather.FOLDER);
+    private final Button saveButton = iconButton("حفظ", Feather.SAVE);
+    private final Button saveAsButton = iconButton("حفظ باسم", Feather.COPY);
+    private final Button importButton = iconButton("استيراد CSV", Feather.UPLOAD);
+
+    private static Button iconButton(String text, Feather icon) {
+        Button button = new Button(text, new FontIcon(icon));
+        return button;
+    }
 
     public BarcodeLabelWorkbench(LabelTemplate initialTemplate) {
         designer = new VisualLabelDesigner(initialTemplate);
