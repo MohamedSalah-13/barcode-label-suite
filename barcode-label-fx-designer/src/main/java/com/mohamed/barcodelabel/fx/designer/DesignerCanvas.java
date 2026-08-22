@@ -13,6 +13,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,7 @@ final class DesignerCanvas extends Pane {
     private final Canvas gridCanvas = new Canvas();
     private final Map<UUID, StackPane> elementViews = new HashMap<>();
     private final Map<UUID, RectMm> dragStartBounds = new HashMap<>();
+    private final Rectangle rubberBand = new Rectangle();
     private LabelTemplate renderedTemplate;
     private double zoom = 1;
     private double gridMm = 1;
@@ -33,16 +35,51 @@ final class DesignerCanvas extends Pane {
     private double dragStartSceneY;
     private double currentDeltaX;
     private double currentDeltaY;
+    private double rubberBandStartX;
+    private double rubberBandStartY;
 
     DesignerCanvas(TemplateEditSession session) {
         this.session = session;
         getStyleClass().add("designer-canvas");
         setFocusTraversable(true);
         getChildren().add(gridCanvas);
+        rubberBand.getStyleClass().add("rubber-band-selection");
+        rubberBand.setManaged(false);
+        rubberBand.setMouseTransparent(true);
+        rubberBand.setVisible(false);
+        rubberBand.setFill(Color.rgb(59, 130, 246, 0.15));
+        rubberBand.setStroke(Color.rgb(59, 130, 246, 0.9));
+        rubberBand.setStrokeWidth(1);
+        rubberBand.getStrokeDashArray().addAll(4.0, 4.0);
         session.addListener(this::sessionChanged);
         setOnMousePressed(event -> {
-            if (event.getTarget() == this || event.getTarget() == gridCanvas) session.clearSelection();
+            if (event.getTarget() == this || event.getTarget() == gridCanvas) {
+                if (!event.isControlDown()) session.clearSelection();
+                rubberBandStartX = event.getX();
+                rubberBandStartY = event.getY();
+                rubberBand.setX(rubberBandStartX);
+                rubberBand.setY(rubberBandStartY);
+                rubberBand.setWidth(0);
+                rubberBand.setHeight(0);
+                rubberBand.setVisible(true);
+            }
             requestFocus();
+        });
+        setOnMouseDragged(event -> {
+            if (!rubberBand.isVisible()) return;
+            double x = Math.max(0, Math.min(event.getX(), getWidth()));
+            double y = Math.max(0, Math.min(event.getY(), getHeight()));
+            rubberBand.setX(Math.min(rubberBandStartX, x));
+            rubberBand.setY(Math.min(rubberBandStartY, y));
+            rubberBand.setWidth(Math.abs(x - rubberBandStartX));
+            rubberBand.setHeight(Math.abs(y - rubberBandStartY));
+        });
+        setOnMouseReleased(event -> {
+            if (!rubberBand.isVisible()) return;
+            rubberBand.setVisible(false);
+            if (rubberBand.getWidth() > 3 || rubberBand.getHeight() > 3) {
+                selectElementsInRubberBand(event.isControlDown());
+            }
         });
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         rebuild();
@@ -74,6 +111,7 @@ final class DesignerCanvas extends Pane {
                 .filter(element -> element.frame().visible())
                 .sorted((left, right) -> Integer.compare(left.frame().zIndex(), right.frame().zIndex()))
                 .forEach(this::addElementView);
+        getChildren().add(rubberBand);
         refreshSelectionStyles();
     }
 
@@ -181,6 +219,19 @@ final class DesignerCanvas extends Pane {
             }
             event.consume();
         });
+    }
+
+    private void selectElementsInRubberBand(boolean additive) {
+        var band = rubberBand.getBoundsInParent();
+        var matched = elementViews.entrySet().stream()
+                .filter(entry -> entry.getValue().getBoundsInParent().intersects(band))
+                .map(Map.Entry::getKey)
+                .toList();
+        if (!additive) session.clearSelection();
+        var alreadySelected = session.selection();
+        for (UUID id : matched) {
+            if (!alreadySelected.contains(id)) session.select(id, true);
+        }
     }
 
     private void refreshSelectionStyles() {
