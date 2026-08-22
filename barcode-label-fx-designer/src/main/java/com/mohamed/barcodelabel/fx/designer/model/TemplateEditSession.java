@@ -1,6 +1,7 @@
 package com.mohamed.barcodelabel.fx.designer.model;
 
 import com.mohamed.barcodelabel.model.LabelTemplate;
+import com.mohamed.barcodelabel.model.element.ImageFit;
 import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
@@ -130,6 +131,10 @@ public final class TemplateEditSession {
             boolean bold, boolean italic, TextAlignment alignment) {
         updateOne(id, "Change text style", element ->
                 ElementCopies.withTextStyle(element, fontFamily, fontSizePoints, color, bold, italic, alignment));
+    }
+
+    public void setImage(UUID id, String source, ImageFit fit) {
+        updateOne(id, "Change image", element -> ElementCopies.withImage(element, source, fit));
     }
 
     public void bringToFront(UUID id) {

@@ -3,6 +3,7 @@ package com.mohamed.barcodelabel.fx.designer.model;
 import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.model.element.ElementFrame;
 import com.mohamed.barcodelabel.model.element.ImageElement;
+import com.mohamed.barcodelabel.model.element.ImageFit;
 import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.element.ShapeElement;
 import com.mohamed.barcodelabel.model.element.TextAlignment;
@@ -72,6 +73,11 @@ public final class ElementCopies {
         if (!(element instanceof TextElement value)) return element;
         return new TextElement(value.frame(), value.textTemplate(), fontFamily, fontSizePoints,
                 color, bold, italic, alignment);
+    }
+
+    public static LabelElement withImage(LabelElement element, String source, ImageFit fit) {
+        if (!(element instanceof ImageElement value)) return element;
+        return new ImageElement(value.frame(), source, fit);
     }
 
     private static ElementFrame copyFrame(ElementFrame source, UUID id, RectMm bounds, String name, int zIndex) {

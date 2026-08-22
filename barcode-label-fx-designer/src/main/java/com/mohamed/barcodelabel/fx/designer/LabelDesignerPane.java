@@ -6,6 +6,8 @@ import com.mohamed.barcodelabel.fx.designer.model.TemplateEditSession;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.model.element.ElementFrame;
+import com.mohamed.barcodelabel.model.element.ImageElement;
+import com.mohamed.barcodelabel.model.element.ImageFit;
 import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.element.ShapeElement;
 import com.mohamed.barcodelabel.model.element.ShapeType;
@@ -40,7 +42,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,6 +59,8 @@ public final class LabelDesignerPane extends BorderPane {
     private final TextField heightField = numberField();
     private final TextField rotationField = numberField();
     private final TextField contentField = new TextField();
+    private final Button browseImageButton = new Button("استعراض...");
+    private final ComboBox<ImageFit> imageFitField = new ComboBox<>(javafx.collections.FXCollections.observableArrayList(ImageFit.values()));
     private final ComboBox<String> fontFamilyField = new ComboBox<>(javafx.collections.FXCollections.observableArrayList(
             "Arial", "Tahoma", "Verdana", "Times New Roman", "Courier New", "Segoe UI"));
     private final TextField fontSizeField = numberField();
@@ -143,8 +149,9 @@ public final class LabelDesignerPane extends BorderPane {
         Button barcode = button("+ باركود", () -> addBarcode(Symbology.CODE_128));
         Button qr = button("+ QR Code", () -> addBarcode(Symbology.QR_CODE));
         Button rectangle = button("+ مستطيل", this::addRectangle);
-        for (Button button : List.of(text, barcode, qr, rectangle)) button.setMaxWidth(Double.MAX_VALUE);
-        VBox toolbox = new VBox(8, title, text, barcode, qr, rectangle, new Separator(),
+        Button image = button("+ صورة", this::addImage);
+        for (Button button : List.of(text, barcode, qr, rectangle, image)) button.setMaxWidth(Double.MAX_VALUE);
+        VBox toolbox = new VBox(8, title, text, barcode, qr, rectangle, image, new Separator(),
                 new Label("Ctrl + Click للتحديد المتعدد"),
                 new Label("الأسهم: 0.1 مم"),
                 new Label("Shift + الأسهم: 1 مم"));
@@ -164,7 +171,13 @@ public final class LabelDesignerPane extends BorderPane {
         addPropertyRow(grid, 2, "العرض", widthField);
         addPropertyRow(grid, 3, "الارتفاع", heightField);
         addPropertyRow(grid, 4, "الدوران (°)", rotationField);
-        addPropertyRow(grid, 5, "النص/البيانات", contentField);
+        HBox contentRow = new HBox(6, contentField, browseImageButton);
+        HBox.setHgrow(contentField, Priority.ALWAYS);
+        browseImageButton.setOnAction(event -> browseImage());
+        grid.add(new Label("النص/البيانات/المسار"), 0, 5);
+        grid.add(contentRow, 1, 5);
+        GridPane.setHgrow(contentRow, Priority.ALWAYS);
+        addPropertyRow(grid, 6, "نمط الصورة", imageFitField);
 
         Label textTitle = new Label("تنسيق النص");
         textTitle.getStyleClass().add("panel-title");
@@ -225,6 +238,25 @@ public final class LabelDesignerPane extends BorderPane {
                 ShapeType.ROUNDED_RECTANGLE, "#64748B", "transparent", 0.3));
     }
 
+    private void addImage() {
+        File file = chooseImageFile();
+        if (file == null) return;
+        session.addElement(new ImageElement(ElementFrame.create("Image", new RectMm(5, 5, 30, 20), nextZ()),
+                file.toURI().toString(), ImageFit.CONTAIN));
+    }
+
+    private void browseImage() {
+        File file = chooseImageFile();
+        if (file != null) contentField.setText(file.toURI().toString());
+    }
+
+    private File chooseImageFile() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("اختر صورة");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("صور", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"));
+        return chooser.showOpenDialog(getScene() != null ? getScene().getWindow() : null);
+    }
+
     private int nextZ() {
         return session.template().elements().stream().mapToInt(element -> element.frame().zIndex()).max().orElse(-1) + 1;
     }
@@ -241,6 +273,8 @@ public final class LabelDesignerPane extends BorderPane {
                 selectionTitle.setText("لا يوجد عنصر محدد");
                 for (TextField field : List.of(xField, yField, widthField, heightField, rotationField, contentField, fontSizeField)) field.clear();
                 setTextControlsDisabled(true);
+                browseImageButton.setDisable(true);
+                imageFitField.setDisable(true);
                 return;
             }
             selectionTitle.setText(element.frame().name());
@@ -251,9 +285,14 @@ public final class LabelDesignerPane extends BorderPane {
             contentField.setText(switch (element) {
                 case TextElement text -> text.textTemplate();
                 case BarcodeElement barcode -> barcode.dataTemplate();
+                case ImageElement image -> image.source();
                 default -> "";
             });
-            contentField.setDisable(!(element instanceof TextElement || element instanceof BarcodeElement));
+            boolean isImage = element instanceof ImageElement;
+            contentField.setDisable(!(element instanceof TextElement || element instanceof BarcodeElement || isImage));
+            browseImageButton.setDisable(!isImage);
+            imageFitField.setDisable(!isImage);
+            if (element instanceof ImageElement image) imageFitField.setValue(image.fit());
             locked.setSelected(element.frame().locked());
             visible.setSelected(element.frame().visible());
 
@@ -297,6 +336,10 @@ public final class LabelDesignerPane extends BorderPane {
             session.setRotation(element.frame().id(), parse(rotationField));
             if (element instanceof TextElement || element instanceof BarcodeElement) {
                 session.setContent(element.frame().id(), contentField.getText());
+            }
+            if (element instanceof ImageElement) {
+                ImageFit fit = imageFitField.getValue() != null ? imageFitField.getValue() : ImageFit.CONTAIN;
+                session.setImage(element.frame().id(), contentField.getText(), fit);
             }
             if (element instanceof TextElement) {
                 TextAlignment alignment = alignCenterToggle.isSelected() ? TextAlignment.CENTER
