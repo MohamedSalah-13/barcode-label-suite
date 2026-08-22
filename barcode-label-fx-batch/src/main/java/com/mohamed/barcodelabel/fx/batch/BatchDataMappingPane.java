@@ -70,7 +70,8 @@ public final class BatchDataMappingPane extends BorderPane {
         Button saveProfile = new Button("حفظ المطابقة", new FontIcon(Feather.SAVE));
         Button loadProfile = new Button("فتح مطابقة", new FontIcon(Feather.FOLDER));
         importCsv.setOnAction(event -> importCsv()); saveProfile.setOnAction(event -> saveProfile()); loadProfile.setOnAction(event -> loadProfile());
-        HBox toolbar = new HBox(8, importCsv, saveProfile, loadProfile); toolbar.setAlignment(Pos.CENTER_LEFT);
+        busy.setPrefSize(18, 18); busy.setMaxSize(18, 18); busy.setVisible(false); busy.setManaged(false);
+        HBox toolbar = new HBox(8, importCsv, saveProfile, loadProfile, busy); toolbar.setAlignment(Pos.CENTER_LEFT);
         VBox box = new VBox(7, title, fileSummary, toolbar); box.setPadding(new Insets(14)); return box;
     }
 
@@ -120,7 +121,13 @@ public final class BatchDataMappingPane extends BorderPane {
     }
 
     private void prepare() {
-        BatchPreparationResult prepared = preparation.prepare(getTemplate(), getDataset(), currentMapping());
+        LabelTemplate currentTemplate = getTemplate();
+        CsvDataset currentDataset = getDataset();
+        ColumnMapping mapping = currentMapping();
+        runIo("تحقق وتجهيز الطباعة", () -> preparation.prepare(currentTemplate, currentDataset, mapping), this::applyPreparationResult);
+    }
+
+    private void applyPreparationResult(BatchPreparationResult prepared) {
         result.set(prepared); issues.setItems(FXCollections.observableArrayList(prepared.issues().stream()
                 .map(issue -> (issue.severity() == ValidationSeverity.ERROR ? "خطأ" : "تنبيه") + " — صف " + issue.sourceRow() + ": " + issue.message()).toList()));
         resultSummary.setText(prepared.ready()
@@ -132,29 +139,34 @@ public final class BatchDataMappingPane extends BorderPane {
     private void importCsv() {
         FileChooser chooser = new FileChooser(); chooser.setTitle("استيراد بيانات الدفعة"); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
         java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        runIo(() -> csv.read(file.toPath()), value -> { setDataset(value); fileSummary.setText(file.getName()); });
+        runIo("استيراد CSV", () -> csv.read(file.toPath()), value -> { setDataset(value); fileSummary.setText(file.getName()); });
     }
 
     private void saveProfile() {
         if (getDataset() == null || fieldBoxes.isEmpty()) return;
         FileChooser chooser = profileChooser("حفظ مطابقة الأعمدة"); chooser.setInitialFileName("csv-mapping.properties");
         java.io.File file = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        ColumnMapping mapping = currentMapping(); runIo(() -> { profiles.save(file.toPath(), mapping); return mapping; }, value -> resultSummary.setText("تم حفظ إعداد المطابقة"));
+        ColumnMapping mapping = currentMapping();
+        runIo("حفظ إعداد المطابقة", () -> { profiles.save(file.toPath(), mapping); return mapping; }, value -> resultSummary.setText("تم حفظ إعداد المطابقة"));
     }
 
     private void loadProfile() {
         FileChooser chooser = profileChooser("فتح مطابقة أعمدة"); java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        runIo(() -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(); resultSummary.setText("تم تحميل إعداد المطابقة"); });
+        runIo("فتح إعداد المطابقة", () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(); resultSummary.setText("تم تحميل إعداد المطابقة"); });
     }
 
-    private <T> void runIo(IoSupplier<T> supplier, java.util.function.Consumer<T> success) {
+    private <T> void runIo(String operation, IoSupplier<T> supplier, java.util.function.Consumer<T> success) {
         setBusy(true); CompletableFuture<T> future = new CompletableFuture<>();
         Thread.ofVirtual().name("batch-data-file-io").start(() -> { try { future.complete(supplier.get()); } catch (Throwable error) { future.completeExceptionally(error); } });
-        future.whenComplete((value, error) -> Platform.runLater(() -> { setBusy(false); if (error == null) success.accept(value); else showError(rootMessage(error)); }));
+        future.whenComplete((value, error) -> Platform.runLater(() -> { setBusy(false); if (error == null) success.accept(value); else showError(operation, rootMessage(error)); }));
     }
 
     private void setBusy(boolean value) { busy.setVisible(value); busy.setManaged(value); prepareButton.setDisable(value || getDataset() == null); }
-    private void showError(String message) { new Alert(Alert.AlertType.ERROR, message, ButtonType.OK).show(); }
+    private void showError(String operation, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, operation + ": " + message, ButtonType.OK);
+        if (getScene() != null && getScene().getWindow() != null) alert.initOwner(getScene().getWindow());
+        alert.show();
+    }
     private static FileChooser profileChooser(String title) { FileChooser chooser = new FileChooser(); chooser.setTitle(title); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Mapping profile", "*.properties")); return chooser; }
     private static String rootMessage(Throwable throwable) { Throwable current = throwable; while (current.getCause() != null) current = current.getCause(); return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage(); }
     private void loadStylesheet() { var resource = BatchDataMappingPane.class.getResource("batch-data-mapping.css"); if (resource != null) getStylesheets().add(resource.toExternalForm()); }

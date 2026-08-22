@@ -19,11 +19,6 @@
             <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.1.0</version>
                 <executions><execution><id>prepare-fx-sources</id><phase>generate-sources</phase><goals><goal>run</goal></goals><configuration><target>
                     <copy todir="${project.build.directory}/generated-sources/fx-batch"><fileset dir="../../barcode-label-fx-batch/src/main/java" includes="**/*.java"/></copy>
-                    <replace dir="${project.build.directory}/generated-sources/fx-batch"
-                             token="headers.forEach(header -&gt; row.put(header, String.valueOf(record.getOrDefault(header, &quot;&quot;))));"
-                             value="headers.forEach(header -&gt; { Object raw = record.get(header); row.put(header, raw == null ? &quot;&quot; : String.valueOf(raw)); });">
-                        <include name="**/BatchProductionWorkbench.java"/>
-                    </replace>
                 </target></configuration></execution></executions>
             </plugin>
             <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>

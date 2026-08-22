@@ -39,7 +39,9 @@ public final class BatchProductionWorkbench extends BorderPane {
         LinkedHashSet<String> headerSet = new LinkedHashSet<>(); records.forEach(record -> headerSet.addAll(record.keySet()));
         List<String> headers = List.copyOf(headerSet); List<Map<String, String>> rows = new ArrayList<>(records.size());
         for (Map<String, ?> record : records) {
-            var row = new java.util.LinkedHashMap<String, String>(); headers.forEach(header -> row.put(header, String.valueOf(record.getOrDefault(header, "")))); rows.add(row);
+            var row = new java.util.LinkedHashMap<String, String>();
+            headers.forEach(header -> { Object raw = record.get(header); row.put(header, raw == null ? "" : String.valueOf(raw)); });
+            rows.add(row);
         }
         return new CsvDataset(headers, rows, ',');
     }
