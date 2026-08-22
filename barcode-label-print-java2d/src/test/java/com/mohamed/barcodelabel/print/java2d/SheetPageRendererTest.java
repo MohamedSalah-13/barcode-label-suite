@@ -57,7 +57,7 @@ class SheetPageRendererTest {
 
     private static List<Map<String, ?>> records(int count) {
         return java.util.stream.IntStream.range(0, count)
-                .mapToObj(index -> Map.<String, Object>of("index", index))
+                .<Map<String, ?>>mapToObj(index -> Map.of("index", index))
                 .toList();
     }
 }

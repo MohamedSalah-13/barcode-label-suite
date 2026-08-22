@@ -4,8 +4,11 @@ import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.print.LabelPrintRequest;
 import com.mohamed.barcodelabel.print.SheetLayoutEngine;
 import com.mohamed.barcodelabel.print.java2d.Java2DLabelPrinter;
+import com.mohamed.barcodelabel.print.java2d.PrintCancelledException;
+import com.mohamed.barcodelabel.print.java2d.PrintJobFailedException;
 import com.mohamed.barcodelabel.print.java2d.PrinterCatalog;
 import com.mohamed.barcodelabel.print.java2d.PrinterDescriptor;
+import com.mohamed.barcodelabel.print.java2d.PrinterNotFoundException;
 import com.mohamed.barcodelabel.print.java2d.SheetPageRenderer;
 import com.mohamed.barcodelabel.print.java2d.SheetPreviewRequest;
 import javafx.application.Platform;
@@ -45,6 +48,7 @@ public final class SheetPrintPane extends BorderPane {
     private final Button previousPage = new Button("السابق");
     private final Button nextPage = new Button("التالي");
     private final Button printButton = new Button("طباعة");
+    private final Button cancelPrintButton = new Button("إلغاء الطباعة");
     private final Label pageStatus = new Label("صفحة 0 من 0");
     private final Label operationStatus = new Label("جاهز");
     private final Label zoomLabel = new Label("100%");
@@ -111,11 +115,14 @@ public final class SheetPrintPane extends BorderPane {
         startSlot.setEditable(true); commitOnFocusLoss(startSlot);
         printButton.getStyleClass().add("primary-button");
         printButton.setMaxWidth(Double.MAX_VALUE);
+        cancelPrintButton.setMaxWidth(Double.MAX_VALUE);
+        cancelPrintButton.setDisable(true);
+        cancelPrintButton.setOnAction(event -> { labelPrinter.cancelCurrent(); operationStatus.setText("جارٍ إلغاء الطباعة..."); });
         VBox panel = new VBox(8,
                 new Label("الطابعة"), printerRow,
                 new Label("عدد النسخ"), copies,
                 new Label("ابدأ من الخانة"), startSlot,
-                printButton, operationStatus);
+                printButton, cancelPrintButton, operationStatus);
         panel.getStyleClass().add("print-settings");
         panel.setPrefWidth(260);
         return panel;
@@ -230,16 +237,31 @@ public final class SheetPrintPane extends BorderPane {
         if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
 
         printButton.setDisable(true);
+        cancelPrintButton.setDisable(false);
         operationStatus.setText("جارٍ إرسال مهمة الطباعة...");
         var request = new LabelPrintRequest(getTemplate(), getRecords(), selected.name(), copies.getValue(), startSlot.getValue());
         labelPrinter.print(request).whenComplete((result, error) -> Platform.runLater(() -> {
             printButton.setDisable(false);
+            cancelPrintButton.setDisable(true);
             if (error != null) {
-                operationStatus.setText("فشلت الطباعة: " + rootMessage(error));
+                operationStatus.setText(describeError(error));
             } else {
                 operationStatus.setText("تمت طباعة " + result.labelsPrinted() + " ملصق في " + result.pagesPrinted() + " صفحة");
             }
         }));
+    }
+
+    private static String describeError(Throwable error) {
+        if (error instanceof PrintCancelledException) {
+            return "تم إلغاء الطباعة: " + rootMessage(error);
+        }
+        if (error instanceof PrinterNotFoundException) {
+            return "الطابعة المحددة غير متاحة: " + rootMessage(error);
+        }
+        if (error instanceof PrintJobFailedException failed) {
+            return "فشلت الطباعة بعد " + failed.pagesCompleted() + " من " + failed.totalPages() + " صفحة: " + rootMessage(error);
+        }
+        return "فشلت الطباعة: " + rootMessage(error);
     }
 
     private static String rootMessage(Throwable throwable) {
