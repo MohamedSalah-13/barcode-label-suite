@@ -122,6 +122,14 @@ class TemplateEditSessionTest {
     }
 
     @Test
+    void selectAllSelectsEveryElement() {
+        var session = new TemplateEditSession(template());
+        session.selectAll();
+        assertEquals(2, session.selection().size());
+        session.template().elements().forEach(element -> assertTrue(session.selection().contains(element.frame().id())));
+    }
+
+    @Test
     void deleteAndUndoRestoreSelectionTargets() {
         var session = new TemplateEditSession(template());
         var id = session.template().elements().getFirst().frame().id();

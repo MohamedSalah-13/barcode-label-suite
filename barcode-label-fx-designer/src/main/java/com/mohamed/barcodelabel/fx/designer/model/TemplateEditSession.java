@@ -53,6 +53,12 @@ public final class TemplateEditSession {
 
     public void clearSelection() { select(null, false); }
 
+    public void selectAll() {
+        selection.clear();
+        template.elements().forEach(element -> selection.add(element.frame().id()));
+        notifyListeners();
+    }
+
     public LabelElement find(UUID id) {
         return template.elements().stream().filter(element -> element.frame().id().equals(id)).findFirst().orElse(null);
     }

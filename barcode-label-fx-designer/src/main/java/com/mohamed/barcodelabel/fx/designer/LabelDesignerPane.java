@@ -156,6 +156,7 @@ public final class LabelDesignerPane extends BorderPane {
         undoButton.setOnAction(event -> session.undo());
         redoButton.setOnAction(event -> session.redo());
         Button copy = button("نسخ", () -> session.copySelected());
+        Button cut = button("قص", () -> { session.copySelected(); session.deleteSelected(); });
         Button paste = button("لصق", () -> session.pasteClipboard());
         Button duplicate = button("تكرار", () -> session.duplicateSelected(2));
         Button delete = button("حذف", () -> session.deleteSelected());
@@ -170,7 +171,7 @@ public final class LabelDesignerPane extends BorderPane {
         Button backward = button("طبقة للخلف", () -> session.sendBackward(session.primarySelection()));
         Button toBack = button("إرسال للخلفية", () -> session.sendToBack(session.primarySelection()));
         return new ToolBar(open, saveAs, new Separator(), undoButton, redoButton,
-                new Separator(), copy, paste, duplicate, delete,
+                new Separator(), cut, copy, paste, duplicate, delete,
                 new Separator(), left, center, right, top, middle, bottom,
                 new Separator(), toFront, forward, backward, toBack);
     }

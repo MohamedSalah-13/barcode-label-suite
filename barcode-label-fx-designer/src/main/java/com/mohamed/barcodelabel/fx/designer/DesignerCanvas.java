@@ -173,6 +173,8 @@ final class DesignerCanvas extends Pane {
     private ContextMenu buildElementContextMenu(UUID id) {
         MenuItem copy = new MenuItem("نسخ");
         copy.setOnAction(event -> session.copySelected());
+        MenuItem cut = new MenuItem("قص");
+        cut.setOnAction(event -> { session.copySelected(); session.deleteSelected(); });
         MenuItem paste = new MenuItem("لصق");
         paste.setDisable(!session.hasClipboard());
         paste.setOnAction(event -> session.pasteClipboard());
@@ -188,7 +190,7 @@ final class DesignerCanvas extends Pane {
         backward.setOnAction(event -> session.sendBackward(id));
         MenuItem toBack = new MenuItem("إرسال للخلفية");
         toBack.setOnAction(event -> session.sendToBack(id));
-        return new ContextMenu(copy, paste, duplicate, delete,
+        return new ContextMenu(cut, copy, paste, duplicate, delete,
                 new SeparatorMenuItem(), toFront, forward, backward, toBack);
     }
 
@@ -299,6 +301,11 @@ final class DesignerCanvas extends Pane {
         }
         if (event.isControlDown() && event.getCode() == KeyCode.C) { session.copySelected(); event.consume(); return; }
         if (event.isControlDown() && event.getCode() == KeyCode.V) { session.pasteClipboard(); event.consume(); return; }
+        if (event.isControlDown() && event.getCode() == KeyCode.X) {
+            session.copySelected(); session.deleteSelected(); event.consume(); return;
+        }
+        if (event.isControlDown() && event.getCode() == KeyCode.D) { session.duplicateSelected(2); event.consume(); return; }
+        if (event.isControlDown() && event.getCode() == KeyCode.A) { session.selectAll(); event.consume(); return; }
         double step = event.isShiftDown() ? 1 : 0.1;
         switch (event.getCode()) {
             case LEFT -> session.moveSelected(-step, 0);
