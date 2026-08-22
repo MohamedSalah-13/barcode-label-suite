@@ -9,6 +9,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -25,6 +26,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class BatchDataMappingPane extends BorderPane {
@@ -37,6 +39,7 @@ public final class BatchDataMappingPane extends BorderPane {
     private final CsvImportService csv = new CsvImportService();
     private final MappingProfileStore profiles = new MappingProfileStore();
     private final GridPane mappings = new GridPane();
+    private final TableView<Map<String, String>> preview = new TableView<>();
     private final LinkedHashMap<String, ComboBox<String>> fieldBoxes = new LinkedHashMap<>();
     private final ComboBox<String> quantityColumn = new ComboBox<>();
     private final Spinner<Integer> defaultCopies = new Spinner<>(1, 999, 1);
@@ -80,10 +83,14 @@ public final class BatchDataMappingPane extends BorderPane {
     private SplitPane content() {
         mappings.setHgap(12); mappings.setVgap(9); mappings.setPadding(new Insets(12));
         ScrollPane mappingScroll = new ScrollPane(mappings); mappingScroll.setFitToWidth(true);
+        preview.setPlaceholder(new Label("استورد CSV لعرض معاينة البيانات"));
+        preview.setPrefHeight(160);
+        VBox mappingSide = new VBox(8, new Label("معاينة البيانات (أول 8 صفوف)"), preview, mappingScroll);
+        mappingSide.setPadding(new Insets(12)); VBox.setVgrow(mappingScroll, Priority.ALWAYS);
         issues.setPlaceholder(new Label("لا توجد أخطاء"));
         VBox validation = new VBox(8, new Label("نتيجة التحقق"), resultSummary, issues);
         validation.setPadding(new Insets(12)); VBox.setVgrow(issues, Priority.ALWAYS);
-        SplitPane split = new SplitPane(mappingScroll, validation); split.setDividerPositions(0.6); return split;
+        SplitPane split = new SplitPane(mappingSide, validation); split.setDividerPositions(0.6); return split;
     }
 
     private HBox actions() {
@@ -100,6 +107,7 @@ public final class BatchDataMappingPane extends BorderPane {
     }
 
     private void rebuildMappings() {
+        rebuildPreview();
         mappings.getChildren().clear(); fieldBoxes.clear(); result.set(null); issues.getItems().clear();
         if (getTemplate() == null || getDataset() == null) {
             mappings.add(new Label("يجب تحديد قالب واستيراد CSV أولًا"), 0, 0); prepareButton.setDisable(true); return;
@@ -121,6 +129,19 @@ public final class BatchDataMappingPane extends BorderPane {
         loadedProfile = null;
         prepareButton.setDisable(fields.isEmpty());
         fileSummary.setText(getDataset().rows().size() + " صف، " + getDataset().headers().size() + " عمود، " + fields.size() + " حقل مطلوب في القالب");
+    }
+
+    private void rebuildPreview() {
+        preview.getColumns().clear();
+        preview.getItems().clear();
+        CsvDataset current = getDataset();
+        if (current == null) return;
+        for (String header : current.headers()) {
+            TableColumn<Map<String, String>, String> column = new TableColumn<>(header);
+            column.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getOrDefault(header, "")));
+            preview.getColumns().add(column);
+        }
+        preview.getItems().addAll(current.rows().stream().limit(8).toList());
     }
 
     private ColumnMapping currentMapping() {
