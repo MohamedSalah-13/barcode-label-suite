@@ -11,6 +11,7 @@ public final class PrinterCatalog {
         String defaultName = defaultService == null ? null : defaultService.getName();
         return Arrays.stream(PrintServiceLookup.lookupPrintServices(null, null))
                 .map(service -> new PrinterDescriptor(service.getName(), service.getName().equals(defaultName)))
+                .distinct()
                 .sorted()
                 .toList();
     }

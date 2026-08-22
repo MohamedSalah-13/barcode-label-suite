@@ -94,9 +94,9 @@ public final class BatchDataMappingPane extends BorderPane {
     }
 
     private HBox actions() {
-        defaultCopies.setEditable(true); quantityColumn.setPrefWidth(240);
-        maxCopiesPerRowField.setEditable(true); maxCopiesPerRowField.setPrefWidth(90);
-        maxTotalLabelsField.setEditable(true); maxTotalLabelsField.setPrefWidth(110);
+        defaultCopies.setEditable(true); commitOnFocusLoss(defaultCopies); quantityColumn.setPrefWidth(240);
+        maxCopiesPerRowField.setEditable(true); commitOnFocusLoss(maxCopiesPerRowField); maxCopiesPerRowField.setPrefWidth(90);
+        maxTotalLabelsField.setEditable(true); commitOnFocusLoss(maxTotalLabelsField); maxTotalLabelsField.setPrefWidth(110);
         prepareButton.getStyleClass().add("primary-button"); prepareButton.setOnAction(event -> prepare());
         HBox box = new HBox(10, new Label("عمود الكمية"), quantityColumn,
                 new Label("الكمية الافتراضية"), defaultCopies,
@@ -206,6 +206,12 @@ public final class BatchDataMappingPane extends BorderPane {
         if (getScene() != null && getScene().getWindow() != null) alert.initOwner(getScene().getWindow());
         alert.show();
     }
+    private static void commitOnFocusLoss(Spinner<Integer> spinner) {
+        spinner.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) spinner.increment(0);
+        });
+    }
+
     private static FileChooser profileChooser(String title) { FileChooser chooser = new FileChooser(); chooser.setTitle(title); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Mapping profile", "*.properties")); return chooser; }
     private static String rootMessage(Throwable throwable) { Throwable current = throwable; while (current.getCause() != null) current = current.getCause(); return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage(); }
     private void loadStylesheet() { var resource = BatchDataMappingPane.class.getResource("batch-data-mapping.css"); if (resource != null) getStylesheets().add(resource.toExternalForm()); }

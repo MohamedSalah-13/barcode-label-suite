@@ -103,18 +103,28 @@ public final class SheetPrintPane extends BorderPane {
     private VBox createSettingsPanel() {
         printers.setPromptText("اختر الطابعة");
         printers.setMaxWidth(Double.MAX_VALUE);
-        copies.setEditable(true);
-        startSlot.setEditable(true);
+        Button refreshPrinters = new Button("تحديث");
+        refreshPrinters.setOnAction(event -> loadPrinters());
+        HBox printerRow = new HBox(6, printers, refreshPrinters);
+        HBox.setHgrow(printers, Priority.ALWAYS);
+        copies.setEditable(true); commitOnFocusLoss(copies);
+        startSlot.setEditable(true); commitOnFocusLoss(startSlot);
         printButton.getStyleClass().add("primary-button");
         printButton.setMaxWidth(Double.MAX_VALUE);
         VBox panel = new VBox(8,
-                new Label("الطابعة"), printers,
+                new Label("الطابعة"), printerRow,
                 new Label("عدد النسخ"), copies,
                 new Label("ابدأ من الخانة"), startSlot,
                 printButton, operationStatus);
         panel.getStyleClass().add("print-settings");
         panel.setPrefWidth(260);
         return panel;
+    }
+
+    private static void commitOnFocusLoss(Spinner<Integer> spinner) {
+        spinner.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) spinner.increment(0);
+        });
     }
 
     private HBox createNavigationBar() {

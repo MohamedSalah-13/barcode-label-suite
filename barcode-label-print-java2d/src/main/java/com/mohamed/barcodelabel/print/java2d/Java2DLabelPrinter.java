@@ -51,7 +51,7 @@ public final class Java2DLabelPrinter implements LabelPrinter {
             SheetPrintable printable = new SheetPrintable(request, renderDpi);
             if (printable.pageCount() == 0) return new PrintResult(0, 0);
 
-            PageFormat format = createPageFormat(request);
+            PageFormat format = job.validatePage(createPageFormat(request));
             Book book = new Book();
             book.append(printable, format, printable.pageCount());
             job.setPageable(book);
