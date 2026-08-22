@@ -26,6 +26,7 @@ public final class TemplateEditSession {
     private final Deque<HistoryEntry> undo = new ArrayDeque<>();
     private final Deque<HistoryEntry> redo = new ArrayDeque<>();
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
+    private List<LabelElement> clipboard = List.of();
 
     public TemplateEditSession(LabelTemplate template) {
         this.template = Objects.requireNonNull(template, "template");
@@ -93,6 +94,34 @@ public final class TemplateEditSession {
         });
         selection.clear();
         duplicates.forEach(element -> selection.add(element.frame().id()));
+        notifyListeners();
+    }
+
+    public void copySelected() {
+        if (selection.isEmpty()) return;
+        clipboard = template.elements().stream()
+                .filter(element -> selection.contains(element.frame().id()))
+                .toList();
+    }
+
+    public boolean hasClipboard() { return !clipboard.isEmpty(); }
+
+    public void pasteClipboard() {
+        if (clipboard.isEmpty()) return;
+        int nextZ = template.elements().stream().mapToInt(element -> element.frame().zIndex()).max().orElse(0) + 1;
+        var pasted = new ArrayList<LabelElement>();
+        for (LabelElement element : clipboard) {
+            RectMm old = element.frame().bounds();
+            RectMm moved = fit(new RectMm(old.x() + 5, old.y() + 5, old.width(), old.height()));
+            pasted.add(ElementCopies.duplicate(element, moved, nextZ++));
+        }
+        apply("Paste elements", current -> {
+            var elements = new ArrayList<>(current.elements());
+            elements.addAll(pasted);
+            return current.withElements(elements);
+        });
+        selection.clear();
+        pasted.forEach(element -> selection.add(element.frame().id()));
         notifyListeners();
     }
 

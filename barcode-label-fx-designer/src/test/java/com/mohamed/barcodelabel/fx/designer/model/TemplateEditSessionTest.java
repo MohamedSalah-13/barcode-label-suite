@@ -94,6 +94,34 @@ class TemplateEditSessionTest {
     }
 
     @Test
+    void copyThenPasteAddsOffsetDuplicatesWithoutTouchingClipboardSource() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.select(id, false);
+        session.copySelected();
+
+        session.clearSelection();
+        session.pasteClipboard();
+        assertEquals(3, session.template().elements().size());
+        assertEquals(1, session.selection().size());
+        var pastedId = session.primarySelection();
+        assertTrue(!pastedId.equals(id));
+        assertEquals(7, session.find(pastedId).frame().bounds().x());
+        assertEquals(8, session.find(pastedId).frame().bounds().y());
+
+        session.pasteClipboard();
+        assertEquals(4, session.template().elements().size());
+    }
+
+    @Test
+    void pasteWithoutCopyIsNoOp() {
+        var session = new TemplateEditSession(template());
+        assertFalse(session.hasClipboard());
+        session.pasteClipboard();
+        assertEquals(2, session.template().elements().size());
+    }
+
+    @Test
     void deleteAndUndoRestoreSelectionTargets() {
         var session = new TemplateEditSession(template());
         var id = session.template().elements().getFirst().frame().id();

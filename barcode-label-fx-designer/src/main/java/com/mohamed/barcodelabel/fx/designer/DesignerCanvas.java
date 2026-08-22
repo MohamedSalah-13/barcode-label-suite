@@ -6,6 +6,9 @@ import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -81,6 +84,12 @@ final class DesignerCanvas extends Pane {
                 selectElementsInRubberBand(event.isControlDown());
             }
         });
+        setOnContextMenuRequested(event -> {
+            if (event.getTarget() == this || event.getTarget() == gridCanvas) {
+                buildCanvasContextMenu().show(this, event.getScreenX(), event.getScreenY());
+                event.consume();
+            }
+        });
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         rebuild();
     }
@@ -150,8 +159,44 @@ final class DesignerCanvas extends Pane {
 
         installMoveHandlers(wrapper, element);
         installResizeHandlers(wrapper, handle, element);
+        wrapper.setOnContextMenuRequested(event -> {
+            if (!session.selection().contains(element.frame().id())) {
+                session.select(element.frame().id(), false);
+            }
+            buildElementContextMenu(element.frame().id()).show(wrapper, event.getScreenX(), event.getScreenY());
+            event.consume();
+        });
         elementViews.put(element.frame().id(), wrapper);
         getChildren().add(wrapper);
+    }
+
+    private ContextMenu buildElementContextMenu(UUID id) {
+        MenuItem copy = new MenuItem("نسخ");
+        copy.setOnAction(event -> session.copySelected());
+        MenuItem paste = new MenuItem("لصق");
+        paste.setDisable(!session.hasClipboard());
+        paste.setOnAction(event -> session.pasteClipboard());
+        MenuItem duplicate = new MenuItem("تكرار");
+        duplicate.setOnAction(event -> session.duplicateSelected(2));
+        MenuItem delete = new MenuItem("حذف");
+        delete.setOnAction(event -> session.deleteSelected());
+        MenuItem toFront = new MenuItem("إحضار للمقدمة");
+        toFront.setOnAction(event -> session.bringToFront(id));
+        MenuItem forward = new MenuItem("طبقة للأمام");
+        forward.setOnAction(event -> session.bringForward(id));
+        MenuItem backward = new MenuItem("طبقة للخلف");
+        backward.setOnAction(event -> session.sendBackward(id));
+        MenuItem toBack = new MenuItem("إرسال للخلفية");
+        toBack.setOnAction(event -> session.sendToBack(id));
+        return new ContextMenu(copy, paste, duplicate, delete,
+                new SeparatorMenuItem(), toFront, forward, backward, toBack);
+    }
+
+    private ContextMenu buildCanvasContextMenu() {
+        MenuItem paste = new MenuItem("لصق");
+        paste.setDisable(!session.hasClipboard());
+        paste.setOnAction(event -> session.pasteClipboard());
+        return new ContextMenu(paste);
     }
 
     private void installMoveHandlers(StackPane wrapper, LabelElement element) {
@@ -252,6 +297,8 @@ final class DesignerCanvas extends Pane {
         if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
             session.deleteSelected(); event.consume(); return;
         }
+        if (event.isControlDown() && event.getCode() == KeyCode.C) { session.copySelected(); event.consume(); return; }
+        if (event.isControlDown() && event.getCode() == KeyCode.V) { session.pasteClipboard(); event.consume(); return; }
         double step = event.isShiftDown() ? 1 : 0.1;
         switch (event.getCode()) {
             case LEFT -> session.moveSelected(-step, 0);

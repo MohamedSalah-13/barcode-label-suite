@@ -122,9 +122,41 @@ public final class LabelDesignerPane extends BorderPane {
         status.setText("تم حفظ القالب: " + path.getFileName());
     }
 
+    private void openFile() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("افتح قالب");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("قالب JSON", "*.json"));
+        File file = chooser.showOpenDialog(getScene() != null ? getScene().getWindow() : null);
+        if (file == null) return;
+        try {
+            setTemplate(new TemplateJsonService().read(file.toPath()));
+            status.setText("تم فتح القالب: " + file.getName());
+        } catch (IOException exception) {
+            status.setText("فشل فتح الملف: " + exception.getMessage());
+        }
+    }
+
+    private void saveFile() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("حفظ القالب");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("قالب JSON", "*.json"));
+        chooser.setInitialFileName(getTemplate().name() + ".json");
+        File file = chooser.showSaveDialog(getScene() != null ? getScene().getWindow() : null);
+        if (file == null) return;
+        try {
+            save(file.toPath());
+        } catch (IOException exception) {
+            status.setText("فشل حفظ الملف: " + exception.getMessage());
+        }
+    }
+
     private ToolBar createToolbar() {
+        Button open = button("فتح...", this::openFile);
+        Button saveAs = button("حفظ باسم...", this::saveFile);
         undoButton.setOnAction(event -> session.undo());
         redoButton.setOnAction(event -> session.redo());
+        Button copy = button("نسخ", () -> session.copySelected());
+        Button paste = button("لصق", () -> session.pasteClipboard());
         Button duplicate = button("تكرار", () -> session.duplicateSelected(2));
         Button delete = button("حذف", () -> session.deleteSelected());
         Button left = button("يسار", () -> session.align(EditorAlignment.LEFT));
@@ -137,7 +169,8 @@ public final class LabelDesignerPane extends BorderPane {
         Button forward = button("طبقة للأمام", () -> session.bringForward(session.primarySelection()));
         Button backward = button("طبقة للخلف", () -> session.sendBackward(session.primarySelection()));
         Button toBack = button("إرسال للخلفية", () -> session.sendToBack(session.primarySelection()));
-        return new ToolBar(undoButton, redoButton, new Separator(), duplicate, delete,
+        return new ToolBar(open, saveAs, new Separator(), undoButton, redoButton,
+                new Separator(), copy, paste, duplicate, delete,
                 new Separator(), left, center, right, top, middle, bottom,
                 new Separator(), toFront, forward, backward, toBack);
     }
