@@ -66,12 +66,23 @@ public final class Java2DLabelPrinter implements LabelPrinter {
                 throw new PrinterNotFoundException(exception.getMessage(), exception);
             }
             SheetPrintable printable = new SheetPrintable(request, renderDpi);
-            if (printable.pageCount() == 0) return new PrintResult(0, 0);
+            int totalPages = printable.pageCount();
+            if (totalPages == 0) return new PrintResult(0, 0);
 
-            CountingPrintable counting = new CountingPrintable(printable);
+            int firstPage = request.firstPage() > 0 ? request.firstPage() : 1;
+            int lastPage = request.lastPage() > 0 ? Math.min(request.lastPage(), totalPages) : totalPages;
+            if (firstPage > totalPages) {
+                throw new IllegalArgumentException("firstPage " + firstPage + " exceeds the planned page count " + totalPages);
+            }
+            if (firstPage > lastPage) {
+                throw new IllegalArgumentException("firstPage must not exceed lastPage");
+            }
+            int rangeSize = lastPage - firstPage + 1;
+
+            RangedPrintable ranged = new RangedPrintable(printable, firstPage - 1, rangeSize);
             PageFormat format = job.validatePage(createPageFormat(request));
             Book book = new Book();
-            book.append(counting, format, printable.pageCount());
+            book.append(ranged, format, rangeSize);
             job.setPageable(book);
             job.setCopies(request.copies());
             job.setJobName(request.template().name());
@@ -79,13 +90,14 @@ public final class Java2DLabelPrinter implements LabelPrinter {
                 job.print();
             } catch (PrinterAbortException exception) {
                 throw new PrintCancelledException("Print job was cancelled after "
-                        + counting.pagesCompleted() + " of " + printable.pageCount() + " page(s)", exception);
+                        + ranged.pagesCompleted() + " of " + rangeSize + " page(s)", exception);
             } catch (PrinterException exception) {
-                throw new PrintJobFailedException("Print job failed after " + counting.pagesCompleted()
-                        + " of " + printable.pageCount() + " page(s): " + exception.getMessage(), exception,
-                        counting.pagesCompleted(), printable.pageCount());
+                throw new PrintJobFailedException("Print job failed after " + ranged.pagesCompleted()
+                        + " of " + rangeSize + " page(s): " + exception.getMessage(), exception,
+                        ranged.pagesCompleted(), rangeSize);
             }
-            return new PrintResult(printable.pageCount() * request.copies(), request.records().size() * request.copies());
+            int labelsPerCopy = printable.placementCount(firstPage - 1, lastPage - 1);
+            return new PrintResult(rangeSize * request.copies(), labelsPerCopy * request.copies());
         } catch (Java2DPrintException exception) {
             throw exception;
         } catch (Exception exception) {
@@ -95,19 +107,24 @@ public final class Java2DLabelPrinter implements LabelPrinter {
         }
     }
 
-    /** Tracks how many pages the spooler actually rendered before a mid-job failure. */
-    private static final class CountingPrintable implements Printable {
+    /** Exposes a 0-based, inclusive sub-range of another Printable's pages, renumbered from 0, and tracks how many completed. */
+    private static final class RangedPrintable implements Printable {
         private final Printable delegate;
+        private final int offset;
+        private final int count;
         private final AtomicInteger pagesCompleted = new AtomicInteger();
 
-        CountingPrintable(Printable delegate) {
+        RangedPrintable(Printable delegate, int offset, int count) {
             this.delegate = delegate;
+            this.offset = offset;
+            this.count = count;
         }
 
         @Override
         public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-            int result = delegate.print(graphics, pageFormat, pageIndex);
-            if (result == Printable.PAGE_EXISTS) pagesCompleted.set(pageIndex + 1);
+            if (pageIndex < 0 || pageIndex >= count) return NO_SUCH_PAGE;
+            int result = delegate.print(graphics, pageFormat, offset + pageIndex);
+            if (result == PAGE_EXISTS) pagesCompleted.set(pageIndex + 1);
             return result;
         }
 

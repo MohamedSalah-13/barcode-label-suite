@@ -46,6 +46,16 @@ class SheetPageRendererTest {
                 printable.print(surface.createGraphics(), new PageFormat(), 2));
     }
 
+    @Test
+    void placementCountSumsLabelsAcrossAPageRange() throws Exception {
+        var printRequest = new LabelPrintRequest(template(), records(20), "Test printer", 1, 5);
+        var printable = new SheetPrintable(printRequest, 150);
+
+        assertEquals(16, printable.placementCount(0, 0));
+        assertEquals(4, printable.placementCount(1, 1));
+        assertEquals(20, printable.placementCount(0, 1));
+    }
+
     private static LabelTemplate template() {
         var layout = new SheetLayout(3, 7, new DimensionsMm(63.5, 38.1), 2.5, 0);
         var page = PageDefinition.a4Sheet(layout, new InsetsMm(15.15, 7.25, 15.15, 7.25));

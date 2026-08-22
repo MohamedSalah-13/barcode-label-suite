@@ -35,6 +35,15 @@ final class SheetPrintable implements Printable {
         return pages.size();
     }
 
+    /** Total label placements across the 0-based, inclusive page-index range {@code [fromPageIndex, toPageIndex]}. */
+    int placementCount(int fromPageIndex, int toPageIndex) {
+        int count = 0;
+        for (int index = Math.max(0, fromPageIndex); index <= toPageIndex && index < pages.size(); index++) {
+            count += pages.get(index).placements().size();
+        }
+        return count;
+    }
+
     @Override
     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
         if (pageIndex < 0 || pageIndex >= pages.size()) return NO_SUCH_PAGE;
