@@ -9,11 +9,17 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 
 import java.util.Map;
@@ -25,8 +31,11 @@ public final class HighQualityLabelPreview extends BorderPane {
     private final DoubleProperty previewDpi = new SimpleDoubleProperty(this, "previewDpi", 150);
     private final ImageView imageView = new ImageView();
     private final Label status = new Label("لا يوجد قالب للمعاينة");
+    private final Label zoomLabel = new Label("100%");
+    private final Slider zoomSlider = new Slider(0.25, 4, 1);
     private final BufferedImageLabelRenderer renderer = new BufferedImageLabelRenderer();
     private final AtomicLong renderGeneration = new AtomicLong();
+    private double nativeImageWidth;
 
     public HighQualityLabelPreview() {
         getStyleClass().add("high-quality-label-preview");
@@ -36,15 +45,34 @@ public final class HighQualityLabelPreview extends BorderPane {
         surface.getStyleClass().add("preview-surface");
         StackPane.setAlignment(status, Pos.CENTER);
         ScrollPane scrollPane = new ScrollPane(surface);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(true);
         scrollPane.setPannable(true);
         setCenter(scrollPane);
+        setBottom(createZoomBar());
 
         template.addListener((observable, oldValue, newValue) -> requestRender());
         data.addListener((observable, oldValue, newValue) -> requestRender());
         previewDpi.addListener((observable, oldValue, newValue) -> requestRender());
+        zoomSlider.valueProperty().addListener((observable, oldValue, newValue) -> applyZoom());
         loadStylesheet();
+    }
+
+    private HBox createZoomBar() {
+        zoomSlider.setPrefWidth(180);
+        Button reset = new Button("100%");
+        reset.setOnAction(event -> zoomSlider.setValue(1));
+        Label spacer = new Label();
+        HBox bar = new HBox(12, spacer, new Separator(), new Label("التكبير"), zoomSlider, zoomLabel, reset);
+        bar.setAlignment(Pos.CENTER_RIGHT);
+        bar.setPadding(new Insets(8, 12, 8, 12));
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        return bar;
+    }
+
+    private void applyZoom() {
+        zoomLabel.setText(Math.round(zoomSlider.getValue() * 100) + "%");
+        if (imageView.getImage() != null) {
+            imageView.setFitWidth(nativeImageWidth * zoomSlider.getValue());
+        }
     }
 
     public ObjectProperty<LabelTemplate> templateProperty() {
@@ -108,7 +136,8 @@ public final class HighQualityLabelPreview extends BorderPane {
                 Platform.runLater(() -> {
                     if (renderGeneration.get() == generation) {
                         imageView.setImage(fxImage);
-                        imageView.setFitWidth(image.getWidth());
+                        nativeImageWidth = image.getWidth();
+                        applyZoom();
                         status.setVisible(false);
                     }
                 });

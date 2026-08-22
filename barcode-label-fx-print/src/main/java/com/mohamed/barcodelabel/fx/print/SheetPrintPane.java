@@ -22,11 +22,14 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -44,6 +47,8 @@ public final class SheetPrintPane extends BorderPane {
     private final Button printButton = new Button("طباعة");
     private final Label pageStatus = new Label("صفحة 0 من 0");
     private final Label operationStatus = new Label("جاهز");
+    private final Label zoomLabel = new Label("100%");
+    private final Slider zoomSlider = new Slider(0.25, 2, 1);
     private final ImageView pageImage = new ImageView();
     private final SheetPageRenderer pageRenderer = new SheetPageRenderer();
     private final SheetLayoutEngine layoutEngine = new SheetLayoutEngine();
@@ -52,19 +57,19 @@ public final class SheetPrintPane extends BorderPane {
     private final AtomicLong previewGeneration = new AtomicLong();
     private int currentPage;
     private int pageCount;
+    private double nativePageWidth;
 
     public SheetPrintPane() {
         setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         getStyleClass().add("sheet-print-pane");
         pageImage.setPreserveRatio(true);
         pageImage.setSmooth(true);
-        pageImage.setFitHeight(680);
         ScrollPane previewScroll = new ScrollPane(pageImage);
-        previewScroll.setFitToWidth(true);
         previewScroll.setPannable(true);
         setCenter(previewScroll);
         setRight(createSettingsPanel());
         setBottom(createNavigationBar());
+        zoomSlider.valueProperty().addListener((observable, oldValue, newValue) -> applyZoom());
 
         template.addListener((observable, oldValue, newValue) -> {
             configureStartSlot();
@@ -113,10 +118,23 @@ public final class SheetPrintPane extends BorderPane {
     }
 
     private HBox createNavigationBar() {
-        HBox navigation = new HBox(12, previousPage, pageStatus, nextPage);
+        zoomSlider.setPrefWidth(160);
+        Button resetZoom = new Button("100%");
+        resetZoom.setOnAction(event -> zoomSlider.setValue(1));
+        Label spacer = new Label();
+        HBox navigation = new HBox(12, previousPage, pageStatus, nextPage, spacer,
+                new Separator(), new Label("التكبير"), zoomSlider, zoomLabel, resetZoom);
         navigation.setAlignment(Pos.CENTER);
         navigation.setPadding(new Insets(10));
+        HBox.setHgrow(spacer, Priority.ALWAYS);
         return navigation;
+    }
+
+    private void applyZoom() {
+        zoomLabel.setText(Math.round(zoomSlider.getValue() * 100) + "%");
+        if (pageImage.getImage() != null) {
+            pageImage.setFitWidth(nativePageWidth * zoomSlider.getValue());
+        }
     }
 
     private void configureStartSlot() {
@@ -162,6 +180,8 @@ public final class SheetPrintPane extends BorderPane {
                 Platform.runLater(() -> {
                     if (previewGeneration.get() == generation) {
                         pageImage.setImage(image);
+                        nativePageWidth = image.getWidth();
+                        applyZoom();
                         operationStatus.setText("المعاينة جاهزة");
                     }
                 });
