@@ -35,7 +35,7 @@ public final class BatchProductionWorkbench extends BorderPane {
     public BatchDataMappingPane batchPane() { return batchPane; }
     public LabelTemplate getTemplate() { return labelWorkbench.getTemplate(); }
 
-    private static CsvDataset asDataset(List<Map<String, ?>> records) {
+    static CsvDataset asDataset(List<Map<String, ?>> records) {
         LinkedHashSet<String> headerSet = new LinkedHashSet<>(); records.forEach(record -> headerSet.addAll(record.keySet()));
         List<String> headers = List.copyOf(headerSet); List<Map<String, String>> rows = new ArrayList<>(records.size());
         for (Map<String, ?> record : records) {

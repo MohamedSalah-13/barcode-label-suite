@@ -11,9 +11,11 @@
         <dependency><groupId>io.github.mkpaz</groupId><artifactId>atlantafx-base</artifactId><version>2.1.0</version></dependency>
         <dependency><groupId>org.kordamp.ikonli</groupId><artifactId>ikonli-javafx</artifactId><version>12.4.0</version></dependency>
         <dependency><groupId>org.kordamp.ikonli</groupId><artifactId>ikonli-feather-pack</artifactId><version>12.4.0</version></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     </dependencies>
     <build>
         <sourceDirectory>${project.build.directory}/generated-sources/fx-batch</sourceDirectory>
+        <testSourceDirectory>../../barcode-label-fx-batch/src/test/java</testSourceDirectory>
         <resources><resource><directory>../../barcode-label-fx-batch/src/main/resources</directory></resource></resources>
         <plugins>
             <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.1.0</version>
@@ -22,6 +24,7 @@
                 </target></configuration></execution></executions>
             </plugin>
             <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId></plugin>
             <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><configuration><archive><manifestEntries><Automatic-Module-Name>com.mohamed.barcodelabel.fx.batch</Automatic-Module-Name></manifestEntries></archive></configuration></plugin>
         </plugins>
     </build>
