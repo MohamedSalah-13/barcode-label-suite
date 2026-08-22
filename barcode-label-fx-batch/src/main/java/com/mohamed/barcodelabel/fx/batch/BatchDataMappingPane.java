@@ -40,6 +40,8 @@ public final class BatchDataMappingPane extends BorderPane {
     private final LinkedHashMap<String, ComboBox<String>> fieldBoxes = new LinkedHashMap<>();
     private final ComboBox<String> quantityColumn = new ComboBox<>();
     private final Spinner<Integer> defaultCopies = new Spinner<>(1, 999, 1);
+    private final Spinner<Integer> maxCopiesPerRowField = new Spinner<>(1, 100_000, 999);
+    private final Spinner<Integer> maxTotalLabelsField = new Spinner<>(1, 5_000_000, 100_000);
     private final ListView<String> issues = new ListView<>();
     private final Label fileSummary = new Label("اختر ملف CSV للبدء");
     private final Label resultSummary = new Label("لم يتم إعداد دفعة طباعة");
@@ -86,9 +88,14 @@ public final class BatchDataMappingPane extends BorderPane {
 
     private HBox actions() {
         defaultCopies.setEditable(true); quantityColumn.setPrefWidth(240);
+        maxCopiesPerRowField.setEditable(true); maxCopiesPerRowField.setPrefWidth(90);
+        maxTotalLabelsField.setEditable(true); maxTotalLabelsField.setPrefWidth(110);
         prepareButton.getStyleClass().add("primary-button"); prepareButton.setOnAction(event -> prepare());
         HBox box = new HBox(10, new Label("عمود الكمية"), quantityColumn,
-                new Label("الكمية الافتراضية"), defaultCopies, prepareButton);
+                new Label("الكمية الافتراضية"), defaultCopies,
+                new Label("أقصى نسخ للصف"), maxCopiesPerRowField,
+                new Label("أقصى إجمالي ملصقات"), maxTotalLabelsField,
+                prepareButton);
         box.setPadding(new Insets(12)); box.setAlignment(Pos.CENTER_LEFT); return box;
     }
 
@@ -108,7 +115,10 @@ public final class BatchDataMappingPane extends BorderPane {
         }
         quantityColumn.setItems(FXCollections.observableArrayList()); quantityColumn.getItems().add(NO_QUANTITY); quantityColumn.getItems().addAll(getDataset().headers());
         quantityColumn.setValue(automatic.quantityColumn() == null ? NO_QUANTITY : automatic.quantityColumn());
-        defaultCopies.getValueFactory().setValue(automatic.defaultCopies()); loadedProfile = null;
+        defaultCopies.getValueFactory().setValue(automatic.defaultCopies());
+        maxCopiesPerRowField.getValueFactory().setValue(automatic.maxCopiesPerRow());
+        maxTotalLabelsField.getValueFactory().setValue(automatic.maxTotalLabels());
+        loadedProfile = null;
         prepareButton.setDisable(fields.isEmpty());
         fileSummary.setText(getDataset().rows().size() + " صف، " + getDataset().headers().size() + " عمود، " + fields.size() + " حقل مطلوب في القالب");
     }
@@ -117,7 +127,7 @@ public final class BatchDataMappingPane extends BorderPane {
         var values = new LinkedHashMap<String, String>();
         fieldBoxes.forEach((field, box) -> { if (box.getValue() != null) values.put(field, box.getValue()); });
         String quantity = NO_QUANTITY.equals(quantityColumn.getValue()) ? null : quantityColumn.getValue();
-        return new ColumnMapping(values, quantity, defaultCopies.getValue(), 999, 100_000);
+        return new ColumnMapping(values, quantity, defaultCopies.getValue(), maxCopiesPerRowField.getValue(), maxTotalLabelsField.getValue());
     }
 
     private void prepare() {
@@ -139,7 +149,15 @@ public final class BatchDataMappingPane extends BorderPane {
     private void importCsv() {
         FileChooser chooser = new FileChooser(); chooser.setTitle("استيراد بيانات الدفعة"); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
         java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
+        if (!fieldBoxes.isEmpty() && !confirm("استيراد ملف CSV جديد سيفقد إعداد المطابقة الحالي. هل تريد المتابعة؟")) return;
         runIo("استيراد CSV", () -> csv.read(file.toPath()), value -> { setDataset(value); fileSummary.setText(file.getName()); });
+    }
+
+    private boolean confirm(String message) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.YES, ButtonType.NO);
+        alert.setHeaderText(null);
+        if (getScene() != null && getScene().getWindow() != null) alert.initOwner(getScene().getWindow());
+        return alert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES;
     }
 
     private void saveProfile() {
