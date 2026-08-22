@@ -16,20 +16,25 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 final class DesignerCanvas extends Pane {
     private static final double BASE_PIXELS_PER_MM = 4.0;
+    private static final double SNAP_TOLERANCE_PX = 6;
     private final TemplateEditSession session;
     private final ElementViewFactory viewFactory = new ElementViewFactory();
     private final Canvas gridCanvas = new Canvas();
     private final Map<UUID, StackPane> elementViews = new HashMap<>();
     private final Map<UUID, RectMm> dragStartBounds = new HashMap<>();
     private final Rectangle rubberBand = new Rectangle();
+    private final Line verticalGuide = new Line();
+    private final Line horizontalGuide = new Line();
     private LabelTemplate renderedTemplate;
     private double zoom = 1;
     private double gridMm = 1;
@@ -54,6 +59,14 @@ final class DesignerCanvas extends Pane {
         rubberBand.setStroke(Color.rgb(59, 130, 246, 0.9));
         rubberBand.setStrokeWidth(1);
         rubberBand.getStrokeDashArray().addAll(4.0, 4.0);
+        for (Line guide : List.of(verticalGuide, horizontalGuide)) {
+            guide.getStyleClass().add("smart-guide");
+            guide.setManaged(false);
+            guide.setMouseTransparent(true);
+            guide.setVisible(false);
+            guide.setStroke(Color.rgb(236, 72, 153, 0.9));
+            guide.setStrokeWidth(1);
+        }
         session.addListener(this::sessionChanged);
         setOnMousePressed(event -> {
             if (event.getTarget() == this || event.getTarget() == gridCanvas) {
@@ -120,7 +133,7 @@ final class DesignerCanvas extends Pane {
                 .filter(element -> element.frame().visible())
                 .sorted((left, right) -> Integer.compare(left.frame().zIndex(), right.frame().zIndex()))
                 .forEach(this::addElementView);
-        getChildren().add(rubberBand);
+        getChildren().addAll(rubberBand, verticalGuide, horizontalGuide);
         refreshSelectionStyles();
     }
 
@@ -220,6 +233,12 @@ final class DesignerCanvas extends Pane {
             if (element.frame().locked() || dragStartBounds.isEmpty()) return;
             currentDeltaX = snapDelta((event.getSceneX() - dragStartSceneX) / pixelsPerMm());
             currentDeltaY = snapDelta((event.getSceneY() - dragStartSceneY) / pixelsPerMm());
+            RectMm startBounds = dragStartBounds.get(element.frame().id());
+            if (startBounds != null) {
+                RectMm tentative = new RectMm(startBounds.x() + currentDeltaX, startBounds.y() + currentDeltaY,
+                        startBounds.width(), startBounds.height());
+                updateSmartGuides(tentative);
+            }
             dragStartBounds.forEach((id, bounds) -> {
                 LabelElement selected = session.find(id);
                 StackPane view = elementViews.get(id);
@@ -235,8 +254,61 @@ final class DesignerCanvas extends Pane {
                 session.moveSelected(currentDeltaX, currentDeltaY);
             }
             dragStartBounds.clear();
+            verticalGuide.setVisible(false);
+            horizontalGuide.setVisible(false);
             event.consume();
         });
+    }
+
+    private void updateSmartGuides(RectMm tentative) {
+        verticalGuide.setVisible(false);
+        horizontalGuide.setVisible(false);
+        double toleranceMm = SNAP_TOLERANCE_PX / pixelsPerMm();
+        double left = tentative.x();
+        double centerX = tentative.x() + tentative.width() / 2;
+        double right = tentative.x() + tentative.width();
+        double top = tentative.y();
+        double centerY = tentative.y() + tentative.height() / 2;
+        double bottom = tentative.y() + tentative.height();
+
+        Double snapDeltaX = null;
+        Double guideXmm = null;
+        Double snapDeltaY = null;
+        Double guideYmm = null;
+
+        for (LabelElement other : renderedTemplate.elements()) {
+            if (session.selection().contains(other.frame().id())) continue;
+            RectMm b = other.frame().bounds();
+            for (double[] pair : new double[][]{{left, b.x()}, {centerX, b.x() + b.width() / 2}, {right, b.x() + b.width()}}) {
+                double diff = pair[1] - pair[0];
+                if (Math.abs(diff) <= toleranceMm && (snapDeltaX == null || Math.abs(diff) < Math.abs(snapDeltaX))) {
+                    snapDeltaX = diff;
+                    guideXmm = pair[1];
+                }
+            }
+            for (double[] pair : new double[][]{{top, b.y()}, {centerY, b.y() + b.height() / 2}, {bottom, b.y() + b.height()}}) {
+                double diff = pair[1] - pair[0];
+                if (Math.abs(diff) <= toleranceMm && (snapDeltaY == null || Math.abs(diff) < Math.abs(snapDeltaY))) {
+                    snapDeltaY = diff;
+                    guideYmm = pair[1];
+                }
+            }
+        }
+
+        if (snapDeltaX != null) {
+            currentDeltaX += snapDeltaX;
+            double x = guideXmm * pixelsPerMm();
+            verticalGuide.setStartX(x); verticalGuide.setEndX(x);
+            verticalGuide.setStartY(0); verticalGuide.setEndY(getHeight());
+            verticalGuide.setVisible(true);
+        }
+        if (snapDeltaY != null) {
+            currentDeltaY += snapDeltaY;
+            double y = guideYmm * pixelsPerMm();
+            horizontalGuide.setStartY(y); horizontalGuide.setEndY(y);
+            horizontalGuide.setStartX(0); horizontalGuide.setEndX(getWidth());
+            horizontalGuide.setVisible(true);
+        }
     }
 
     private void installResizeHandlers(StackPane wrapper, Region handle, LabelElement element) {
