@@ -5,6 +5,7 @@ import com.mohamed.barcodelabel.model.element.ElementFrame;
 import com.mohamed.barcodelabel.model.element.ImageElement;
 import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.element.ShapeElement;
+import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
 
@@ -50,6 +51,27 @@ public final class ElementCopies {
         ElementFrame frame = new ElementFrame(old.id(), old.name(), old.bounds(), old.rotationDegrees(),
                 old.zIndex(), visible, locked);
         return withFrame(element, frame);
+    }
+
+    public static LabelElement withRotation(LabelElement element, double degrees) {
+        ElementFrame old = element.frame();
+        ElementFrame frame = new ElementFrame(old.id(), old.name(), old.bounds(), degrees,
+                old.zIndex(), old.visible(), old.locked());
+        return withFrame(element, frame);
+    }
+
+    public static LabelElement withZIndex(LabelElement element, int zIndex) {
+        ElementFrame old = element.frame();
+        ElementFrame frame = new ElementFrame(old.id(), old.name(), old.bounds(), old.rotationDegrees(),
+                zIndex, old.visible(), old.locked());
+        return withFrame(element, frame);
+    }
+
+    public static LabelElement withTextStyle(LabelElement element, String fontFamily, double fontSizePoints,
+            String color, boolean bold, boolean italic, TextAlignment alignment) {
+        if (!(element instanceof TextElement value)) return element;
+        return new TextElement(value.frame(), value.textTemplate(), fontFamily, fontSizePoints,
+                color, bold, italic, alignment);
     }
 
     private static ElementFrame copyFrame(ElementFrame source, UUID id, RectMm bounds, String name, int zIndex) {

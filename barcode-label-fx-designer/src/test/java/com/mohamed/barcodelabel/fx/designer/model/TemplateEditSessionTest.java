@@ -50,6 +50,50 @@ class TemplateEditSessionTest {
     }
 
     @Test
+    void rotationIsUndoable() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.select(id, false);
+        session.setRotation(id, 45);
+        assertEquals(45, session.find(id).frame().rotationDegrees());
+        session.undo();
+        assertEquals(0, session.find(id).frame().rotationDegrees());
+    }
+
+    @Test
+    void textStyleUpdatesOnlyTextElements() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.setTextStyle(id, "Tahoma", 14, "#FF0000", true, true, TextAlignment.RIGHT);
+        var updated = (TextElement) session.find(id);
+        assertEquals("Tahoma", updated.fontFamily());
+        assertEquals(14, updated.fontSizePoints());
+        assertEquals("#FF0000", updated.color());
+        assertTrue(updated.bold());
+        assertTrue(updated.italic());
+        assertEquals(TextAlignment.RIGHT, updated.alignment());
+    }
+
+    @Test
+    void layerOrderingMovesElementsFrontAndBack() {
+        var session = new TemplateEditSession(template());
+        var first = session.template().elements().get(0).frame().id();
+        var second = session.template().elements().get(1).frame().id();
+
+        session.bringToFront(first);
+        assertTrue(session.find(first).frame().zIndex() > session.find(second).frame().zIndex());
+
+        session.sendToBack(first);
+        assertTrue(session.find(first).frame().zIndex() < session.find(second).frame().zIndex());
+
+        session.bringForward(first);
+        assertEquals(session.find(first).frame().zIndex() - 1, session.find(second).frame().zIndex());
+
+        session.sendBackward(first);
+        assertTrue(session.find(first).frame().zIndex() < session.find(second).frame().zIndex());
+    }
+
+    @Test
     void deleteAndUndoRestoreSelectionTargets() {
         var session = new TemplateEditSession(template());
         var id = session.template().elements().getFirst().frame().id();

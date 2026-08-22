@@ -24,17 +24,22 @@ import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,7 +53,18 @@ public final class LabelDesignerPane extends BorderPane {
     private final TextField yField = numberField();
     private final TextField widthField = numberField();
     private final TextField heightField = numberField();
+    private final TextField rotationField = numberField();
     private final TextField contentField = new TextField();
+    private final ComboBox<String> fontFamilyField = new ComboBox<>(javafx.collections.FXCollections.observableArrayList(
+            "Arial", "Tahoma", "Verdana", "Times New Roman", "Courier New", "Segoe UI"));
+    private final TextField fontSizeField = numberField();
+    private final ColorPicker colorField = new ColorPicker();
+    private final ToggleButton boldToggle = new ToggleButton("B");
+    private final ToggleButton italicToggle = new ToggleButton("I");
+    private final ToggleGroup textAlignGroup = new ToggleGroup();
+    private final ToggleButton alignLeftToggle = new ToggleButton("يسار");
+    private final ToggleButton alignCenterToggle = new ToggleButton("توسيط");
+    private final ToggleButton alignRightToggle = new ToggleButton("يمين");
     private final CheckBox locked = new CheckBox("مقفل");
     private final CheckBox visible = new CheckBox("ظاهر");
     private final Button undoButton = new Button("تراجع");
@@ -104,15 +120,20 @@ public final class LabelDesignerPane extends BorderPane {
         undoButton.setOnAction(event -> session.undo());
         redoButton.setOnAction(event -> session.redo());
         Button duplicate = button("تكرار", () -> session.duplicateSelected(2));
-        Button delete = button("حذف", session::deleteSelected);
+        Button delete = button("حذف", () -> session.deleteSelected());
         Button left = button("يسار", () -> session.align(EditorAlignment.LEFT));
         Button center = button("توسيط أفقي", () -> session.align(EditorAlignment.HORIZONTAL_CENTER));
         Button right = button("يمين", () -> session.align(EditorAlignment.RIGHT));
         Button top = button("أعلى", () -> session.align(EditorAlignment.TOP));
         Button middle = button("توسيط رأسي", () -> session.align(EditorAlignment.VERTICAL_CENTER));
         Button bottom = button("أسفل", () -> session.align(EditorAlignment.BOTTOM));
+        Button toFront = button("إحضار للمقدمة", () -> session.bringToFront(session.primarySelection()));
+        Button forward = button("طبقة للأمام", () -> session.bringForward(session.primarySelection()));
+        Button backward = button("طبقة للخلف", () -> session.sendBackward(session.primarySelection()));
+        Button toBack = button("إرسال للخلفية", () -> session.sendToBack(session.primarySelection()));
         return new ToolBar(undoButton, redoButton, new Separator(), duplicate, delete,
-                new Separator(), left, center, right, top, middle, bottom);
+                new Separator(), left, center, right, top, middle, bottom,
+                new Separator(), toFront, forward, backward, toBack);
     }
 
     private VBox createToolbox() {
@@ -142,12 +163,30 @@ public final class LabelDesignerPane extends BorderPane {
         addPropertyRow(grid, 1, "Y (mm)", yField);
         addPropertyRow(grid, 2, "العرض", widthField);
         addPropertyRow(grid, 3, "الارتفاع", heightField);
-        addPropertyRow(grid, 4, "النص/البيانات", contentField);
+        addPropertyRow(grid, 4, "الدوران (°)", rotationField);
+        addPropertyRow(grid, 5, "النص/البيانات", contentField);
+
+        Label textTitle = new Label("تنسيق النص");
+        textTitle.getStyleClass().add("panel-title");
+        GridPane textGrid = new GridPane();
+        textGrid.setHgap(8);
+        textGrid.setVgap(8);
+        fontFamilyField.setEditable(true);
+        addPropertyRow(textGrid, 0, "الخط", fontFamilyField);
+        addPropertyRow(textGrid, 1, "الحجم", fontSizeField);
+        addPropertyRow(textGrid, 2, "اللون", colorField);
+        alignLeftToggle.setToggleGroup(textAlignGroup);
+        alignCenterToggle.setToggleGroup(textAlignGroup);
+        alignRightToggle.setToggleGroup(textAlignGroup);
+        HBox style = new HBox(6, boldToggle, italicToggle, new Separator(),
+                alignLeftToggle, alignCenterToggle, alignRightToggle);
+
         HBox state = new HBox(12, visible, locked);
         Button apply = button("تطبيق الخصائص", this::applyProperties);
         apply.getStyleClass().add("primary-button");
         apply.setMaxWidth(Double.MAX_VALUE);
-        propertiesPanel.getChildren().setAll(title, selectionTitle, grid, state, apply);
+        propertiesPanel.getChildren().setAll(title, selectionTitle, grid,
+                textTitle, textGrid, style, state, apply);
         propertiesPanel.getStyleClass().add("designer-properties");
         propertiesPanel.setPrefWidth(260);
         return propertiesPanel;
@@ -200,13 +239,15 @@ public final class LabelDesignerPane extends BorderPane {
             visible.setDisable(disabled);
             if (element == null) {
                 selectionTitle.setText("لا يوجد عنصر محدد");
-                for (TextField field : List.of(xField, yField, widthField, heightField, contentField)) field.clear();
+                for (TextField field : List.of(xField, yField, widthField, heightField, rotationField, contentField, fontSizeField)) field.clear();
+                setTextControlsDisabled(true);
                 return;
             }
             selectionTitle.setText(element.frame().name());
             RectMm b = element.frame().bounds();
             xField.setText(format(b.x())); yField.setText(format(b.y()));
             widthField.setText(format(b.width())); heightField.setText(format(b.height()));
+            rotationField.setText(format(element.frame().rotationDegrees()));
             contentField.setText(switch (element) {
                 case TextElement text -> text.textTemplate();
                 case BarcodeElement barcode -> barcode.dataTemplate();
@@ -215,9 +256,35 @@ public final class LabelDesignerPane extends BorderPane {
             contentField.setDisable(!(element instanceof TextElement || element instanceof BarcodeElement));
             locked.setSelected(element.frame().locked());
             visible.setSelected(element.frame().visible());
+
+            boolean isText = element instanceof TextElement;
+            setTextControlsDisabled(!isText);
+            if (element instanceof TextElement text) {
+                fontFamilyField.setValue(text.fontFamily());
+                fontSizeField.setText(format(text.fontSizePoints()));
+                colorField.setValue(parseColor(text.color()));
+                boldToggle.setSelected(text.bold());
+                italicToggle.setSelected(text.italic());
+                textAlignGroup.selectToggle(switch (text.alignment()) {
+                    case LEFT -> alignLeftToggle;
+                    case CENTER -> alignCenterToggle;
+                    case RIGHT -> alignRightToggle;
+                });
+            }
         } finally {
             refreshingProperties = false;
         }
+    }
+
+    private void setTextControlsDisabled(boolean disabled) {
+        fontFamilyField.setDisable(disabled);
+        fontSizeField.setDisable(disabled);
+        colorField.setDisable(disabled);
+        boldToggle.setDisable(disabled);
+        italicToggle.setDisable(disabled);
+        alignLeftToggle.setDisable(disabled);
+        alignCenterToggle.setDisable(disabled);
+        alignRightToggle.setDisable(disabled);
     }
 
     private void applyProperties() {
@@ -227,8 +294,16 @@ public final class LabelDesignerPane extends BorderPane {
         try {
             RectMm bounds = new RectMm(parse(xField), parse(yField), parse(widthField), parse(heightField));
             session.setBounds(element.frame().id(), bounds);
+            session.setRotation(element.frame().id(), parse(rotationField));
             if (element instanceof TextElement || element instanceof BarcodeElement) {
                 session.setContent(element.frame().id(), contentField.getText());
+            }
+            if (element instanceof TextElement) {
+                TextAlignment alignment = alignCenterToggle.isSelected() ? TextAlignment.CENTER
+                        : alignRightToggle.isSelected() ? TextAlignment.RIGHT
+                        : TextAlignment.LEFT;
+                session.setTextStyle(element.frame().id(), fontFamilyField.getValue(), parse(fontSizeField),
+                        toHex(colorField.getValue()), boldToggle.isSelected(), italicToggle.isSelected(), alignment);
             }
             session.setLockedVisible(element.frame().id(), locked.isSelected(), visible.isSelected());
             status.setText("تم تطبيق الخصائص");
@@ -256,14 +331,30 @@ public final class LabelDesignerPane extends BorderPane {
         return field;
     }
 
-    private static void addPropertyRow(GridPane grid, int row, String label, TextField field) {
+    private static void addPropertyRow(GridPane grid, int row, String label, javafx.scene.control.Control field) {
         grid.add(new Label(label), 0, row);
         grid.add(field, 1, row);
+        field.setMaxWidth(Double.MAX_VALUE);
         GridPane.setHgrow(field, Priority.ALWAYS);
     }
 
     private static double parse(TextField field) { return Double.parseDouble(field.getText().trim()); }
     private static String format(double value) { return String.format(java.util.Locale.ROOT, "%.2f", value); }
+
+    private static Color parseColor(String hex) {
+        try {
+            return Color.web(hex);
+        } catch (IllegalArgumentException exception) {
+            return Color.BLACK;
+        }
+    }
+
+    private static String toHex(Color color) {
+        return String.format("#%02X%02X%02X",
+                (int) Math.round(color.getRed() * 255),
+                (int) Math.round(color.getGreen() * 255),
+                (int) Math.round(color.getBlue() * 255));
+    }
 
     private void loadStylesheet() {
         var resource = LabelDesignerPane.class.getResource("label-designer-pane.css");

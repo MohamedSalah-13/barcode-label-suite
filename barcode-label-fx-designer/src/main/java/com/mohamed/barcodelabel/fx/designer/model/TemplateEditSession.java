@@ -2,6 +2,7 @@ package com.mohamed.barcodelabel.fx.designer.model;
 
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.LabelElement;
+import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
 
 import java.util.ArrayDeque;
@@ -119,6 +120,65 @@ public final class TemplateEditSession {
 
     public void setLockedVisible(UUID id, boolean locked, boolean visible) {
         updateOne(id, "Change element state", element -> ElementCopies.withLockedVisible(element, locked, visible));
+    }
+
+    public void setRotation(UUID id, double degrees) {
+        updateOne(id, "Rotate element", element -> ElementCopies.withRotation(element, degrees));
+    }
+
+    public void setTextStyle(UUID id, String fontFamily, double fontSizePoints, String color,
+            boolean bold, boolean italic, TextAlignment alignment) {
+        updateOne(id, "Change text style", element ->
+                ElementCopies.withTextStyle(element, fontFamily, fontSizePoints, color, bold, italic, alignment));
+    }
+
+    public void bringToFront(UUID id) {
+        LabelElement element = find(id);
+        if (element == null) return;
+        int maxZ = template.elements().stream().mapToInt(e -> e.frame().zIndex()).max().orElse(0);
+        if (element.frame().zIndex() >= maxZ) return;
+        updateOne(id, "Bring to front", e -> ElementCopies.withZIndex(e, maxZ + 1));
+    }
+
+    public void sendToBack(UUID id) {
+        LabelElement element = find(id);
+        if (element == null) return;
+        int minZ = template.elements().stream().mapToInt(e -> e.frame().zIndex()).min().orElse(0);
+        if (element.frame().zIndex() <= minZ) return;
+        updateOne(id, "Send to back", e -> ElementCopies.withZIndex(e, minZ - 1));
+    }
+
+    public void bringForward(UUID id) {
+        LabelElement element = find(id);
+        if (element == null) return;
+        int z = element.frame().zIndex();
+        LabelElement next = template.elements().stream()
+                .filter(e -> e.frame().zIndex() > z)
+                .min((a, b) -> Integer.compare(a.frame().zIndex(), b.frame().zIndex()))
+                .orElse(null);
+        if (next == null) return;
+        swapZIndex(id, z, next.frame().id(), next.frame().zIndex(), "Bring forward");
+    }
+
+    public void sendBackward(UUID id) {
+        LabelElement element = find(id);
+        if (element == null) return;
+        int z = element.frame().zIndex();
+        LabelElement previous = template.elements().stream()
+                .filter(e -> e.frame().zIndex() < z)
+                .max((a, b) -> Integer.compare(a.frame().zIndex(), b.frame().zIndex()))
+                .orElse(null);
+        if (previous == null) return;
+        swapZIndex(id, z, previous.frame().id(), previous.frame().zIndex(), "Send backward");
+    }
+
+    private void swapZIndex(UUID id, int zIndex, UUID otherId, int otherZIndex, String description) {
+        apply(description, current -> current.withElements(current.elements().stream()
+                .map(element -> {
+                    if (element.frame().id().equals(id)) return ElementCopies.withZIndex(element, otherZIndex);
+                    if (element.frame().id().equals(otherId)) return ElementCopies.withZIndex(element, zIndex);
+                    return element;
+                }).toList()));
     }
 
     public void align(EditorAlignment alignment) {
