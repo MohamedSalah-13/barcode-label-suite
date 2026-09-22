@@ -44,7 +44,7 @@ For the complete phase-6 verification chain, run:
 .\verify-phase6.ps1
 ```
 
-Core modules enforce a minimum 25% line-coverage baseline with JaCoCo. HTML reports are written to each tested module's `target/site/jacoco` directory.
+Core modules and the tested JavaFX workbenches enforce a minimum 25% line-coverage baseline with JaCoCo. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
 
 ## Package for Windows
 
