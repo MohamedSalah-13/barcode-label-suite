@@ -48,5 +48,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\mvnw.cmd -f phase5-fixed-pom.xml clean install
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\mvnw.cmd -f phase6-final-pom.xml clean verify
+          .\mvnw.cmd -f phase6-final-pom.xml clean install
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package Windows application image
+        shell: pwsh
+        run: .\package-phase6.ps1 -SkipBuild
+
+      - name: Upload application and coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: barcode-label-suite-windows
+          path: |
+            dist/BarcodeLabelSuite
+            **/target/site/jacoco

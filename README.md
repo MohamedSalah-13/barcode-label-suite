@@ -38,6 +38,24 @@ To verify without starting the desktop application, run the same Maven stages sh
 .\mvnw.cmd clean verify
 ```
 
+For the complete phase-6 verification chain, run:
+
+```powershell
+.\verify-phase6.ps1
+```
+
+Core modules enforce a minimum 25% line-coverage baseline with JaCoCo. HTML reports are written to each tested module's `target/site/jacoco` directory.
+
+## Package for Windows
+
+Create a self-contained application image (including a private Java runtime) with JDK 21 `jpackage`:
+
+```powershell
+.\package-phase6.ps1
+```
+
+The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful full verification in the current checkout.
+
 Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
 
 ## Main modules
