@@ -9,11 +9,11 @@ import java.util.List;
 
 public final class SheetLayoutEngine {
     public List<SheetPage> plan(PageDefinition page, int recordCount, int startSlotIndex) {
-        if (page.mode() != PageMode.SHEET) {
-            throw new IllegalArgumentException("page must use SHEET mode");
-        }
         if (recordCount < 0) {
             throw new IllegalArgumentException("recordCount must be non-negative");
+        }
+        if (page.mode() != PageMode.SHEET) {
+            return planOneLabelPerPage(page, recordCount, startSlotIndex);
         }
         int capacity = page.sheetLayout().labelsPerPage();
         if (startSlotIndex < 0 || startSlotIndex >= capacity) {
@@ -33,6 +33,22 @@ public final class SheetLayoutEngine {
                 placements.add(new LabelPlacement(nextRecord++, slot, boundsFor(page, slot)));
             }
             pages.add(new SheetPage(pageIndex++, placements));
+        }
+        return List.copyOf(pages);
+    }
+
+    private List<SheetPage> planOneLabelPerPage(PageDefinition page, int recordCount, int startSlotIndex) {
+        if (startSlotIndex != 0) {
+            throw new IllegalArgumentException("startSlotIndex must be zero for roll or single-label paper");
+        }
+        if (recordCount == 0) {
+            return List.of();
+        }
+        var size = page.labelSize();
+        var bounds = new RectMm(page.margins().left(), page.margins().top(), size.width(), size.height());
+        List<SheetPage> pages = new ArrayList<>(recordCount);
+        for (int index = 0; index < recordCount; index++) {
+            pages.add(new SheetPage(index, List.of(new LabelPlacement(index, 0, bounds))));
         }
         return List.copyOf(pages);
     }

@@ -2,8 +2,13 @@ package com.mohamed.barcodelabel.fx.workbench;
 
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.page.PageMode;
-import com.mohamed.barcodelabel.model.page.PageOrientation;
 import com.mohamed.barcodelabel.model.unit.UnitConversions;
+import com.mohamed.barcodelabel.print.LabelPrintRequest;
+import com.mohamed.barcodelabel.print.java2d.Java2DLabelPrinter;
+import com.mohamed.barcodelabel.print.java2d.PrintCancelledException;
+import com.mohamed.barcodelabel.print.java2d.PrintJobFailedException;
+import com.mohamed.barcodelabel.print.java2d.PrinterCatalog;
+import com.mohamed.barcodelabel.print.java2d.PrinterNotFoundException;
 import com.mohamed.barcodelabel.render.RenderRequest;
 import com.mohamed.barcodelabel.render.java2d.BufferedImageLabelRenderer;
 import com.mohamed.barcodelabel.workflow.print.PlannedPage;
@@ -15,26 +20,17 @@ import javafx.collections.FXCollections;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.print.*;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import javax.print.PrintService;
-import javax.print.PrintServiceLookup;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.awt.print.Book;
-import java.awt.print.PageFormat;
-import java.awt.print.Paper;
-import java.awt.print.PrinterJob;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,8 +47,14 @@ public final class UniversalPrintPane extends BorderPane {
     private final Button previous = new Button("السابق");
     private final Button next = new Button("التالي");
     private final Button print = new Button("طباعة");
+    private final Button cancelPrint = new Button("إلغاء الطباعة");
+    private final CheckBox allPages = new CheckBox("طباعة كل الصفحات");
+    private final Spinner<Integer> fromPage = new Spinner<>(1, 1, 1);
+    private final Spinner<Integer> toPage = new Spinner<>(1, 1, 1);
     private final UniversalPagePlanner planner = new UniversalPagePlanner();
     private final BufferedImageLabelRenderer renderer = new BufferedImageLabelRenderer();
+    private final PrinterCatalog printerCatalog = new PrinterCatalog();
+    private final Java2DLabelPrinter labelPrinter = new Java2DLabelPrinter();
     private final AtomicLong generation = new AtomicLong();
     private int pageIndex;
     private List<PlannedPage> pages = List.of();
@@ -78,10 +80,29 @@ public final class UniversalPrintPane extends BorderPane {
 
     private VBox settings() {
         printers.setPromptText("اختر الطابعة"); printers.setMaxWidth(Double.MAX_VALUE);
-        copies.setEditable(true); startSlot.setEditable(true); print.getStyleClass().add("primary-button"); print.setMaxWidth(Double.MAX_VALUE);
+        copies.setEditable(true); commitOnFocusLoss(copies);
+        startSlot.setEditable(true); commitOnFocusLoss(startSlot);
+        fromPage.setEditable(true); commitOnFocusLoss(fromPage);
+        toPage.setEditable(true); commitOnFocusLoss(toPage);
+        allPages.setSelected(true);
+        fromPage.setDisable(true); toPage.setDisable(true);
+        allPages.selectedProperty().addListener((obs, oldValue, selected) -> {
+            fromPage.setDisable(selected); toPage.setDisable(selected);
+        });
+        HBox range = new HBox(6, new Label("من"), fromPage, new Label("إلى"), toPage);
+        range.setAlignment(Pos.CENTER_LEFT);
+        print.getStyleClass().add("primary-button"); print.setMaxWidth(Double.MAX_VALUE);
+        cancelPrint.setMaxWidth(Double.MAX_VALUE); cancelPrint.setDisable(true);
+        cancelPrint.setOnAction(event -> { labelPrinter.cancelCurrent(); status.setText("جارٍ إلغاء الطباعة..."); });
         VBox box = new VBox(8, new Label("الطابعة"), printers, new Label("عدد النسخ"), copies,
-                new Label("ابدأ من الخانة (A4 فقط)"), startSlot, print, status);
+                new Label("ابدأ من الخانة (A4 فقط)"), startSlot, allPages, range, print, cancelPrint, status);
         box.getStyleClass().add("print-settings"); box.setPrefWidth(270); return box;
+    }
+
+    private static void commitOnFocusLoss(Spinner<Integer> spinner) {
+        spinner.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) spinner.increment(0);
+        });
     }
 
     private HBox navigation() {
@@ -102,6 +123,9 @@ public final class UniversalPrintPane extends BorderPane {
         }
         try { pages = planner.plan(getTemplate().page(), getRecords().size(), startSlot.getValue()); }
         catch (RuntimeException exception) { pages = List.of(); status.setText("تعذر تخطيط الصفحات: " + rootMessage(exception)); }
+        int pageMaximum = Math.max(1, pages.size());
+        fromPage.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, pageMaximum, 1));
+        toPage.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, pageMaximum, pageMaximum));
         renderPreview();
     }
 
@@ -146,51 +170,55 @@ public final class UniversalPrintPane extends BorderPane {
     private void loadPrinters() {
         status.setText("جارٍ اكتشاف الطابعات...");
         Thread.ofVirtual().name("universal-printer-discovery").start(() -> {
-            List<String> names = Arrays.stream(PrintServiceLookup.lookupPrintServices(null, null)).map(PrintService::getName).sorted().toList();
+            List<String> names = printerCatalog.discover().stream().map(descriptor -> descriptor.name()).toList();
             Platform.runLater(() -> { printers.setItems(FXCollections.observableArrayList(names)); if (!names.isEmpty()) printers.getSelectionModel().selectFirst(); print.setDisable(names.isEmpty()); status.setText(names.isEmpty() ? "لم يتم العثور على طابعات" : "تم العثور على " + names.size() + " طابعة"); });
         });
     }
 
     private void print() {
         if (printers.getValue() == null || getTemplate() == null || pages.isEmpty()) return;
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "إرسال " + getRecords().size() + " ملصق إلى:\n" + printers.getValue(), ButtonType.OK, ButtonType.CANCEL);
+        boolean restrictRange = !allPages.isSelected();
+        int first = restrictRange ? fromPage.getValue() : 0;
+        int last = restrictRange ? toPage.getValue() : 0;
+        if (restrictRange && first > last) {
+            status.setText("صفحة البداية يجب ألا تتجاوز صفحة النهاية");
+            return;
+        }
+        String rangeText = restrictRange ? "\nالصفحات: " + first + " إلى " + last : "";
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "إرسال " + getRecords().size() + " ملصق إلى:\n" + printers.getValue() + rangeText,
+                ButtonType.OK, ButtonType.CANCEL);
         alert.setHeaderText("تأكيد الطباعة"); if (alert.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
-        print.setDisable(true); status.setText("جارٍ إرسال مهمة الطباعة...");
-        LabelTemplate currentTemplate = getTemplate(); List<Map<String, ?>> currentRecords = getRecords(); List<PlannedPage> currentPages = pages;
-        int copyCount = copies.getValue(); String printerName = printers.getValue();
-        Thread.ofVirtual().name("universal-label-print").start(() -> {
-            try {
-                printBlocking(currentTemplate, currentRecords, currentPages, copyCount, printerName);
-                Platform.runLater(() -> { print.setDisable(false); status.setText("تمت طباعة " + (currentRecords.size() * copyCount) + " ملصق"); });
-            } catch (Exception exception) {
-                Platform.runLater(() -> { print.setDisable(false); status.setText("فشلت الطباعة: " + rootMessage(exception)); });
+        print.setDisable(true); cancelPrint.setDisable(false); status.setText("جارٍ إرسال مهمة الطباعة...");
+        var request = new LabelPrintRequest(getTemplate(), getRecords(), printers.getValue(),
+                copies.getValue(), startSlot.getValue(), first, last);
+        labelPrinter.print(request).whenComplete((result, error) -> Platform.runLater(() -> {
+            print.setDisable(false); cancelPrint.setDisable(true);
+            if (error == null) {
+                status.setText("تمت طباعة " + result.labelsPrinted() + " ملصق في " + result.pagesPrinted() + " صفحة");
+            } else {
+                status.setText(describePrintError(error));
             }
-        });
+        }));
     }
 
-    private void printBlocking(LabelTemplate currentTemplate, List<Map<String, ?>> currentRecords,
-                               List<PlannedPage> currentPages, int copyCount, String printerName) throws Exception {
-        PrintService service = Arrays.stream(PrintServiceLookup.lookupPrintServices(null, null)).filter(item -> item.getName().equals(printerName)).findFirst()
-                .orElseThrow(() -> new IllegalStateException("الطابعة لم تعد متاحة"));
-        PrinterJob job = PrinterJob.getPrinterJob(); job.setPrintService(service); job.setCopies(copyCount); job.setJobName(currentTemplate.name());
-        PageFormat format = pageFormat(currentTemplate); Book book = new Book();
-        java.awt.print.Printable printable = (graphics, pageFormat, index) -> {
-            if (index < 0 || index >= currentPages.size()) return java.awt.print.Printable.NO_SUCH_PAGE;
-            try {
-                BufferedImage image = renderPage(currentTemplate, currentRecords, currentPages.get(index), 300, false);
-                Graphics2D g = (Graphics2D) graphics.create();
-                try { AffineTransform transform = new AffineTransform(); transform.scale(pageFormat.getWidth() / image.getWidth(), pageFormat.getHeight() / image.getHeight()); g.drawImage(image, transform, null); }
-                finally { g.dispose(); }
-                return java.awt.print.Printable.PAGE_EXISTS;
-            } catch (Exception exception) { throw new java.awt.print.PrinterException(rootMessage(exception)); }
-        };
-        book.append(printable, format, currentPages.size()); job.setPageable(book); job.print();
+    private static String describePrintError(Throwable throwable) {
+        Throwable error = unwrap(throwable);
+        if (error instanceof PrintCancelledException) return "تم إلغاء الطباعة: " + rootMessage(error);
+        if (error instanceof PrinterNotFoundException) return "الطابعة المحددة غير متاحة: " + rootMessage(error);
+        if (error instanceof PrintJobFailedException failed) {
+            return "فشلت الطباعة بعد " + failed.pagesCompleted() + " من " + failed.totalPages() + " صفحة: " + rootMessage(error);
+        }
+        return "فشلت الطباعة: " + rootMessage(error);
     }
 
-    private static PageFormat pageFormat(LabelTemplate template) {
-        double width = UnitConversions.mmToPoints(template.page().pageSize().width()); double height = UnitConversions.mmToPoints(template.page().pageSize().height());
-        Paper paper = new Paper(); paper.setSize(width, height); paper.setImageableArea(0, 0, width, height);
-        PageFormat format = new PageFormat(); format.setPaper(paper); format.setOrientation(template.page().orientation() == PageOrientation.LANDSCAPE ? PageFormat.LANDSCAPE : PageFormat.PORTRAIT); return format;
+    private static Throwable unwrap(Throwable throwable) {
+        Throwable current = throwable;
+        while ((current instanceof java.util.concurrent.CompletionException
+                || current instanceof java.util.concurrent.ExecutionException) && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
     }
     private static int pixels(double mm, double dpi) { return Math.max(1, (int) Math.round(UnitConversions.mmToPixels(mm, dpi))); }
     private static String rootMessage(Throwable throwable) { Throwable current = throwable; while (current.getCause() != null) current = current.getCause(); return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage(); }

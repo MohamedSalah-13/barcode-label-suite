@@ -3,7 +3,7 @@
 الإصدار النهائي هو `0.6.1-SNAPSHOT`. استخدم:
 
 ```powershell
-cd C:\Users\Mohamed\Documents\Codex\barcode-label-suite
+cd <مسار المشروع>\barcode-label-suite
 .\start-phase6-v2.cmd
 ```
 

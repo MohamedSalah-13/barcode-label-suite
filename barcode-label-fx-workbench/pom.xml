@@ -8,6 +8,7 @@
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-workflow</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-fx-designer</artifactId><version>${phase4.version}</version></dependency>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-render-java2d</artifactId><version>0.2.0-SNAPSHOT</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-print-java2d</artifactId><version>${phase3.version}</version></dependency>
         <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></dependency>
         <dependency><groupId>org.openjfx</groupId><artifactId>javafx-swing</artifactId><version>${javafx.version}</version></dependency>
         <dependency><groupId>io.github.mkpaz</groupId><artifactId>atlantafx-base</artifactId><version>2.1.0</version></dependency>

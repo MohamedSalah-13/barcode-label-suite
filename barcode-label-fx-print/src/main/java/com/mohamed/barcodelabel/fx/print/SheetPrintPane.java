@@ -258,6 +258,10 @@ public final class SheetPrintPane extends BorderPane {
         boolean restrictRange = !allPages.isSelected();
         int firstPage = restrictRange ? fromPageField.getValue() : 0;
         int lastPage = restrictRange ? toPageField.getValue() : 0;
+        if (restrictRange && firstPage > lastPage) {
+            operationStatus.setText("صفحة البداية يجب ألا تتجاوز صفحة النهاية");
+            return;
+        }
         String rangeText = restrictRange ? "\nالصفحات: " + firstPage + " إلى " + lastPage : "";
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
                 "سيتم إرسال " + getRecords().size() + " ملصق إلى الطابعة:\n" + selected.name() + rangeText,
@@ -282,6 +286,7 @@ public final class SheetPrintPane extends BorderPane {
     }
 
     private static String describeError(Throwable error) {
+        error = unwrap(error);
         if (error instanceof PrintCancelledException) {
             return "تم إلغاء الطباعة: " + rootMessage(error);
         }
@@ -292,6 +297,15 @@ public final class SheetPrintPane extends BorderPane {
             return "فشلت الطباعة بعد " + failed.pagesCompleted() + " من " + failed.totalPages() + " صفحة: " + rootMessage(error);
         }
         return "فشلت الطباعة: " + rootMessage(error);
+    }
+
+    private static Throwable unwrap(Throwable throwable) {
+        Throwable current = throwable;
+        while ((current instanceof java.util.concurrent.CompletionException
+                || current instanceof java.util.concurrent.ExecutionException) && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     private static String rootMessage(Throwable throwable) {

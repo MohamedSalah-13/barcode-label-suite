@@ -7,6 +7,7 @@
     <dependencies>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-model</artifactId><version>${base.version}</version></dependency>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-data</artifactId><version>${base.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-print</artifactId><version>${base.version}</version></dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     </dependencies>
     <build><plugins>

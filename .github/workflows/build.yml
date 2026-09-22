@@ -1,0 +1,52 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify base modules
+        shell: pwsh
+        run: .\mvnw.cmd clean install
+
+      - name: Verify rendering modules
+        shell: pwsh
+        run: .\mvnw.cmd -f phase2-pom.xml clean install
+
+      - name: Install phase 3 parent descriptors
+        shell: pwsh
+        run: |
+          .\mvnw.cmd -N -f phase3-pom.xml install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\mvnw.cmd -N -f phase3-build-pom.xml install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify printing and designer modules
+        shell: pwsh
+        run: |
+          .\mvnw.cmd -f phase3-final-pom.xml clean install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\mvnw.cmd -f phase4-final-pom.xml clean install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify workflow and final application
+        shell: pwsh
+        run: |
+          .\mvnw.cmd -f phase5-pom.xml -pl barcode-label-workflow -am clean install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\mvnw.cmd -f phase5-fixed-pom.xml clean install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\mvnw.cmd -f phase6-final-pom.xml clean verify
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
