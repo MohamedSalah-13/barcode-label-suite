@@ -66,6 +66,8 @@ public final class BarcodeLabelWorkbench extends BorderPane {
         getStyleClass().add("barcode-label-workbench");
         setTop(toolbar()); setCenter(contentTabs()); setBottom(statusBar());
         dataset.addListener((obs, oldValue, value) -> updateDataset(value));
+        designer.templateProperty().addListener((obs, oldValue, value) -> printPane.setTemplate(value));
+        syncPrintPane();
         loadStylesheet();
     }
 
@@ -152,7 +154,12 @@ public final class BarcodeLabelWorkbench extends BorderPane {
 
     private void updateDataset(CsvDataset value) {
         dataTable.getColumns().clear();
-        if (value == null) { dataTable.getItems().clear(); dataSummary.setText("لم يتم استيراد بيانات بعد"); return; }
+        if (value == null) {
+            dataTable.getItems().clear();
+            dataSummary.setText("لم يتم استيراد بيانات بعد");
+            syncPrintPane();
+            return;
+        }
         for (String header : value.headers()) {
             TableColumn<Map<String, String>, String> column = new TableColumn<>(header);
             column.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getOrDefault(header, "")));

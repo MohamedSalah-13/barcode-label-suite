@@ -17,8 +17,23 @@
 ## التشغيل
 
 ```powershell
-cd C:\Users\Mohamed\Documents\Codex\barcode-label-suite
-.\start-phase6.cmd
+cd <مسار المشروع>\barcode-label-suite
+.\start-phase6-v2.cmd
+```
+
+> لا تستخدم `start-phase6.cmd`؛ فهو يشير إلى Reactor أولي غير مصحح. الإصدار
+> النهائي الحالي هو `0.6.1-SNAPSHOT` ويُبنى عبر `start-phase6-v2.cmd`.
+
+للتحقق الكامل بدون تشغيل الواجهة:
+
+```powershell
+.\verify-phase6.ps1
+```
+
+ولإنشاء حزمة Windows مستقلة بعد نجاح التحقق:
+
+```powershell
+.\package-phase6.ps1
 ```
 
 استخدم الملف التجريبي `sample-products-quantities.csv`، ثم اربط الحقول كالتالي:
@@ -37,7 +52,7 @@ cd C:\Users\Mohamed\Documents\Codex\barcode-label-suite
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-fx-batch</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -52,6 +67,6 @@ root.setCenter(workbench);
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-batch</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```

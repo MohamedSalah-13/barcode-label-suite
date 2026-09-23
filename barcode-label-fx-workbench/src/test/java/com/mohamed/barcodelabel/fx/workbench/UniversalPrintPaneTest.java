@@ -75,13 +75,34 @@ class UniversalPrintPaneTest {
     }
 
     @Test
-    void nullRecordsAreNormalizedToAnEmptyList() {
+    void emptyRecordsStillRenderATemplatePreviewButCannotBePrinted() {
         UniversalPrintPane pane = onFx(UniversalPrintPane::new);
         onFx(() -> {
             pane.setTemplate(template());
             pane.setRecords(null);
             assertTrue(pane.getRecords().isEmpty());
-            assertEquals("صفحة 0 من 0", label(pane, "صفحة 0 من 0").getText());
+            return null;
+        });
+
+        await(Duration.ofSeconds(15), () -> onFx(() -> imageView(pane).getImage() != null));
+        onFx(() -> {
+            assertEquals("صفحة 1 من 1", label(pane, "صفحة 1 من 1").getText());
+            assertTrue(button(pane, "طباعة").isDisabled());
+            assertNotNull(imageView(pane).getImage());
+            return null;
+        });
+    }
+
+    @Test
+    void workbenchKeepsThePrintTemplateSynchronizedWithDesignerChanges() {
+        LabelTemplate initial = template();
+        BarcodeLabelWorkbench workbench = onFx(() -> new BarcodeLabelWorkbench(initial));
+        LabelTemplate updated = LabelTemplate.create("Updated preview", initial.page(), initial.elements());
+
+        onFx(() -> {
+            assertEquals(initial, workbench.printPane().getTemplate());
+            workbench.setTemplate(updated);
+            assertEquals(updated, workbench.printPane().getTemplate());
             return null;
         });
     }

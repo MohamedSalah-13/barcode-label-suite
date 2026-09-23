@@ -222,13 +222,17 @@ public final class TemplateEditSession {
     }
 
     public void align(EditorAlignment alignment) {
-        if (selection.size() < 2) return;
+        if (selection.isEmpty()) return;
         List<LabelElement> selected = template.elements().stream()
                 .filter(element -> selection.contains(element.frame().id())).toList();
-        double minX = selected.stream().mapToDouble(e -> e.frame().bounds().x()).min().orElse(0);
-        double maxX = selected.stream().mapToDouble(e -> e.frame().bounds().x() + e.frame().bounds().width()).max().orElse(0);
-        double minY = selected.stream().mapToDouble(e -> e.frame().bounds().y()).min().orElse(0);
-        double maxY = selected.stream().mapToDouble(e -> e.frame().bounds().y() + e.frame().bounds().height()).max().orElse(0);
+        var labelSize = template.page().labelSize();
+        boolean alignToLabel = selected.size() == 1;
+        double minX = alignToLabel ? 0 : selected.stream().mapToDouble(e -> e.frame().bounds().x()).min().orElse(0);
+        double maxX = alignToLabel ? labelSize.width()
+                : selected.stream().mapToDouble(e -> e.frame().bounds().x() + e.frame().bounds().width()).max().orElse(0);
+        double minY = alignToLabel ? 0 : selected.stream().mapToDouble(e -> e.frame().bounds().y()).min().orElse(0);
+        double maxY = alignToLabel ? labelSize.height()
+                : selected.stream().mapToDouble(e -> e.frame().bounds().y() + e.frame().bounds().height()).max().orElse(0);
         updateSelected("Align " + alignment, element -> {
             RectMm b = element.frame().bounds();
             double x = switch (alignment) {

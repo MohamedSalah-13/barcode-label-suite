@@ -58,6 +58,7 @@ public final class UniversalPrintPane extends BorderPane {
     private final AtomicLong generation = new AtomicLong();
     private int pageIndex;
     private List<PlannedPage> pages = List.of();
+    private List<Map<String, ?>> previewRecords = List.of();
 
     public UniversalPrintPane() {
         getStyleClass().add("universal-print-pane");
@@ -118,14 +119,32 @@ public final class UniversalPrintPane extends BorderPane {
 
     private void resetPreview() {
         pageIndex = 0;
-        if (getTemplate() == null || getRecords().isEmpty()) {
-            pages = List.of(); preview.setImage(null); status.setText(getTemplate() == null ? "اختر قالبًا" : "استورد بيانات CSV"); updateNavigation(); return;
+        if (getTemplate() == null) {
+            generation.incrementAndGet();
+            pages = List.of();
+            previewRecords = List.of();
+            preview.setImage(null);
+            status.setText("اختر قالبًا");
+            updateNavigation();
+            updatePrintAvailability();
+            return;
         }
-        try { pages = planner.plan(getTemplate().page(), getRecords().size(), startSlot.getValue()); }
-        catch (RuntimeException exception) { pages = List.of(); status.setText("تعذر تخطيط الصفحات: " + rootMessage(exception)); }
+        previewRecords = getRecords().isEmpty() ? List.of(Map.of()) : getRecords();
+        try {
+            pages = planner.plan(getTemplate().page(), previewRecords.size(), startSlot.getValue());
+        } catch (RuntimeException exception) {
+            generation.incrementAndGet();
+            pages = List.of();
+            preview.setImage(null);
+            status.setText("تعذر تخطيط الصفحات: " + rootMessage(exception));
+            updateNavigation();
+            updatePrintAvailability();
+            return;
+        }
         int pageMaximum = Math.max(1, pages.size());
         fromPage.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, pageMaximum, 1));
         toPage.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, pageMaximum, pageMaximum));
+        updatePrintAvailability();
         renderPreview();
     }
 
@@ -133,12 +152,13 @@ public final class UniversalPrintPane extends BorderPane {
         updateNavigation();
         if (pages.isEmpty()) return;
         long request = generation.incrementAndGet(); int requestedPage = pageIndex;
-        LabelTemplate currentTemplate = getTemplate(); List<Map<String, ?>> currentRecords = getRecords(); PlannedPage page = pages.get(requestedPage);
-        status.setText("جارٍ إنشاء المعاينة...");
+        LabelTemplate currentTemplate = getTemplate(); List<Map<String, ?>> currentRecords = previewRecords; PlannedPage page = pages.get(requestedPage);
+        boolean templateOnly = getRecords().isEmpty();
+        status.setText(templateOnly ? "جارٍ إنشاء معاينة القالب..." : "جارٍ إنشاء المعاينة...");
         Thread.ofVirtual().name("universal-label-preview").start(() -> {
             try {
                 BufferedImage image = renderPage(currentTemplate, currentRecords, page, 96, true);
-                Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(SwingFXUtils.toFXImage(image, null)); status.setText("المعاينة جاهزة"); } });
+                Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(SwingFXUtils.toFXImage(image, null)); status.setText(templateOnly ? "معاينة القالب — استورد بيانات CSV للطباعة" : "المعاينة جاهزة"); } });
             } catch (Exception exception) {
                 Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(null); status.setText("خطأ في المعاينة: " + rootMessage(exception)); } });
             }
@@ -171,12 +191,21 @@ public final class UniversalPrintPane extends BorderPane {
         status.setText("جارٍ اكتشاف الطابعات...");
         Thread.ofVirtual().name("universal-printer-discovery").start(() -> {
             List<String> names = printerCatalog.discover().stream().map(descriptor -> descriptor.name()).toList();
-            Platform.runLater(() -> { printers.setItems(FXCollections.observableArrayList(names)); if (!names.isEmpty()) printers.getSelectionModel().selectFirst(); print.setDisable(names.isEmpty()); status.setText(names.isEmpty() ? "لم يتم العثور على طابعات" : "تم العثور على " + names.size() + " طابعة"); });
+            Platform.runLater(() -> {
+                printers.setItems(FXCollections.observableArrayList(names));
+                if (!names.isEmpty()) printers.getSelectionModel().selectFirst();
+                updatePrintAvailability();
+                if (getTemplate() == null) status.setText(names.isEmpty() ? "لم يتم العثور على طابعات" : "تم العثور على " + names.size() + " طابعة");
+            });
         });
     }
 
+    private void updatePrintAvailability() {
+        print.setDisable(printers.getItems().isEmpty() || getTemplate() == null || getRecords().isEmpty() || pages.isEmpty());
+    }
+
     private void print() {
-        if (printers.getValue() == null || getTemplate() == null || pages.isEmpty()) return;
+        if (printers.getValue() == null || getTemplate() == null || getRecords().isEmpty() || pages.isEmpty()) return;
         boolean restrictRange = !allPages.isSelected();
         int first = restrictRange ? fromPage.getValue() : 0;
         int last = restrictRange ? toPage.getValue() : 0;

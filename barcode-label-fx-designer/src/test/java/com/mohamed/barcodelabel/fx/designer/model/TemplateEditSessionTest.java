@@ -50,6 +50,20 @@ class TemplateEditSessionTest {
     }
 
     @Test
+    void alignsSingleElementToLabelCenter() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.select(id, false);
+
+        session.align(EditorAlignment.HORIZONTAL_CENTER);
+        session.align(EditorAlignment.VERTICAL_CENTER);
+
+        RectMm bounds = session.find(id).frame().bounds();
+        assertEquals((63.5 - bounds.width()) / 2, bounds.x(), 0.0001);
+        assertEquals((38.1 - bounds.height()) / 2, bounds.y(), 0.0001);
+    }
+
+    @Test
     void rotationIsUndoable() {
         var session = new TemplateEditSession(template());
         var id = session.template().elements().getFirst().frame().id();

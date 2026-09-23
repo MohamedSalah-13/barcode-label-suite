@@ -276,6 +276,32 @@ final class DesignerCanvas extends Pane {
         Double snapDeltaY = null;
         Double guideYmm = null;
 
+        var labelSize = renderedTemplate.page().labelSize();
+        double[][] horizontalTargets = {
+                {left, 0},
+                {centerX, labelSize.width() / 2},
+                {right, labelSize.width()}
+        };
+        for (double[] pair : horizontalTargets) {
+            double diff = pair[1] - pair[0];
+            if (Math.abs(diff) <= toleranceMm && (snapDeltaX == null || Math.abs(diff) < Math.abs(snapDeltaX))) {
+                snapDeltaX = diff;
+                guideXmm = pair[1];
+            }
+        }
+        double[][] verticalTargets = {
+                {top, 0},
+                {centerY, labelSize.height() / 2},
+                {bottom, labelSize.height()}
+        };
+        for (double[] pair : verticalTargets) {
+            double diff = pair[1] - pair[0];
+            if (Math.abs(diff) <= toleranceMm && (snapDeltaY == null || Math.abs(diff) < Math.abs(snapDeltaY))) {
+                snapDeltaY = diff;
+                guideYmm = pair[1];
+            }
+        }
+
         for (LabelElement other : renderedTemplate.elements()) {
             if (session.selection().contains(other.frame().id())) continue;
             RectMm b = other.frame().bounds();
