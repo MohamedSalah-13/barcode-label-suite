@@ -7,7 +7,7 @@ cd <مسار المشروع>\barcode-label-suite
 .\start-phase6-v2.cmd
 ```
 
-لا تستخدم `start-phase6.cmd` الأول؛ فهو يشير إلى Reactor أولي. ملف `start-phase6-v2.cmd` يبني الإصدار المصحح ويشغله.
+ملف `start-phase6-v2.cmd` يبني الإصدار الحالي ويشغله.
 
 للتحقق من جميع المراحل بدون تشغيل الواجهة:
 

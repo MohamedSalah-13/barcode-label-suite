@@ -8,8 +8,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>barcode-label-workflow</module>
-        <module>barcode-label-fx-workbench</module>
-        <module>phase5-build/demo</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

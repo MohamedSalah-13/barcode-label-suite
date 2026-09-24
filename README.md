@@ -30,7 +30,7 @@ The repository includes Maven Wrapper 3.9.9, so a separate Maven installation is
 .\start-phase6-v2.cmd
 ```
 
-This installs the required phase artifacts in dependency order, runs the tests, and starts the final demo. Do not use `start-phase6.cmd`; it targets the earlier phase-6 reactor.
+This installs the required phase artifacts in dependency order, runs the tests, and starts the final demo.
 
 To verify without starting the desktop application, run the same Maven stages shown in [the CI workflow](.github/workflows/build.yml). The base milestone alone can still be built with:
 

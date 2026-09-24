@@ -16,7 +16,7 @@ mvn clean verify                              # builds/tests milestone-1 modules
 mvn -pl barcode-label-demo -am javafx:run     # runs the milestone-1 demo
 ```
 
-Everything built after milestone 1 (phases 2–6: `render-java2d`, `print-java2d`, `fx-designer*`, `fx-workbench`, `fx-preview`, `fx-print`, `workflow`, `batch`, `fx-batch`, `demo-v2`..`v6`) is **not** in the root reactor. Each phase has its own standalone parent POM at the repo root (`phase2-pom.xml`, `phase3-pom.xml`/`phase3-build-pom.xml`/`phase3-final-pom.xml`, `phase4-pom.xml`/`phase4-final-pom.xml`, `phase5-pom.xml`/`phase5-fixed-pom.xml`, `phase6-pom.xml`/`phase6-final-pom.xml`), and later phases depend on artifacts installed to the local repo by earlier ones (`relativePath` + `${base.version}`/`${phaseN.version}` properties). To build a later phase, its dependency chain must already be `mvn install`ed. The `start-phase*.cmd`/`.ps1` scripts at the repo root encode the correct install order per phase — read the matching one before building a phase module by hand.
+Everything built after milestone 1 (phases 2–6: `render-java2d`, `print-java2d`, `fx-designer*`, `fx-workbench`, `fx-preview`, `fx-print`, `workflow`, `batch`, `fx-batch`, `demo-v6`) is **not** in the root reactor. The required parent POMs are `phase2-pom.xml`, `phase3-pom.xml`, `phase3-build-pom.xml`, `phase3-final-pom.xml`, `phase4-final-pom.xml`, `phase5-pom.xml`, `phase5-fixed-pom.xml`, and `phase6-final-pom.xml`. Later phases depend on artifacts installed to the local repo by earlier ones (`relativePath` + `${base.version}`/`${phaseN.version}` properties). To build a later phase, its dependency chain must already be `mvn install`ed. Read `verify-phase6.ps1` for the install order.
 
 The current/most complete state is phase 6 final (`0.6.1-SNAPSHOT`, batch CSV production workflow). To build and run it:
 
@@ -24,7 +24,7 @@ The current/most complete state is phase 6 final (`0.6.1-SNAPSHOT`, batch CSV pr
 .\start-phase6-v2.cmd
 ```
 
-Do **not** use `start-phase6.cmd` — per [`PHASE6_FINAL_AR.md`](PHASE6_FINAL_AR.md) it points at an earlier, uncorrected reactor. Each phase's `*_AR.md` file at the repo root (Arabic) documents what changed and how to run that specific phase; `docs/INTEGRATION_AR.md` documents consuming `barcode-label-fx`/`barcode-label-data`/`barcode-label-print` as a library from another JavaFX app.
+[`PHASE6_FINAL_AR.md`](PHASE6_FINAL_AR.md) documents the current app in Arabic; `docs/INTEGRATION_AR.md` documents consuming `barcode-label-fx`/`barcode-label-data`/`barcode-label-print` as a library from another JavaFX app.
 
 Run a single test module: `mvn -f <phaseN-pom.xml> -pl <module-name> test` (or plain `mvn test` inside a milestone-1 module, or from the root reactor).
 

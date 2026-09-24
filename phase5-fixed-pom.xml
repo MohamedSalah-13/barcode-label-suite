@@ -9,7 +9,6 @@
     <modules>
         <module>barcode-label-fx-designer-fixed</module>
         <module>phase5-build/workbench-fixed</module>
-        <module>phase5-build/demo-fixed</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

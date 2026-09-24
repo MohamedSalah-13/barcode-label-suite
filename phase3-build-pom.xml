@@ -6,11 +6,6 @@
     <artifactId>barcode-label-phase3-build</artifactId>
     <version>0.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <modules>
-        <module>phase3-build/print</module>
-        <module>barcode-label-fx-print</module>
-        <module>barcode-label-demo-v3</module>
-    </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>

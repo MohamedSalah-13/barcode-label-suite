@@ -9,7 +9,6 @@
     <modules>
         <module>phase3-build/print</module>
         <module>barcode-label-fx-print</module>
-        <module>phase3-build/demo</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
