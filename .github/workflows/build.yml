@@ -1,12 +1,24 @@
 name: build
 
+# A pull request, and a push to master. A push to any other branch starts nothing: it used to, so
+# every push to a pull request's branch ran this twice on the same commit, once as the push and once
+# as the pull request. The repository is private and the runner is Windows, whose minute is billed
+# at more than a Linux one, out of the 2,000 a month the account has for all its repositories.
 on:
   push:
+    branches: [ master ]
   pull_request:
+
+# A new push to a pull request cancels its run still going. Pushes to master never cancel one another.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
     runs-on: windows-latest
+    # About five minutes as a rule. Without a limit a job that hangs runs for GitHub's six hours.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
