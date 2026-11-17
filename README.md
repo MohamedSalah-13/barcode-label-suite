@@ -4,6 +4,20 @@
 
 A reusable, modular Java 21 / JavaFX library for designing and printing barcode labels.
 
+## Screenshots
+
+Designing a label: the elements on the right, the label on its own millimetre surface, the properties on the left.
+
+![The label designer](docs/images/designer.png)
+
+Importing a CSV: the columns are matched to the template's fields and the quantity column automatically, then validated (10 labels from 4 rows).
+
+![CSV column mapping and validation](docs/images/csv-mapping.png)
+
+The print preview of that batch on an A4 sheet, one label per copy.
+
+![Print preview](docs/images/preview.png)
+
 ## Current release
 
 The current version is `0.7.0`. It provides:
