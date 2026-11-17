@@ -18,10 +18,12 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 public final class Java2DLabelPrinter implements LabelPrinter {
     private final PrinterCatalog printerCatalog;
     private final double renderDpi;
+    private final Supplier<PrinterJob> jobs;
     private volatile PrinterJob currentJob;
 
     public Java2DLabelPrinter() {
@@ -29,6 +31,12 @@ public final class Java2DLabelPrinter implements LabelPrinter {
     }
 
     public Java2DLabelPrinter(PrinterCatalog printerCatalog, double renderDpi) {
+        this(printerCatalog, renderDpi, PrinterJob::getPrinterJob);
+    }
+
+    /** For tests: where print jobs come from instead of {@link PrinterJob#getPrinterJob()}. */
+    Java2DLabelPrinter(PrinterCatalog printerCatalog, double renderDpi, Supplier<PrinterJob> jobs) {
+        this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.printerCatalog = Objects.requireNonNull(printerCatalog, "printerCatalog");
         if (!Double.isFinite(renderDpi) || renderDpi < 150 || renderDpi > 1200) {
             throw new IllegalArgumentException("renderDpi must be between 150 and 1200");
@@ -57,7 +65,7 @@ public final class Java2DLabelPrinter implements LabelPrinter {
     }
 
     private PrintResult printBlocking(LabelPrintRequest request) {
-        PrinterJob job = PrinterJob.getPrinterJob();
+        PrinterJob job = jobs.get();
         currentJob = job;
         try {
             try {
