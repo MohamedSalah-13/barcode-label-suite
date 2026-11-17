@@ -40,6 +40,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
@@ -103,7 +104,10 @@ public final class LabelDesignerPane extends BorderPane {
     public void setTemplate(LabelTemplate value) {
         session = new TemplateEditSession(value);
         canvas = new DesignerCanvas(session);
-        workspace = new ScrollPane(canvas);
+        // The canvas is left to right; the holder around it inherits this pane's right-to-left orientation,
+        // so the workspace places the label on its right, like the rest of the Arabic UI. A layout pane, not a
+        // Group: a Group's size would include the canvas's drop shadow and push the label off the padding.
+        workspace = new ScrollPane(new StackPane(canvas));
         workspace.getStyleClass().add("designer-workspace");
         workspace.setPannable(true);
         setCenter(workspace);

@@ -392,7 +392,8 @@ class LabelDesignerPaneTest {
     }
 
     private static DesignerCanvas canvas(LabelDesignerPane pane) {
-        return (DesignerCanvas) ((ScrollPane) pane.getCenter()).getContent();
+        return all(pane).filter(DesignerCanvas.class::isInstance).map(DesignerCanvas.class::cast)
+                .findFirst().orElseThrow();
     }
 
     private static StackPane elementView(LabelDesignerPane pane) {
