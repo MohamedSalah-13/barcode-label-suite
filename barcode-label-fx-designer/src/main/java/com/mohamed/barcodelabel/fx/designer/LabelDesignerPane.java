@@ -48,6 +48,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 public final class LabelDesignerPane extends BorderPane {
     private final ReadOnlyObjectWrapper<LabelTemplate> template = new ReadOnlyObjectWrapper<>(this, "template");
@@ -365,24 +366,37 @@ public final class LabelDesignerPane extends BorderPane {
         LabelElement element = session.find(session.primarySelection());
         if (element == null) return;
         try {
+            // Read every field before changing anything: each change refreshes this panel from the element,
+            // which would overwrite the fields that have not been applied yet.
+            UUID id = element.frame().id();
             RectMm bounds = new RectMm(parse(xField), parse(yField), parse(widthField), parse(heightField));
-            session.setBounds(element.frame().id(), bounds);
-            session.setRotation(element.frame().id(), parse(rotationField));
-            if (element instanceof TextElement || element instanceof BarcodeElement) {
-                session.setContent(element.frame().id(), contentField.getText());
+            double rotation = parse(rotationField);
+            String content = contentField.getText();
+            ImageFit fit = imageFitField.getValue() != null ? imageFitField.getValue() : ImageFit.CONTAIN;
+            boolean isText = element instanceof TextElement;
+            String fontFamily = fontFamilyField.getValue();
+            double fontSize = isText ? parse(fontSizeField) : 0;
+            String color = toHex(colorField.getValue());
+            boolean bold = boldToggle.isSelected();
+            boolean italic = italicToggle.isSelected();
+            TextAlignment alignment = alignCenterToggle.isSelected() ? TextAlignment.CENTER
+                    : alignRightToggle.isSelected() ? TextAlignment.RIGHT
+                    : TextAlignment.LEFT;
+            boolean isLocked = locked.isSelected();
+            boolean isVisible = visible.isSelected();
+
+            session.setBounds(id, bounds);
+            session.setRotation(id, rotation);
+            if (isText || element instanceof BarcodeElement) {
+                session.setContent(id, content);
             }
             if (element instanceof ImageElement) {
-                ImageFit fit = imageFitField.getValue() != null ? imageFitField.getValue() : ImageFit.CONTAIN;
-                session.setImage(element.frame().id(), contentField.getText(), fit);
+                session.setImage(id, content, fit);
             }
-            if (element instanceof TextElement) {
-                TextAlignment alignment = alignCenterToggle.isSelected() ? TextAlignment.CENTER
-                        : alignRightToggle.isSelected() ? TextAlignment.RIGHT
-                        : TextAlignment.LEFT;
-                session.setTextStyle(element.frame().id(), fontFamilyField.getValue(), parse(fontSizeField),
-                        toHex(colorField.getValue()), boldToggle.isSelected(), italicToggle.isSelected(), alignment);
+            if (isText) {
+                session.setTextStyle(id, fontFamily, fontSize, color, bold, italic, alignment);
             }
-            session.setLockedVisible(element.frame().id(), locked.isSelected(), visible.isSelected());
+            session.setLockedVisible(id, isLocked, isVisible);
             status.setText("تم تطبيق الخصائص");
         } catch (RuntimeException exception) {
             status.setText("قيمة غير صحيحة: " + exception.getMessage());

@@ -284,7 +284,9 @@ public final class TemplateEditSession {
     private void apply(String description, UnaryOperator<LabelTemplate> operation) {
         LabelTemplate before = template;
         LabelTemplate after = Objects.requireNonNull(operation.apply(before));
-        if (before.equals(after)) return;
+        // Compare elements, not templates: withElements always stamps a new updatedAt, so whole templates
+        // never compare equal and an edit that changes nothing would still notify and add an undo step.
+        if (before.elements().equals(after.elements())) return;
         template = after;
         undo.push(new HistoryEntry(description, before, after));
         redo.clear();

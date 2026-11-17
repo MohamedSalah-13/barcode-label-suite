@@ -157,6 +157,9 @@ final class DesignerCanvas extends Pane {
         wrapper.setPrefSize(bounds.width() * pixelsPerMm(), bounds.height() * pixelsPerMm());
         wrapper.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         wrapper.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        // The wrapper is unmanaged, so no layout pass sizes it: without this it stays 0 x 0, which hides
+        // its content, its selection border and its resize handle, and breaks rubber-band hit testing.
+        wrapper.autosize();
         wrapper.setRotate(element.frame().rotationDegrees());
         if (element.frame().locked()) wrapper.getStyleClass().add("locked-element");
 
@@ -353,6 +356,7 @@ final class DesignerCanvas extends Pane {
             double width = Math.max(2, start[0].width() + snapDelta((event.getSceneX() - mouse[0]) / pixelsPerMm()));
             double height = Math.max(2, start[0].height() + snapDelta((event.getSceneY() - mouse[1]) / pixelsPerMm()));
             wrapper.setPrefSize(width * pixelsPerMm(), height * pixelsPerMm());
+            wrapper.autosize();
             event.consume();
         });
         handle.setOnMouseReleased(event -> {
@@ -390,7 +394,9 @@ final class DesignerCanvas extends Pane {
     }
 
     private void handleKeyPressed(KeyEvent event) {
-        if (event.isControlDown() && event.getCode() == KeyCode.Z) { session.undo(); event.consume(); return; }
+        if (event.isControlDown() && !event.isShiftDown() && event.getCode() == KeyCode.Z) {
+            session.undo(); event.consume(); return;
+        }
         if (event.isControlDown() && (event.getCode() == KeyCode.Y || (event.isShiftDown() && event.getCode() == KeyCode.Z))) {
             session.redo(); event.consume(); return;
         }
