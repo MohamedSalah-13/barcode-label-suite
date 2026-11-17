@@ -24,6 +24,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.font.TextAttribute;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
@@ -36,6 +37,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.text.AttributedString;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -123,11 +125,12 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
 
     private void drawText(Graphics2D graphics, TextElement element, double x, double y,
                           double width, double height, double dpi) {
-        AttributedString attributed = new AttributedString(element.textTemplate());
-        attributed.addAttribute(FAMILY, element.fontFamily());
-        attributed.addAttribute(SIZE, (float) (element.fontSizePoints() * dpi / 72.0));
-        if (element.bold()) attributed.addAttribute(WEIGHT, WEIGHT_BOLD);
-        if (element.italic()) attributed.addAttribute(POSTURE, POSTURE_OBLIQUE);
+        Map<TextAttribute, Object> style = new HashMap<>();
+        style.put(FAMILY, element.fontFamily());
+        style.put(SIZE, (float) (element.fontSizePoints() * dpi / 72.0));
+        if (element.bold()) style.put(WEIGHT, WEIGHT_BOLD);
+        if (element.italic()) style.put(POSTURE, POSTURE_OBLIQUE);
+        AttributedString attributed = FontFallback.style(element.textTemplate(), style);
 
         TextLayout layout = new TextLayout(attributed.getIterator(), graphics.getFontRenderContext());
         float drawX = switch (element.alignment()) {

@@ -117,6 +117,26 @@ class BufferedImageLabelRendererTest {
     }
 
     @Test
+    void arabicTextInAFontWithoutArabicGlyphsPrintsInAFallbackFont() throws RenderException {
+        String latinOnly = FontFallbackTest.latinOnlyFont();
+        BufferedImage inLatinOnlyFont = render(List.of(arabicWord(latinOnly)));
+        BufferedImage inDialog = render(List.of(arabicWord("Dialog")));
+
+        assertTrue(dark(inDialog, 0, 0, 200, 100) > 0, "the word is drawn");
+        for (int x = 0; x < 200; x++) {
+            for (int y = 0; y < 100; y++) {
+                assertEquals(inDialog.getRGB(x, y), inLatinOnlyFont.getRGB(x, y),
+                        latinOnly + " draws the word as Dialog does, not as missing-glyph boxes, at " + x + "," + y);
+            }
+        }
+    }
+
+    private static LabelElement arabicWord(String fontFamily) {
+        return new TextElement(frame(new RectMm(0, 0, 50.8, 25.4), 0), "المنتج", fontFamily, 20,
+                "#000000", false, false, TextAlignment.CENTER);
+    }
+
+    @Test
     void fieldsAreFilledFromTheDataAndAMissingFieldFails() throws RenderException {
         TextElement name = new TextElement(frame(new RectMm(0, 0, 50.8, 12.7), 0), "{{name}}", "Dialog", 20,
                 "#000000", false, false, TextAlignment.LEFT);
