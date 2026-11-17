@@ -58,7 +58,7 @@ xvfb-run -a ./mvnw clean install
 
 After an install, the application alone starts with `./mvnw -pl barcode-label-app javafx:run`.
 
-Every tested module except `barcode-label-fx-designer` enforces a minimum 25% line-coverage baseline with JaCoCo; the designer's report is still written, but its coverage (about 20%) does not yet fail the build. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
+Every tested module enforces a minimum 25% line-coverage baseline with JaCoCo. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
 
 ## Package for Windows
 

@@ -2,6 +2,8 @@ package com.mohamed.barcodelabel.fx.designer.model;
 
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.ElementFrame;
+import com.mohamed.barcodelabel.model.element.ImageElement;
+import com.mohamed.barcodelabel.model.element.ImageFit;
 import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.model.geometry.DimensionsMm;
@@ -12,6 +14,8 @@ import com.mohamed.barcodelabel.model.page.SheetLayout;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -153,6 +157,164 @@ class TemplateEditSessionTest {
         assertFalse(session.canRedo());
         session.undo();
         assertEquals(2, session.template().elements().size());
+    }
+
+    @Test
+    void anEditThatChangesNothingAddsNoUndoStepAndNotifiesNobody() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        var notifications = new AtomicInteger();
+        session.addListener(notifications::incrementAndGet);
+
+        session.setBounds(id, session.find(id).frame().bounds());
+        session.setRotation(id, 0);
+        session.setContent(id, "First");
+
+        assertFalse(session.canUndo());
+        assertEquals(0, notifications.get());
+    }
+
+    @Test
+    void listenersAreNotifiedUntilRemoved() {
+        var session = new TemplateEditSession(template());
+        var notifications = new AtomicInteger();
+        Runnable listener = notifications::incrementAndGet;
+        session.addListener(listener);
+        session.selectAll();
+        session.removeListener(listener);
+        session.clearSelection();
+        assertEquals(1, notifications.get());
+    }
+
+    @Test
+    void additiveSelectTogglesAnElement() {
+        var session = new TemplateEditSession(template());
+        var first = session.template().elements().get(0).frame().id();
+        var second = session.template().elements().get(1).frame().id();
+        session.select(first, false);
+        session.select(second, true);
+        assertEquals(Set.of(first, second), session.selection());
+        session.select(first, true);
+        assertEquals(Set.of(second), session.selection());
+        assertEquals(second, session.primarySelection());
+    }
+
+    @Test
+    void duplicateOffsetsTheCopiesAndSelectsThem() {
+        var session = new TemplateEditSession(template());
+        session.duplicateSelected(2);
+        assertEquals(2, session.template().elements().size(), "nothing selected, nothing duplicated");
+
+        session.selectAll();
+        session.duplicateSelected(2);
+        assertEquals(4, session.template().elements().size());
+        assertEquals(2, session.selection().size());
+        var copy = session.find(session.primarySelection());
+        assertEquals(new RectMm(4, 5, 20, 6), copy.frame().bounds());
+        assertEquals(2, copy.frame().zIndex(), "copies go above the existing elements");
+        assertEquals("Duplicate elements", session.undoDescription());
+    }
+
+    @Test
+    void lockedElementsIgnoreMoveAndResizeButNotExplicitBounds() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.setLockedVisible(id, true, true);
+        session.select(id, false);
+
+        session.moveSelected(5, 5);
+        session.resize(id, new RectMm(2, 3, 40, 20));
+        assertEquals(new RectMm(2, 3, 20, 6), session.find(id).frame().bounds());
+
+        session.setBounds(id, new RectMm(10, 10, 5, 5));
+        assertEquals(new RectMm(10, 10, 5, 5), session.find(id).frame().bounds());
+    }
+
+    @Test
+    void boundsAreClampedInsideTheLabel() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.resize(id, new RectMm(-5, -5, 100, 100));
+        assertEquals(new RectMm(0, 0, 63.5, 38.1), session.find(id).frame().bounds());
+    }
+
+    @Test
+    void contentAndImageChangesApplyToTheMatchingElementTypes() {
+        var image = new ImageElement(ElementFrame.create("Logo", new RectMm(1, 1, 10, 10), 2),
+                "logo.png", ImageFit.CONTAIN);
+        var session = new TemplateEditSession(template().withElements(List.of(text("First", new RectMm(2, 3, 20, 6), 0), image)));
+        var textId = session.template().elements().getFirst().frame().id();
+
+        session.setContent(textId, "Changed");
+        assertEquals("Changed", ((TextElement) session.find(textId)).textTemplate());
+
+        session.setImage(image.frame().id(), "other.png", ImageFit.STRETCH);
+        var updated = (ImageElement) session.find(image.frame().id());
+        assertEquals("other.png", updated.source());
+        assertEquals(ImageFit.STRETCH, updated.fit());
+
+        session.setContent(image.frame().id(), "ignored");
+        assertEquals("other.png", ((ImageElement) session.find(image.frame().id())).source());
+    }
+
+    @Test
+    void alignsSeveralElementsToTheirSharedRightAndBottomEdges() {
+        var session = new TemplateEditSession(template());
+        session.selectAll();
+        session.align(EditorAlignment.RIGHT);
+        session.align(EditorAlignment.BOTTOM);
+        session.template().elements().forEach(element -> {
+            var b = element.frame().bounds();
+            assertEquals(50, b.x() + b.width(), 0.0001);
+            assertEquals(18, b.y() + b.height(), 0.0001);
+        });
+        session.align(EditorAlignment.TOP);
+        session.template().elements().forEach(element -> assertEquals(12, element.frame().bounds().y(), 0.0001));
+    }
+
+    @Test
+    void historyDescribesTheNextStepAndEmptyHistoryIsANoOp() {
+        var session = new TemplateEditSession(template());
+        assertEquals("", session.undoDescription());
+        assertEquals("", session.redoDescription());
+        session.undo();
+        session.redo();
+
+        var id = session.template().elements().getFirst().frame().id();
+        session.setRotation(id, 30);
+        assertEquals("Rotate element", session.undoDescription());
+        session.undo();
+        assertEquals("Rotate element", session.redoDescription());
+    }
+
+    @Test
+    void undoDropsSelectedElementsThatNoLongerExist() {
+        var session = new TemplateEditSession(template());
+        session.selectAll();
+        session.duplicateSelected(1);
+        assertEquals(2, session.selection().size());
+        session.undo();
+        assertTrue(session.selection().isEmpty(), "the duplicated copies are gone, so they are deselected");
+    }
+
+    @Test
+    void layerCommandsIgnoreUnknownIdsAndElementsAlreadyAtTheEdge() {
+        var session = new TemplateEditSession(template());
+        var top = session.template().elements().get(1).frame().id();
+        var bottom = session.template().elements().get(0).frame().id();
+        java.util.UUID unknown = java.util.UUID.randomUUID();
+
+        session.bringToFront(top);
+        session.bringForward(top);
+        session.sendToBack(bottom);
+        session.sendBackward(bottom);
+        session.bringToFront(unknown);
+        session.sendToBack(unknown);
+        session.bringForward(unknown);
+        session.sendBackward(unknown);
+        session.setRotation(null, 10);
+        session.moveSelected(0, 0);
+        assertFalse(session.canUndo());
     }
 
     private static LabelTemplate template() {
