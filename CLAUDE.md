@@ -23,7 +23,7 @@ Run a single module's tests: `mvnw -pl <module-name> -am test`.
 
 The application is `barcode-label-app` (main class `com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher`). [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md) documents it in Arabic; [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md) documents embedding the modules in another JavaFX app.
 
-JaCoCo enforces a 45% line-coverage baseline on every module with tests.
+JaCoCo enforces a 70% line-coverage baseline on every module with tests.
 
 ## Architecture
 
