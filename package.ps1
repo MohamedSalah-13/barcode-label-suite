@@ -14,7 +14,7 @@ $inputDirectory = Join-Path $targetDirectory 'package-input'
 $outputDirectory = Join-Path $projectRoot 'dist'
 $appName = 'BarcodeLabelSuite'
 $mainJar = 'barcode-label-app.jar'
-$mainClass = 'com.mohamed.barcodelabel.demo.v6.Phase6Launcher'
+$mainClass = 'com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher'
 
 function Assert-ProjectPath {
     param([Parameter(Mandatory)][string]$Path)

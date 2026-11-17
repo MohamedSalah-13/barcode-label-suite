@@ -36,7 +36,7 @@
         <module>barcode-label-fx-designer</module>
         <module>barcode-label-fx-workbench</module>
         <module>barcode-label-fx-batch</module>
-        <!-- Applications. -->
+        <!-- The desktop application. -->
         <module>barcode-label-app</module>
     </modules>
 

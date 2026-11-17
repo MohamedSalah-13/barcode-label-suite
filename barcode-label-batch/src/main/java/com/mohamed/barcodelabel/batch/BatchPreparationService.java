@@ -26,7 +26,8 @@ public final class BatchPreparationService {
             int quantity = quantity(source, mapping, sourceRow, issues);
             if (quantity <= 0) continue;
             if ((long) records.size() + quantity > mapping.maxTotalLabels()) {
-                issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, sourceRow, "quantity",
+                issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.TOTAL_LIMIT_EXCEEDED,
+                        sourceRow, "quantity", String.valueOf(mapping.maxTotalLabels()),
                         "Total labels exceed the safety limit of " + mapping.maxTotalLabels()));
                 break;
             }
@@ -43,11 +44,14 @@ public final class BatchPreparationService {
         List<BatchValidationIssue> issues = new ArrayList<>();
         for (String field : templateFields.scan(template)) {
             String column = mapping.fields().get(field);
-            if (column == null) issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, 1, field, "No CSV column is mapped to template field {{" + field + "}}"));
-            else if (!dataset.headers().contains(column)) issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, 1, field, "CSV column does not exist: " + column));
+            if (column == null) issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.UNMAPPED_FIELD,
+                    1, field, "", "No CSV column is mapped to template field {{" + field + "}}"));
+            else if (!dataset.headers().contains(column)) issues.add(new BatchValidationIssue(ValidationSeverity.ERROR,
+                    BatchIssueKind.MISSING_COLUMN, 1, field, column, "CSV column does not exist: " + column));
         }
         if (mapping.quantityColumn() != null && !dataset.headers().contains(mapping.quantityColumn())) {
-            issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, 1, "quantity", "Quantity column does not exist: " + mapping.quantityColumn()));
+            issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.MISSING_QUANTITY_COLUMN, 1,
+                    "quantity", mapping.quantityColumn(), "Quantity column does not exist: " + mapping.quantityColumn()));
         }
         return issues;
     }
@@ -58,13 +62,14 @@ public final class BatchPreparationService {
         try {
             int value = Integer.parseInt(raw);
             if (value <= 0 || value > mapping.maxCopiesPerRow()) {
-                issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, sourceRow, "quantity",
-                        "Quantity must be between 1 and " + mapping.maxCopiesPerRow() + ": " + raw));
+                issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.QUANTITY_OUT_OF_RANGE,
+                        sourceRow, "quantity", raw, "Quantity must be between 1 and " + mapping.maxCopiesPerRow() + ": " + raw));
                 return -1;
             }
             return value;
         } catch (NumberFormatException exception) {
-            issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, sourceRow, "quantity", "Invalid integer quantity: " + raw));
+            issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.INVALID_QUANTITY, sourceRow,
+                    "quantity", raw, "Invalid integer quantity: " + raw));
             return -1;
         }
     }

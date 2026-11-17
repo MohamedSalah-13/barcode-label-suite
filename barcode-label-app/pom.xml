@@ -12,7 +12,7 @@
         <!-- A version-free name, so packaging scripts need not know the version. -->
         <finalName>barcode-label-app</finalName>
         <plugins>
-            <plugin><groupId>org.openjfx</groupId><artifactId>javafx-maven-plugin</artifactId><configuration><mainClass>com.mohamed.barcodelabel.demo.v6.Phase6Launcher</mainClass></configuration></plugin>
+            <plugin><groupId>org.openjfx</groupId><artifactId>javafx-maven-plugin</artifactId><configuration><mainClass>com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher</mainClass></configuration></plugin>
         </plugins>
     </build>
 </project>

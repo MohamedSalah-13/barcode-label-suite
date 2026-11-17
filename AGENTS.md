@@ -21,7 +21,7 @@ The JavaFX UI tests (`barcode-label-fx-designer`, `barcode-label-fx-workbench`, 
 
 Run a single module's tests: `mvnw -pl <module-name> -am test`.
 
-The application is `barcode-label-app` (main class `com.mohamed.barcodelabel.demo.v6.Phase6Launcher`). [`PHASE6_FINAL_AR.md`](PHASE6_FINAL_AR.md) documents it in Arabic; `docs/INTEGRATION_AR.md` documents consuming the modules as a library from another JavaFX app.
+The application is `barcode-label-app` (main class `com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher`). [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md) documents it in Arabic; [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md) documents embedding the modules in another JavaFX app.
 
 JaCoCo enforces a 25% line-coverage baseline on every module with tests.
 
@@ -30,7 +30,7 @@ JaCoCo enforces a 25% line-coverage baseline on every module with tests.
 **Module dependency direction** (lower layers know nothing about upper ones):
 `model` → `data` (JSON persistence, `{{field}}` binding) / `render` (rasterization contracts) / `print` (sheet layout contracts) → `render-java2d` / `print-java2d` (Java2D implementations) → `workflow` (CSV import + universal page planning) → `batch` (CSV-to-print validation/preparation) → the `fx-*` UI modules, which compose into `barcode-label-app`.
 
-**Two module systems coexist.** Milestone-1 modules (`model`, `data`, `render`, `print`) use real JPMS (`module-info.java`, `requires`/`exports`). Every later module (`render-java2d`, `print-java2d`, `workflow`, `batch`, the `fx-*` modules and `app`) builds on the classpath instead, using `Automatic-Module-Name` manifest entries (set via `maven-jar-plugin`) rather than `module-info.java`. Don't assume one of these modules has a module descriptor — check before adding a `requires`.
+**Two module systems coexist.** The core modules (`model`, `data`, `render`, `print`) use real JPMS (`module-info.java`, `requires`/`exports`). Every other module (`render-java2d`, `print-java2d`, `workflow`, `batch`, the `fx-*` modules and `app`) builds on the classpath instead, using `Automatic-Module-Name` manifest entries (set via `maven-jar-plugin`) rather than `module-info.java`. Don't assume one of these modules has a module descriptor — check before adding a `requires`.
 
 **Domain model (`barcode-label-model`)** is the immutable core: `LabelTemplate` (schema-versioned, holds a `PageDefinition` and a list of `LabelElement`s — barcode/text/image/shape, each anchored by an `ElementFrame`), geometry types (`DimensionsMm`, `InsetsMm`, `RectMm`) all in millimetres, and page/sheet layout (`PageDefinition`, `PageMode`, `SheetLayout`). Validation lives in compact record constructors; each geometry/element record currently re-implements its own `requireNonNegative`/`requirePositive` helpers rather than sharing one.
 
