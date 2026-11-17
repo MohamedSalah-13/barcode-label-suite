@@ -12,6 +12,8 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.image.ImageView;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -94,6 +96,42 @@ class UniversalPrintPaneTest {
     }
 
     @Test
+    void sheetSlotsAreNumberedFromOneLikeTheUserCountsThem() {
+        UniversalPrintPane pane = onFx(UniversalPrintPane::new);
+        // 21 labels on the 3 x 7 sheet: starting at slot 1 they fill exactly one page.
+        List<Map<String, ?>> records = java.util.stream.IntStream.range(0, 21)
+                .<Map<String, ?>>mapToObj(index -> Map.of("name", "Item " + index))
+                .toList();
+        onFx(() -> {
+            pane.setTemplate(template());
+            pane.setRecords(records);
+            Spinner<?> slot = startSlot(pane);
+            assertEquals(1, slot.getValue());
+            assertEquals(0, pane.startSlotIndex());
+            assertEquals("صفحة 1 من 1", label(pane, "صفحة 1 من 1").getText());
+
+            // The last of the 21 slots can be chosen; then only one label fits on the first page.
+            @SuppressWarnings("unchecked")
+            var factory = (SpinnerValueFactory.IntegerSpinnerValueFactory) slot.getValueFactory();
+            assertEquals(21, factory.getMax());
+            factory.setValue(21);
+            assertEquals(20, pane.startSlotIndex());
+            assertEquals("صفحة 1 من 2", label(pane, "صفحة 1 من 2").getText());
+            return null;
+        });
+    }
+
+    @Test
+    void printConfirmationCountsCopiesAndPagesInArabic() {
+        assertEquals("سيُطبع 10 ملصقات على صفحة واحدة\nالطابعة: Office",
+                UniversalPrintPane.confirmation("Office", 10, 1, 1, 0, 0));
+        assertEquals("سيُطبع 30 ملصقاً على 3 صفحات\n(3 نسخ، في كل نسخة 10 ملصقات)\nالطابعة: Office",
+                UniversalPrintPane.confirmation("Office", 10, 1, 3, 0, 0));
+        assertEquals("سيُطبع ملصقان على صفحتين\nالصفحات من 2 إلى 3\nالطابعة: Office",
+                UniversalPrintPane.confirmation("Office", 2, 2, 1, 2, 3));
+    }
+
+    @Test
     void workbenchKeepsThePrintTemplateSynchronizedWithDesignerChanges() {
         LabelTemplate initial = template();
         BarcodeLabelWorkbench workbench = onFx(() -> new BarcodeLabelWorkbench(initial));
@@ -112,6 +150,13 @@ class UniversalPrintPaneTest {
         var text = new TextElement(ElementFrame.create("name", new RectMm(2, 2, 55, 8), 0),
                 "{{name}}", "Arial", 10, "#000000", false, false, TextAlignment.CENTER);
         return LabelTemplate.create("Preview test", page, List.of(text));
+    }
+
+    private static Spinner<?> startSlot(Parent root) {
+        Spinner<?> found = find(root, Spinner.class, node -> node.getTooltip() != null
+                && node.getTooltip().getText().startsWith("رقم أول خانة"));
+        if (found == null) throw new AssertionError("Start slot spinner not found");
+        return found;
     }
 
     private static Button button(Parent root, String text) {

@@ -40,7 +40,8 @@ public final class UniversalPrintPane extends BorderPane {
     private final ObjectProperty<List<Map<String, ?>>> records = new SimpleObjectProperty<>(this, "records", List.of());
     private final ComboBox<String> printers = new ComboBox<>();
     private final Spinner<Integer> copies = new Spinner<>(1, 999, 1);
-    private final Spinner<Integer> startSlot = new Spinner<>(0, 0, 0);
+    /** The first free slot on the first sheet, counted from 1 as the user sees it; the planner counts from 0. */
+    private final Spinner<Integer> startSlot = new Spinner<>(1, 1, 1);
     private final ImageView preview = new ImageView();
     private final Label status = new Label("جاهز");
     private final Label pageStatus = new Label("صفحة 0 من 0");
@@ -83,6 +84,8 @@ public final class UniversalPrintPane extends BorderPane {
         printers.setPromptText("اختر الطابعة"); printers.setMaxWidth(Double.MAX_VALUE);
         copies.setEditable(true); commitOnFocusLoss(copies);
         startSlot.setEditable(true); commitOnFocusLoss(startSlot);
+        startSlot.setTooltip(new Tooltip("رقم أول خانة فارغة في الورقة. الخانة 1 أعلى يسار الورقة، "
+                + "والترقيم يسير من اليسار إلى اليمين ثم ينزل إلى الصف التالي."));
         fromPage.setEditable(true); commitOnFocusLoss(fromPage);
         toPage.setEditable(true); commitOnFocusLoss(toPage);
         allPages.setSelected(true);
@@ -111,10 +114,10 @@ public final class UniversalPrintPane extends BorderPane {
     }
 
     private void reset() {
-        int max = getTemplate() != null && getTemplate().page().mode() == PageMode.SHEET
-                ? getTemplate().page().sheetLayout().labelsPerPage() - 1 : 0;
-        startSlot.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, Math.max(0, max), 0));
-        startSlot.setDisable(max == 0); resetPreview();
+        int slots = getTemplate() != null && getTemplate().page().mode() == PageMode.SHEET
+                ? getTemplate().page().sheetLayout().labelsPerPage() : 1;
+        startSlot.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, Math.max(1, slots), 1));
+        startSlot.setDisable(slots <= 1); resetPreview();
     }
 
     private void resetPreview() {
@@ -131,7 +134,7 @@ public final class UniversalPrintPane extends BorderPane {
         }
         previewRecords = getRecords().isEmpty() ? List.of(Map.of()) : getRecords();
         try {
-            pages = planner.plan(getTemplate().page(), previewRecords.size(), startSlot.getValue());
+            pages = planner.plan(getTemplate().page(), previewRecords.size(), startSlotIndex());
         } catch (RuntimeException exception) {
             generation.incrementAndGet();
             pages = List.of();
@@ -195,7 +198,8 @@ public final class UniversalPrintPane extends BorderPane {
                 printers.setItems(FXCollections.observableArrayList(names));
                 if (!names.isEmpty()) printers.getSelectionModel().selectFirst();
                 updatePrintAvailability();
-                if (getTemplate() == null) status.setText(names.isEmpty() ? "لم يتم العثور على طابعات" : "تم العثور على " + names.size() + " طابعة");
+                if (getTemplate() == null) status.setText(names.isEmpty() ? "لم يتم العثور على طابعات"
+                        : "تم العثور على " + ArabicCount.PRINTERS.afterPreposition(names.size()));
             });
         });
     }
@@ -213,18 +217,22 @@ public final class UniversalPrintPane extends BorderPane {
             status.setText("صفحة البداية يجب ألا تتجاوز صفحة النهاية");
             return;
         }
-        String rangeText = restrictRange ? "\nالصفحات: " + first + " إلى " + last : "";
+        int firstIndex = restrictRange ? first - 1 : 0;
+        int lastIndex = restrictRange ? last - 1 : pages.size() - 1;
+        int labelsPerCopy = pages.subList(firstIndex, lastIndex + 1).stream().mapToInt(page -> page.placements().size()).sum();
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "إرسال " + getRecords().size() + " ملصق إلى:\n" + printers.getValue() + rangeText,
+                confirmation(printers.getValue(), labelsPerCopy, lastIndex - firstIndex + 1, copies.getValue(),
+                        restrictRange ? first : 0, restrictRange ? last : 0),
                 ButtonType.OK, ButtonType.CANCEL);
         alert.setHeaderText("تأكيد الطباعة"); if (alert.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
         print.setDisable(true); cancelPrint.setDisable(false); status.setText("جارٍ إرسال مهمة الطباعة...");
         var request = new LabelPrintRequest(getTemplate(), getRecords(), printers.getValue(),
-                copies.getValue(), startSlot.getValue(), first, last);
+                copies.getValue(), startSlotIndex(), first, last);
         labelPrinter.print(request).whenComplete((result, error) -> Platform.runLater(() -> {
             print.setDisable(false); cancelPrint.setDisable(true);
             if (error == null) {
-                status.setText("تمت طباعة " + result.labelsPrinted() + " ملصق في " + result.pagesPrinted() + " صفحة");
+                status.setText("تمت طباعة " + ArabicCount.LABELS.count(result.labelsPrinted()) + " على "
+                        + ArabicCount.PAGES.afterPreposition(result.pagesPrinted()));
             } else {
                 status.setText(describePrintError(error));
             }
@@ -239,6 +247,26 @@ public final class UniversalPrintPane extends BorderPane {
             return "فشلت الطباعة بعد " + failed.pagesCompleted() + " من " + failed.totalPages() + " صفحة: " + rootMessage(error);
         }
         return "فشلت الطباعة: " + rootMessage(error);
+    }
+
+    int startSlotIndex() {
+        return startSlot.getValue() - 1;
+    }
+
+    /**
+     * The text asking the user to confirm a print job. {@code pages} is the number of sheet sides printed for
+     * one copy; {@code firstPage}/{@code lastPage} are 0 when every page is printed.
+     */
+    static String confirmation(String printer, int labelsPerCopy, int pages, int copies, int firstPage, int lastPage) {
+        StringBuilder text = new StringBuilder("سيُطبع ")
+                .append(ArabicCount.LABELS.count((long) labelsPerCopy * copies))
+                .append(" على ").append(ArabicCount.PAGES.afterPreposition((long) pages * copies));
+        if (copies > 1) {
+            text.append("\n(").append(ArabicCount.COPIES.count(copies)).append("، في كل نسخة ")
+                    .append(ArabicCount.LABELS.count(labelsPerCopy)).append(")");
+        }
+        if (firstPage > 0) text.append("\nالصفحات من ").append(firstPage).append(" إلى ").append(lastPage);
+        return text.append("\nالطابعة: ").append(printer).toString();
     }
 
     private static Throwable unwrap(Throwable throwable) {

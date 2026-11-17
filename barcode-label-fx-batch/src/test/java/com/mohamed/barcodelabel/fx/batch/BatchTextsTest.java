@@ -14,26 +14,10 @@ class BatchTextsTest {
     private static final ColumnMapping MAPPING = new ColumnMapping(Map.of(), null, 1, 20, 500);
 
     @Test
-    void countsFollowArabicNumberAgreement() {
-        assertEquals("ملصق واحد", BatchTexts.LABELS.count(1));
-        assertEquals("ملصقان", BatchTexts.LABELS.count(2));
-        assertEquals("3 ملصقات", BatchTexts.LABELS.count(3));
-        assertEquals("10 ملصقات", BatchTexts.LABELS.count(10));
-        assertEquals("11 ملصقاً", BatchTexts.LABELS.count(11));
-        assertEquals("99 ملصقاً", BatchTexts.LABELS.count(99));
-        assertEquals("100 ملصق", BatchTexts.LABELS.count(100));
-        assertEquals("102 ملصق", BatchTexts.LABELS.count(102));
-        assertEquals("105 ملصقات", BatchTexts.LABELS.count(105));
-        assertEquals("120 ملصقاً", BatchTexts.LABELS.count(120));
-        assertEquals("0 ملصقات", BatchTexts.LABELS.count(0));
-        assertEquals("صفان", BatchTexts.ROWS.count(2));
-        assertEquals("4 أعمدة", BatchTexts.COLUMNS.count(4));
-    }
-
-    @Test
     void summariesUseTheCountedNouns() {
         assertEquals("جاهز: سيُطبع 10 ملصقات من 4 صفوف", BatchTexts.ready(4, 10));
         assertEquals("جاهز: سيُطبع ملصق واحد من صف واحد", BatchTexts.ready(1, 1));
+        assertEquals("جاهز: سيُطبع ملصقان من صفين", BatchTexts.ready(2, 2));
         assertEquals("4 صفوف، 4 أعمدة — حقول القالب: 3 — الملف: products.csv", BatchTexts.fileSummary("products.csv", 4, 4, 3));
     }
 
