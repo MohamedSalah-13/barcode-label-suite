@@ -110,9 +110,13 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private void chooseOpen() {
         FileChooser chooser = templateChooser("فتح قالب ملصق");
         java.io.File selected = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow());
-        if (selected == null) return;
-        runIo("جارٍ فتح القالب...", () -> documents.open(selected.toPath()), template -> {
-            designer.setTemplate(template); currentTemplateFile.set(selected.toPath()); status.setText("تم فتح " + selected.getName());
+        if (selected != null) open(selected.toPath());
+    }
+
+    /** Opens a template file in the background, then shows it in the designer. */
+    void open(Path file) {
+        runIo("جارٍ فتح القالب...", () -> documents.open(file), template -> {
+            designer.setTemplate(template); currentTemplateFile.set(file); status.setText("تم فتح " + file.getFileName());
         });
     }
 
@@ -123,8 +127,13 @@ public final class BarcodeLabelWorkbench extends BorderPane {
             java.io.File selected = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow());
             if (selected == null) return; target = selected.toPath();
         }
-        Path finalTarget = target; LabelTemplate snapshot = getTemplate();
-        runIo("جارٍ حفظ القالب...", () -> { documents.save(finalTarget, snapshot); return finalTarget; }, path -> {
+        saveTo(target);
+    }
+
+    /** Saves the current template to a file in the background; later plain saves go to the same file. */
+    void saveTo(Path target) {
+        LabelTemplate snapshot = getTemplate();
+        runIo("جارٍ حفظ القالب...", () -> { documents.save(target, snapshot); return target; }, path -> {
             currentTemplateFile.set(path); status.setText("تم حفظ القالب في " + path.getFileName());
         });
     }
@@ -133,9 +142,14 @@ public final class BarcodeLabelWorkbench extends BorderPane {
         FileChooser chooser = new FileChooser(); chooser.setTitle("استيراد بيانات CSV");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
         java.io.File selected = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow());
-        if (selected == null) return;
-        runIo("جارٍ قراءة ملف البيانات...", () -> csv.read(selected.toPath()), value -> {
-            dataset.set(value); tabs.getSelectionModel().select(1); status.setText("تم استيراد " + value.rows().size() + " سجل من " + selected.getName());
+        if (selected != null) importCsv(selected.toPath());
+    }
+
+    /** Reads a CSV file in the background, then shows its rows on the data tab. */
+    void importCsv(Path file) {
+        runIo("جارٍ قراءة ملف البيانات...", () -> csv.read(file), value -> {
+            dataset.set(value); tabs.getSelectionModel().select(1);
+            status.setText("تم استيراد " + ArabicCount.RECORDS.count(value.rows().size()) + " من " + file.getFileName());
         });
     }
 
@@ -166,7 +180,7 @@ public final class BarcodeLabelWorkbench extends BorderPane {
             column.setPrefWidth(150); dataTable.getColumns().add(column);
         }
         dataTable.setItems(FXCollections.observableArrayList(value.rows()));
-        dataSummary.setText(value.rows().size() + " سجل — " + value.headers().size() + " عمود");
+        dataSummary.setText(ArabicCount.RECORDS.count(value.rows().size()) + " — " + ArabicCount.COLUMNS.count(value.headers().size()));
         syncPrintPane();
     }
 

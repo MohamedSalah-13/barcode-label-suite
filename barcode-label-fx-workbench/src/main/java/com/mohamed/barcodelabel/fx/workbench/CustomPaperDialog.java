@@ -84,13 +84,31 @@ final class CustomPaperDialog extends Dialog<PageDefinition> {
 
     private static double number(TextField field, String name) {
         try { return Double.parseDouble(field.getText().trim()); }
-        catch (NumberFormatException exception) { throw new IllegalArgumentException(name + " يجب أن يكون رقمًا صحيحًا"); }
+        catch (NumberFormatException exception) { throw new InvalidInput(name + " يجب أن يكون رقمًا صحيحًا"); }
     }
     private static int integer(TextField field, String name) {
         try { return Integer.parseInt(field.getText().trim()); }
-        catch (NumberFormatException exception) { throw new IllegalArgumentException(name + " يجب أن يكون عددًا صحيحًا"); }
+        catch (NumberFormatException exception) { throw new InvalidInput(name + " يجب أن يكون عددًا صحيحًا"); }
     }
-    private static String message(Throwable error) { return error.getMessage() == null ? "قيم الورق غير صالحة" : error.getMessage(); }
+    /**
+     * The field checks above already explain themselves in Arabic; the model's own checks are in English, so
+     * the common ones are translated and the rest are shown after an Arabic lead-in.
+     */
+    private static String message(Throwable error) {
+        String text = error.getMessage();
+        if (text == null) return "قيم الورق غير صالحة";
+        if (error instanceof InvalidInput) return text;
+        return switch (text) {
+            case "sheet layout does not fit inside the page margins" -> "الملصقات لا تتسع داخل هوامش الصفحة";
+            case "margins must leave a positive printable area" -> "الهوامش لا تترك مساحة للطباعة";
+            default -> "قيم الورق غير صالحة: " + text;
+        };
+    }
+
+    /** A field that does not hold a number, explained in Arabic. */
+    private static final class InvalidInput extends IllegalArgumentException {
+        InvalidInput(String message) { super(message); }
+    }
     private static TextField field(String value) { TextField field = new TextField(value); field.setPrefColumnCount(9); return field; }
     private static void add(GridPane grid, int row, String label, Node control) { grid.add(new Label(label), 0, row); grid.add(control, 1, row); }
 }
