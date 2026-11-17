@@ -33,43 +33,13 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Verify base modules
+      - name: Build and test all modules
         shell: pwsh
-        run: .\mvnw.cmd clean install
-
-      - name: Verify rendering modules
-        shell: pwsh
-        run: .\mvnw.cmd -f phase2-pom.xml clean install
-
-      - name: Install phase 3 parent descriptors
-        shell: pwsh
-        run: |
-          .\mvnw.cmd -N -f phase3-pom.xml install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\mvnw.cmd -N -f phase3-build-pom.xml install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Verify printing and designer modules
-        shell: pwsh
-        run: |
-          .\mvnw.cmd -f phase3-final-pom.xml clean install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\mvnw.cmd -f phase4-final-pom.xml clean install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Verify workflow and final application
-        shell: pwsh
-        run: |
-          .\mvnw.cmd -f phase5-pom.xml -pl barcode-label-workflow -am clean install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\mvnw.cmd -f phase5-fixed-pom.xml clean install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\mvnw.cmd -f phase6-final-pom.xml clean install
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        run: .\mvnw.cmd -B clean install
 
       - name: Package Windows application image
         shell: pwsh
-        run: .\package-phase6.ps1 -SkipBuild
+        run: .\package.ps1 -SkipBuild
 
       - name: Upload application and coverage reports
         uses: actions/upload-artifact@v4
@@ -79,7 +49,7 @@ jobs:
             dist/BarcodeLabelSuite
             **/target/site/jacoco
 
-  # The same verification on Linux, so the library is known to build outside Windows. The JavaFX UI
+  # The same build on Linux, so the library is known to build outside Windows. The JavaFX UI
   # tests need a display, which xvfb provides on the headless runner.
   verify-linux:
     name: verify (linux)
@@ -98,5 +68,5 @@ jobs:
       - name: Install a virtual display
         run: command -v xvfb-run || (sudo apt-get update && sudo apt-get install -y xvfb)
 
-      - name: Verify all phases
-        run: xvfb-run -a ./verify-phase6.sh
+      - name: Build and test all modules
+        run: xvfb-run -a ./mvnw -B clean install
