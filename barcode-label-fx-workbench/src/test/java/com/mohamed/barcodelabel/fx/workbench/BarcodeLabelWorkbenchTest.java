@@ -32,6 +32,7 @@ import static com.mohamed.barcodelabel.fx.workbench.FxSupport.await;
 import static com.mohamed.barcodelabel.fx.workbench.FxSupport.onFx;
 import static com.mohamed.barcodelabel.fx.workbench.FxSupport.runFx;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BarcodeLabelWorkbenchTest {
@@ -63,6 +64,59 @@ class BarcodeLabelWorkbenchTest {
             assertEquals("تم تطبيق المقاس: " + roll.displayName(), status(workbench).getText());
             assertEquals(workbench.getTemplate(), workbench.printPane().getTemplate(), "the print pane follows");
         });
+    }
+
+    @Test
+    void aNamedSizeIsAppliedListedSavedAndDeleted() {
+        BarcodeLabelWorkbench workbench = onFx(() -> new BarcodeLabelWorkbench(template("Products")));
+        List<List<PaperPreset>> saves = new java.util.ArrayList<>();
+        CustomPaperStore store = new CustomPaperStore() {
+            @Override public List<PaperPreset> load() { return saves.isEmpty() ? List.of() : saves.getLast(); }
+            @Override public void save(List<PaperPreset> presets) { saves.add(List.copyOf(presets)); }
+        };
+        PaperPreset shop = roll("رول المحل", 50, 30);
+        runFx(() -> {
+            workbench.setCustomPaperStore(store);
+            Button delete = button(workbench, "حذف المقاس");
+            assertTrue(delete.isDisabled(), "nothing to delete yet");
+
+            workbench.saveCustomPaper(shop);
+            assertEquals(List.of(shop), saves.getLast());
+            assertEquals(shop, presets(workbench).getValue(), "the new size is selected");
+            assertEquals(shop.displayName(), presets(workbench).getConverter().toString(shop));
+            assertEquals(shop.page(), workbench.getTemplate().page());
+            assertEquals("تم حفظ المقاس «رول المحل» وتطبيقه، وستجده في قائمة المقاسات", status(workbench).getText());
+            assertFalse(delete.isDisabled());
+
+            PaperPreset wider = roll("رول المحل", 58, 40);
+            workbench.saveCustomPaper(wider);
+            assertEquals(List.of(wider), saves.getLast(), "the same name replaces the size");
+            assertEquals(new PaperPresetRegistry().all().size() + 1, presets(workbench).getItems().size());
+
+            presets(workbench).setValue(presets(workbench).getItems().getFirst());
+            assertTrue(delete.isDisabled(), "a built-in size cannot be deleted");
+            presets(workbench).setValue(wider);
+            delete.fire();
+            assertEquals(List.of(), saves.getLast());
+            assertEquals(new PaperPresetRegistry().all().size(), presets(workbench).getItems().size());
+            assertEquals("تم حذف المقاس «رول المحل» من القائمة", status(workbench).getText());
+            assertEquals(wider.page(), workbench.getTemplate().page(), "the label keeps its page");
+        });
+
+        BarcodeLabelWorkbench restarted = onFx(() -> new BarcodeLabelWorkbench(template("Products")));
+        saves.add(List.of(shop));
+        runFx(() -> {
+            restarted.setCustomPaperStore(store);
+            assertEquals(List.of(shop), restarted.savedPaperSizes());
+            assertTrue(presets(restarted).getItems().contains(shop), "a saved size is listed on the next run");
+        });
+    }
+
+    private static PaperPreset roll(String name, double width, double height) {
+        return new PaperPreset("custom:" + name, name, "custom", new com.mohamed.barcodelabel.model.page.PageDefinition(
+                PageMode.ROLL, new com.mohamed.barcodelabel.model.geometry.DimensionsMm(width, height),
+                com.mohamed.barcodelabel.model.geometry.InsetsMm.ZERO,
+                com.mohamed.barcodelabel.model.page.PageOrientation.PORTRAIT, null));
     }
 
     @Test

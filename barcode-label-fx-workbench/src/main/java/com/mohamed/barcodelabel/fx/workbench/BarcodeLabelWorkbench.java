@@ -55,6 +55,9 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private final ProgressIndicator busy = new ProgressIndicator();
     private final TabPane tabs = new TabPane();
     private final ComboBox<PaperPreset> presetBox = new ComboBox<>();
+    private final Button deletePaper = new Button();
+    private CustomPaperStore customPapers = CustomPaperStore.inMemory();
+    private List<PaperPreset> savedPapers = List.of();
     private final Button openButton = iconButton(Feather.FOLDER);
     private final Button saveButton = iconButton(Feather.SAVE);
     private final Button saveAsButton = iconButton(Feather.COPY);
@@ -99,8 +102,25 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     public UniversalPrintPane printPane() { return printPane; }
     public PaperPresetRegistry paperPresets() { return paperPresets; }
 
+    /**
+     * Where the sizes named in the custom size dialog are kept. The workbench lists the sizes already saved there
+     * after the built-in ones, and saves there each size the user names, changes or deletes. Without a store they
+     * last only while the application runs.
+     */
+    public void setCustomPaperStore(CustomPaperStore store) {
+        customPapers = java.util.Objects.requireNonNull(store, "store");
+        savedPapers = List.copyOf(store.load());
+        refreshPresets(presetBox.getValue());
+    }
+
+    /** The named sizes, in the order they were first saved. */
+    public List<PaperPreset> savedPaperSizes() { return savedPapers; }
+
     private HBox toolbar() {
-        presetBox.setItems(FXCollections.observableArrayList(paperPresets.all()));
+        refreshPresets(null);
+        presetBox.valueProperty().addListener((obs, oldValue, value) -> deletePaper.setDisable(!CustomPaperDialog.isCustom(value)));
+        deletePaper.setText(t("workbench.deletePaper")); deletePaper.setDisable(true);
+        deletePaper.setOnAction(event -> deletePaper());
         presetBox.setConverter(new StringConverter<>() {
             @Override public String toString(PaperPreset preset) { return preset == null ? "" : presetName(preset); }
             @Override public PaperPreset fromString(String text) { return null; }
@@ -110,7 +130,7 @@ public final class BarcodeLabelWorkbench extends BorderPane {
         openButton.setOnAction(event -> chooseOpen()); saveButton.setOnAction(event -> save(false)); saveAsButton.setOnAction(event -> save(true));
         importButton.setOnAction(event -> chooseCsv()); applyPreset.setOnAction(event -> applyPreset()); customPaper.setOnAction(event -> customPaper());
         HBox bar = new HBox(8, openButton, saveButton, saveAsButton, new Separator(), presetBox, applyPreset, customPaper,
-                new Separator(), importButton);
+                deletePaper, new Separator(), importButton);
         bar.setAlignment(Pos.CENTER_LEFT); bar.setPadding(new Insets(10)); bar.getStyleClass().add("workbench-toolbar"); return bar;
     }
 
@@ -181,9 +201,49 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     }
 
     private void customPaper() {
-        new CustomPaperDialog(texts).showAndWait().ifPresent(page -> {
-            designer.setTemplate(documents.withPage(getTemplate(), page)); status.setText(t("workbench.customApplied"));
-        });
+        // A saved size that is selected opens filled in, to be changed; saving it under its name replaces it.
+        PaperPreset selected = CustomPaperDialog.isCustom(presetBox.getValue()) ? presetBox.getValue() : null;
+        new CustomPaperDialog(texts, selected).showAndWait().ifPresent(this::saveCustomPaper);
+    }
+
+    /** Adds the size to the paper list, or replaces the one with its name, saves the list and applies the size. */
+    void saveCustomPaper(PaperPreset preset) {
+        List<PaperPreset> next = new java.util.ArrayList<>(savedPapers);
+        int existing = indexOf(next, preset.id());
+        if (existing >= 0) next.set(existing, preset); else next.add(preset);
+        storePapers(next);
+        refreshPresets(preset);
+        designer.setTemplate(documents.withPage(getTemplate(), preset.page()));
+        status.setText(t("workbench.customSaved", preset.displayName()));
+    }
+
+    /** Removes the selected saved size from the list and the store; the label keeps its page. */
+    void deletePaper() {
+        PaperPreset selected = presetBox.getValue();
+        if (!CustomPaperDialog.isCustom(selected)) return;
+        List<PaperPreset> next = new java.util.ArrayList<>(savedPapers);
+        next.remove(indexOf(next, selected.id()));
+        storePapers(next);
+        refreshPresets(null);
+        status.setText(t("workbench.paperDeleted", selected.displayName()));
+    }
+
+    private void storePapers(List<PaperPreset> next) {
+        savedPapers = List.copyOf(next);
+        customPapers.save(savedPapers);
+    }
+
+    /** The built-in sizes, then the saved ones; {@code selected} stays selected if it is still in the list. */
+    private void refreshPresets(PaperPreset selected) {
+        List<PaperPreset> all = new java.util.ArrayList<>(paperPresets.all());
+        all.addAll(savedPapers);
+        presetBox.setItems(FXCollections.observableArrayList(all));
+        presetBox.setValue(selected == null ? null : all.stream().filter(p -> p.id().equals(selected.id())).findFirst().orElse(null));
+    }
+
+    private static int indexOf(List<PaperPreset> presets, String id) {
+        for (int i = 0; i < presets.size(); i++) if (presets.get(i).id().equals(id)) return i;
+        return -1;
     }
 
     private void updateDataset(CsvDataset value) {

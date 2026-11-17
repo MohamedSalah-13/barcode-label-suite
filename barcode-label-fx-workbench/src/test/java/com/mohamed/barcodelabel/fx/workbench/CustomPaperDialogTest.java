@@ -2,6 +2,7 @@ package com.mohamed.barcodelabel.fx.workbench;
 
 import com.mohamed.barcodelabel.model.page.PageDefinition;
 import com.mohamed.barcodelabel.model.page.PageMode;
+import com.mohamed.barcodelabel.workflow.paper.PaperPreset;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -36,6 +37,45 @@ class CustomPaperDialogTest {
             assertEquals(21, page.sheetLayout().labelsPerPage());
             assertEquals(63.5, page.labelSize().width(), 1e-9);
             assertNull(dialog.getResultConverter().call(ButtonType.CANCEL), "cancel gives no paper");
+        });
+    }
+
+    @Test
+    void theSizeIsSavedUnderItsNameOrOneMadeFromTheLabelSize() {
+        runFx(() -> {
+            CustomPaperDialog dialog = new CustomPaperDialog();
+            PaperPreset unnamed = preset(dialog);
+            assertEquals("مقاس مخصص — 63.5 × 38.1 مم", unnamed.displayName());
+            assertTrue(CustomPaperDialog.isCustom(unnamed));
+
+            field(dialog, "الاسم").setText("  رول المحل  ");
+            mode(dialog).setValue(PageMode.ROLL);
+            field(dialog, "عرض الصفحة").setText("50");
+            field(dialog, "ارتفاع الصفحة").setText("30");
+            PaperPreset named = preset(dialog);
+            assertEquals("رول المحل", named.displayName());
+            assertEquals("custom:رول المحل", named.id());
+            assertEquals(CustomPaperDialog.CATEGORY, named.category());
+            assertFalse(CustomPaperDialog.isCustom(new com.mohamed.barcodelabel.workflow.paper.PaperPresetRegistry().all().getFirst()));
+        });
+    }
+
+    @Test
+    void aSavedSizeOpensFilledInToBeChanged() {
+        runFx(() -> {
+            CustomPaperDialog first = new CustomPaperDialog();
+            field(first, "الاسم").setText("ورق المخزن");
+            field(first, "عدد الأعمدة").setText("2");
+            field(first, "عرض الملصق").setText("98");
+            PaperPreset saved = preset(first);
+
+            CustomPaperDialog again = new CustomPaperDialog(
+                    com.mohamed.barcodelabel.fx.i18n.UiTexts.load(CustomPaperDialog.class, "messages",
+                            com.mohamed.barcodelabel.fx.i18n.UiLanguage.ARABIC), saved);
+            assertEquals("ورق المخزن", field(again, "الاسم").getText());
+            assertEquals("2", field(again, "عدد الأعمدة").getText());
+            assertEquals("98", field(again, "عرض الملصق").getText());
+            assertEquals(saved, preset(again), "unchanged, it is the same size");
         });
     }
 
@@ -115,6 +155,10 @@ class CustomPaperDialogTest {
     }
 
     private static PageDefinition applied(CustomPaperDialog dialog) {
+        return preset(dialog).page();
+    }
+
+    private static PaperPreset preset(CustomPaperDialog dialog) {
         return dialog.getResultConverter().call(applyType(dialog));
     }
 

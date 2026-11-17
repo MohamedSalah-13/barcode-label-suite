@@ -13,6 +13,7 @@ import com.mohamed.barcodelabel.model.element.Symbology;
 import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
+import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -353,6 +354,90 @@ class LabelDesignerPaneTest {
         runFx(() -> mouse(empty.editorPane(), MouseEvent.MOUSE_PRESSED, 1, 1, false));
     }
 
+    @Test
+    void aPressInAPropertyFieldLeavesItTheFocusToTypeInto() {
+        VisualLabelDesigner designer = onFx(() -> new VisualLabelDesigner(FxTestSupport.twoTextTemplate()));
+        javafx.scene.Scene scene = onFx(() -> {
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setScene(new javafx.scene.Scene(designer, 1300, 700));
+            stage.show();
+            return stage.getScene();
+        });
+        LabelDesignerPane pane = designer.editorPane();
+        TextField content = onFx(() -> {
+            button(pane, "+ نص").fire();
+            TextField field = field(pane, "النص");
+            field.requestFocus();
+            press(field);
+            return field;
+        });
+        // The designer's own refocus runs later on the FX thread; this check runs after it.
+        runFx(() -> assertSame(content, scene.getFocusOwner(), "the field keeps the focus after the press"));
+
+        runFx(() -> press(canvas(pane).lookup(".selected-element")));
+        runFx(() -> {
+            assertTrue(scene.getFocusOwner() != null && scene.getFocusOwner().getStyleClass().contains("selected-element"),
+                    "a press on the label gives the selected element the focus back, for the arrow keys");
+            scene.getWindow().hide();
+        });
+    }
+
+    @Test
+    void onlyFieldsAndBoxesOneTypesIntoKeepTheFocus() {
+        runFx(() -> {
+            TextField field = new TextField();
+            HBox box = new HBox(field);
+            assertTrue(VisualLabelDesigner.isTypedInto(field));
+            assertTrue(VisualLabelDesigner.isTypedInto(new ComboBox<String>()));
+            assertTrue(VisualLabelDesigner.isTypedInto(new ColorPicker()));
+            assertFalse(VisualLabelDesigner.isTypedInto(box));
+            assertFalse(VisualLabelDesigner.isTypedInto(new Button("x")));
+            assertFalse(VisualLabelDesigner.isTypedInto(null));
+        });
+    }
+
+    private static void press(Node target) {
+        Event.fireEvent(target, new MouseEvent(MouseEvent.MOUSE_PRESSED, 1, 1, 1, 1,
+                javafx.scene.input.MouseButton.PRIMARY, 1, false, false, false, false, true, false, false,
+                false, false, false, new javafx.scene.input.PickResult(target, 1, 1)));
+    }
+
+    @Test
+    void theSidePanelsHideAndShowFromTheStatusBar() {
+        LabelDesignerPane pane = pane();
+        runFx(() -> {
+            assertEquals(3, pane.bodyItems().size(), "elements, workspace and properties");
+            assertSame(pane.workspace(), pane.bodyItems().get(1));
+
+            checkBox(pane, "لوحة العناصر").setSelected(false);
+            assertEquals(2, pane.bodyItems().size());
+            assertSame(pane.workspace(), pane.bodyItems().getFirst());
+            checkBox(pane, "لوحة الخصائص").setSelected(false);
+            assertEquals(List.of(pane.workspace()), pane.bodyItems());
+
+            checkBox(pane, "لوحة العناصر").setSelected(true);
+            assertEquals(2, pane.bodyItems().size());
+            assertSame(pane.workspace(), pane.bodyItems().getLast());
+
+            pane.setTemplate(FxTestSupport.twoTextTemplate());
+            assertSame(pane.workspace(), pane.bodyItems().getLast(), "a new template keeps the panels as they are");
+        });
+    }
+
+    @Test
+    void aDoubleClickOnAnElementShowsTheHiddenPropertiesPanel() {
+        LabelDesignerPane pane = pane();
+        runFx(() -> {
+            checkBox(pane, "لوحة الخصائص").setSelected(false);
+            button(pane, "+ نص").fire();
+            Event.fireEvent(canvas(pane), new MouseEvent(MouseEvent.MOUSE_CLICKED, 1, 1, 1, 1,
+                    javafx.scene.input.MouseButton.PRIMARY, 2, false, false, false, false, false, false, false,
+                    false, false, false, null));
+            assertTrue(checkBox(pane, "لوحة الخصائص").isSelected());
+            assertEquals(3, pane.bodyItems().size());
+        });
+    }
+
     private static LabelDesignerPane pane() {
         return onFx(() -> new LabelDesignerPane(FxTestSupport.twoTextTemplate()));
     }
@@ -371,6 +456,7 @@ class LabelDesignerPaneTest {
     private static Stream<Node> all(Node root) {
         Stream<Node> children = Stream.empty();
         if (root instanceof ToolBar toolBar) children = toolBar.getItems().stream();
+        else if (root instanceof javafx.scene.control.SplitPane split) children = split.getItems().stream();
         else if (root instanceof ScrollPane scroll && scroll.getContent() != null) children = Stream.of(scroll.getContent());
         else if (root instanceof Parent parent) children = parent.getChildrenUnmodifiable().stream();
         return Stream.concat(Stream.of(root), children.flatMap(LabelDesignerPaneTest::all));
@@ -384,7 +470,7 @@ class LabelDesignerPaneTest {
     }
 
     private static ToggleButton toggle(LabelDesignerPane pane, String text) {
-        return all(pane.getRight()).filter(node -> node instanceof ToggleButton toggle && toggle.getText().equals(text))
+        return all(pane.propertiesPanel()).filter(node -> node instanceof ToggleButton toggle && toggle.getText().equals(text))
                 .map(ToggleButton.class::cast).findFirst()
                 .orElseThrow(() -> new AssertionError("no toggle " + text));
     }
@@ -397,7 +483,7 @@ class LabelDesignerPaneTest {
 
     /** The control in the properties grid row labelled {@code label}. */
     private static Node control(LabelDesignerPane pane, String label) {
-        Label caption = all(pane.getRight())
+        Label caption = all(pane.propertiesPanel())
                 .filter(node -> node instanceof Label l && l.getText().equals(label))
                 .map(Label.class::cast).findFirst()
                 .orElseThrow(() -> new AssertionError("no property " + label));
@@ -419,7 +505,7 @@ class LabelDesignerPaneTest {
 
     /** The properties panel's second child names the selected element. */
     private static Label title(LabelDesignerPane pane) {
-        return (Label) ((javafx.scene.layout.VBox) pane.getRight()).getChildren().get(1);
+        return (Label) pane.propertiesPanel().getChildren().get(1);
     }
 
     private static DesignerCanvas canvas(LabelDesignerPane pane) {

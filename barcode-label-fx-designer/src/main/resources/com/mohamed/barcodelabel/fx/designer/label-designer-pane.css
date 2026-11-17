@@ -1,8 +1,10 @@
 .label-designer-pane { -fx-background-color: #e2e8f0; -fx-font-family: "Segoe UI", "Arial"; }
 .tool-bar { -fx-background-color: white; -fx-padding: 8; -fx-border-color: #cbd5e1; -fx-border-width: 0 0 1 0; }
 .designer-toolbox, .designer-properties { -fx-background-color: white; -fx-padding: 16; -fx-border-color: #cbd5e1; }
-.designer-toolbox { -fx-border-width: 0 0 0 1; }
-.designer-properties { -fx-border-width: 0 1 0 0; }
+.designer-toolbox, .designer-properties { -fx-border-width: 0; }
+.designer-body { -fx-padding: 0; -fx-background-insets: 0; -fx-background-color: #cbd5e1; }
+.designer-body > .split-pane-divider { -fx-padding: 0 2; -fx-background-color: #cbd5e1; }
+.designer-properties-scroll, .designer-properties-scroll > .viewport { -fx-background-color: white; -fx-background-insets: 0; -fx-padding: 0; }
 .panel-title { -fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #0f172a; }
 .designer-workspace { -fx-background: #cbd5e1; -fx-padding: 32; }
 .designer-canvas { -fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(15,23,42,0.22), 20, 0.15, 0, 7); }

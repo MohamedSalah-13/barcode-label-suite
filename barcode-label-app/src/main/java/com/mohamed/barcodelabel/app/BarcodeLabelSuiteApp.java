@@ -1,6 +1,7 @@
 package com.mohamed.barcodelabel.app;
 
 import com.mohamed.barcodelabel.fx.batch.BatchProductionWorkbench;
+import com.mohamed.barcodelabel.fx.workbench.CustomPaperStore;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import com.mohamed.barcodelabel.model.LabelTemplate;
@@ -24,6 +25,7 @@ import javafx.stage.Stage;
 
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.prefs.Preferences;
 
 /**
  * The desktop application: the production workbench in the user's language, with a language menu at the end of
@@ -31,6 +33,8 @@ import java.util.function.Predicate;
  */
 public final class BarcodeLabelSuiteApp extends Application {
     private final LanguageSetting languageSetting;
+    /** The paper sizes the user named, kept between runs. */
+    private final CustomPaperStore paperSizes;
     /** Asks whether to switch language while CSV data is loaded, which the switch discards. */
     private final Predicate<UiTexts> confirmSwitch;
     private Stage stage;
@@ -41,12 +45,18 @@ public final class BarcodeLabelSuiteApp extends Application {
     private ComboBox<UiLanguage> languagePicker;
 
     public BarcodeLabelSuiteApp() {
-        this(LanguageSetting.preferences(), BarcodeLabelSuiteApp::askToSwitch);
+        this(LanguageSetting.preferences(), BarcodeLabelSuiteApp::askToSwitch,
+                CustomPaperStore.preferences(Preferences.userNodeForPackage(BarcodeLabelSuiteApp.class).node("paperSizes")));
     }
 
     BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch) {
+        this(languageSetting, confirmSwitch, CustomPaperStore.inMemory());
+    }
+
+    BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch, CustomPaperStore paperSizes) {
         this.languageSetting = languageSetting;
         this.confirmSwitch = confirmSwitch;
+        this.paperSizes = paperSizes;
     }
 
     @Override public void start(Stage stage) {
@@ -84,6 +94,7 @@ public final class BarcodeLabelSuiteApp extends Application {
     private Parent root(LabelTemplate template) {
         texts = UiTexts.load(BarcodeLabelSuiteApp.class, "messages", language);
         workbench = new BatchProductionWorkbench(template, language);
+        workbench.labelWorkbench().setCustomPaperStore(paperSizes);
         languagePicker = new ComboBox<>();
         languagePicker.getItems().setAll(UiLanguage.values());
         languagePicker.setValue(language);

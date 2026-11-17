@@ -8,6 +8,7 @@ import com.mohamed.barcodelabel.model.page.PageDefinition;
 import com.mohamed.barcodelabel.model.page.PageMode;
 import com.mohamed.barcodelabel.model.page.PageOrientation;
 import com.mohamed.barcodelabel.model.page.SheetLayout;
+import com.mohamed.barcodelabel.workflow.paper.PaperPreset;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBar;
@@ -19,8 +20,18 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.util.StringConverter;
 
-final class CustomPaperDialog extends Dialog<PageDefinition> {
+import java.math.BigDecimal;
+
+/**
+ * Asks for a paper size and names it. The result is a preset the workbench adds to its paper list and saves; a
+ * size given no name is named from its label size.
+ */
+final class CustomPaperDialog extends Dialog<PaperPreset> {
+    /** The category of the sizes made here; their ids start with {@link #ID_PREFIX}. */
+    static final String CATEGORY = "custom";
+    static final String ID_PREFIX = "custom:";
     private final UiTexts texts;
+    private final TextField name = new TextField();
     private final ComboBox<PageMode> mode = new ComboBox<>();
     private final TextField pageWidth = field("210");
     private final TextField pageHeight = field("297");
@@ -41,6 +52,11 @@ final class CustomPaperDialog extends Dialog<PageDefinition> {
     }
 
     CustomPaperDialog(UiTexts texts) {
+        this(texts, null);
+    }
+
+    /** A dialog filled in from {@code initial}, a saved size to change, or with the defaults when it is null. */
+    CustomPaperDialog(UiTexts texts, PaperPreset initial) {
         this.texts = texts;
         getDialogPane().setNodeOrientation(texts.language().orientation());
         setTitle(t("custom.title"));
@@ -54,6 +70,9 @@ final class CustomPaperDialog extends Dialog<PageDefinition> {
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(8); grid.setPadding(new Insets(8));
         int row = 0;
+        name.setPromptText(t("custom.namePrompt"));
+        name.setPrefColumnCount(18);
+        add(grid, row++, t("custom.name"), name);
         add(grid, row++, t("custom.mode"), mode);
         add(grid, row++, t("custom.pageWidth"), pageWidth); add(grid, row++, t("custom.pageHeight"), pageHeight);
         add(grid, row++, t("custom.top"), top); add(grid, row++, t("custom.right"), right);
@@ -73,8 +92,40 @@ final class CustomPaperDialog extends Dialog<PageDefinition> {
         });
         mode.valueProperty().addListener((obs, oldValue, value) -> updateMode());
         updateMode();
-        setResultConverter(button -> button == apply ? build() : null);
+        if (initial != null) fill(initial);
+        setResultConverter(button -> button == apply ? preset() : null);
     }
+
+    /** True for a size made in this dialog, which can be changed or deleted, unlike the built-in ones. */
+    static boolean isCustom(PaperPreset preset) {
+        return preset != null && preset.id().startsWith(ID_PREFIX);
+    }
+
+    private PaperPreset preset() {
+        PageDefinition page = build();
+        String typed = name.getText() == null ? "" : name.getText().strip();
+        String displayName = typed.isEmpty()
+                ? t("custom.autoName", mm(page.labelSize().width()), mm(page.labelSize().height()))
+                : typed;
+        return new PaperPreset(ID_PREFIX + displayName, displayName, CATEGORY, page);
+    }
+
+    private void fill(PaperPreset preset) {
+        PageDefinition page = preset.page();
+        name.setText(preset.displayName());
+        mode.setValue(page.mode());
+        pageWidth.setText(mm(page.pageSize().width())); pageHeight.setText(mm(page.pageSize().height()));
+        top.setText(mm(page.margins().top())); right.setText(mm(page.margins().right()));
+        bottom.setText(mm(page.margins().bottom())); left.setText(mm(page.margins().left()));
+        SheetLayout layout = page.sheetLayout();
+        if (layout != null) {
+            columns.setText(Integer.toString(layout.columns())); rows.setText(Integer.toString(layout.rows()));
+            labelWidth.setText(mm(layout.labelSize().width())); labelHeight.setText(mm(layout.labelSize().height()));
+            horizontalGap.setText(mm(layout.horizontalGap())); verticalGap.setText(mm(layout.verticalGap()));
+        }
+    }
+
+    private static String mm(double value) { return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString(); }
 
     private PageDefinition build() {
         var margins = new InsetsMm(number(top, "custom.top"), number(right, "custom.right"),

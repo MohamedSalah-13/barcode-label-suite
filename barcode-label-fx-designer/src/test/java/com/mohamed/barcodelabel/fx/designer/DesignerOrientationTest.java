@@ -75,7 +75,7 @@ class DesignerOrientationTest {
     @Test
     void theLabelSitsAtTheRightOfTheWorkspaceLikeTheRestOfTheRightToLeftUi() {
         runFx(() -> {
-            Bounds workspace = sceneBounds(pane.getCenter());
+            Bounds workspace = sceneBounds(pane.workspace());
             Bounds label = sceneBounds(canvas());
             assertTrue(label.getMinX() - workspace.getMinX() > workspace.getMaxX() - label.getMaxX(),
                     "the label is closer to the workspace's right edge: " + label + " in " + workspace);
@@ -88,6 +88,20 @@ class DesignerOrientationTest {
             Bounds zoomed = sceneBounds(canvas());
             assertEquals(label.getWidth() * 2, zoomed.getWidth(), 0.5);
             assertEquals(32, workspace.getMaxX() - zoomed.getMaxX(), 3, "it stays on the right when zoomed");
+        });
+    }
+
+    @Test
+    void theElementsPanelIsOnTheRightAndThePropertiesOnTheLeftAtTheirWidths() {
+        runFx(() -> {
+            var items = pane.bodyItems();
+            Bounds elements = sceneBounds(items.getFirst());
+            Bounds workspace = sceneBounds(pane.workspace());
+            Bounds properties = sceneBounds(items.getLast());
+            assertTrue(elements.getMinX() > workspace.getMaxX() - 1, "elements on the right: " + elements);
+            assertTrue(properties.getMaxX() < workspace.getMinX() + 1, "properties on the left: " + properties);
+            assertEquals(190, elements.getWidth(), 8);
+            assertEquals(300, properties.getWidth(), 8);
         });
     }
 

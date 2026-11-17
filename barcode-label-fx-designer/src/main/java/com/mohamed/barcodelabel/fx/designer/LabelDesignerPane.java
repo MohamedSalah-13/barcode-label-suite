@@ -34,6 +34,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
@@ -88,9 +89,22 @@ public final class LabelDesignerPane extends BorderPane {
     private final Button undoButton = new Button();
     private final Button redoButton = new Button();
     private final Label status = new Label();
+    // The elements and properties panels sit beside the label in a split pane: their dividers resize them, and the
+    // two check boxes in the status bar hide or show them. Each keeps its width while hidden and when the window
+    // is resized; the label's workspace takes the rest.
+    private final SplitPane body = new SplitPane();
+    private final CheckBox showElements = new CheckBox();
+    private final CheckBox showProperties = new CheckBox();
+    private VBox toolbox;
+    private ScrollPane propertiesScroll;
+    private double toolboxWidth = 190;
+    private double propertiesWidth = 300;
+    private boolean placingPanels;
+    // One workspace for the pane's lifetime: a new template only replaces the canvas inside it, so the split pane
+    // and its dividers are left alone.
+    private final ScrollPane workspace = new ScrollPane();
     private TemplateEditSession session;
     private DesignerCanvas canvas;
-    private ScrollPane workspace;
     private boolean refreshingProperties;
 
     /** An Arabic designer for a new, empty A4 label. */
@@ -129,8 +143,8 @@ public final class LabelDesignerPane extends BorderPane {
         });
         getStyleClass().add("label-designer-pane");
         setTop(createToolbar());
-        setLeft(createToolbox());
-        setRight(createPropertiesPanel());
+        createSidePanels();
+        setCenter(body);
         setBottom(createStatusBar());
         setTemplate(initialTemplate);
         loadStylesheet();
@@ -146,14 +160,12 @@ public final class LabelDesignerPane extends BorderPane {
         // The canvas is left to right; the holder around it inherits this pane's orientation, so in Arabic the
         // workspace places the label on its right, like the rest of the right-to-left UI. A layout pane, not a
         // Group: a Group's size would include the canvas's drop shadow and push the label off the padding.
-        workspace = new ScrollPane(new StackPane(canvas));
-        workspace.getStyleClass().add("designer-workspace");
-        workspace.setPannable(true);
-        setCenter(workspace);
+        workspace.setContent(new StackPane(canvas));
         // A double click on an element jumps to the field that edits its text or barcode data. A filter, because the
         // canvas consumes the element's mouse events; it runs after the press has already selected the element.
         canvas.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
             if (event.getClickCount() == 2 && !contentField.isDisabled()) {
+                showProperties.setSelected(true);
                 contentField.requestFocus();
                 contentField.selectAll();
             }
@@ -169,6 +181,81 @@ public final class LabelDesignerPane extends BorderPane {
         template.set(value);
         updateHistoryButtons();
         refreshProperties();
+    }
+
+    /** The panel that edits the selected element, inside its scroll pane. */
+    VBox propertiesPanel() { return propertiesPanel; }
+
+    /** The scroll pane around the label being designed. */
+    ScrollPane workspace() { return workspace; }
+
+    /** The split pane's items, in order: the elements panel, the workspace and the properties panel, when shown. */
+    List<javafx.scene.Node> bodyItems() { return List.copyOf(body.getItems()); }
+
+    private void createSidePanels() {
+        workspace.getStyleClass().add("designer-workspace");
+        workspace.setPannable(true);
+        workspace.setMinWidth(160);
+        toolbox = createToolbox();
+        toolbox.setMinWidth(120);
+        toolbox.setMaxWidth(500);
+        propertiesScroll = new ScrollPane(createPropertiesPanel());
+        propertiesScroll.setFitToWidth(true);
+        propertiesScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        propertiesScroll.getStyleClass().add("designer-properties-scroll");
+        propertiesScroll.setMinWidth(200);
+        propertiesScroll.setMaxWidth(700);
+        SplitPane.setResizableWithParent(toolbox, false);
+        SplitPane.setResizableWithParent(propertiesScroll, false);
+        body.getStyleClass().add("designer-body");
+        // A dragged divider is remembered, so hiding and showing a panel brings it back at the width it had.
+        toolbox.widthProperty().addListener((observable, oldValue, width) -> {
+            if (!placingPanels && body.getItems().contains(toolbox) && width.doubleValue() > 0) toolboxWidth = width.doubleValue();
+        });
+        propertiesScroll.widthProperty().addListener((observable, oldValue, width) -> {
+            if (!placingPanels && body.getItems().contains(propertiesScroll) && width.doubleValue() > 0) propertiesWidth = width.doubleValue();
+        });
+        body.widthProperty().addListener((observable, oldValue, width) -> {
+            if (oldValue.doubleValue() <= 0 && width.doubleValue() > 0) placeDividers();
+        });
+        showElements.setText(t("designer.showElements"));
+        showProperties.setText(t("designer.showProperties"));
+        showElements.setSelected(true);
+        showProperties.setSelected(true);
+        showElements.selectedProperty().addListener((observable, oldValue, shown) -> layoutBody());
+        showProperties.selectedProperty().addListener((observable, oldValue, shown) -> layoutBody());
+        layoutBody();
+    }
+
+    /** Puts the shown panels and the workspace into the split pane, then the dividers at the panels' widths. */
+    private void layoutBody() {
+        placingPanels = true;
+        try {
+            List<javafx.scene.Node> items = new java.util.ArrayList<>();
+            if (showElements.isSelected()) items.add(toolbox);
+            items.add(workspace);
+            if (showProperties.isSelected()) items.add(propertiesScroll);
+            body.getItems().setAll(items);
+            placeDividers();
+        } finally {
+            placingPanels = false;
+        }
+    }
+
+    /**
+     * Sets the dividers from the panels' widths in pixels. The positions are fractions of the split pane's width,
+     * so this waits for its first layout; in Arabic the pane is mirrored and the fractions count from the right.
+     */
+    private void placeDividers() {
+        double width = body.getWidth();
+        if (width <= 0) return;
+        boolean elements = body.getItems().contains(toolbox);
+        boolean properties = body.getItems().contains(propertiesScroll);
+        double start = Math.min(toolboxWidth, width / 3) / width;
+        double end = 1 - Math.min(propertiesWidth, width / 2) / width;
+        if (elements && properties) body.setDividerPositions(start, Math.max(start, end));
+        else if (elements) body.setDividerPositions(start);
+        else if (properties) body.setDividerPositions(end);
     }
 
     public void save(Path path) throws IOException {
@@ -307,7 +394,8 @@ public final class LabelDesignerPane extends BorderPane {
         Slider zoom = new Slider(0.5, 2.5, 1);
         zoom.setPrefWidth(180);
         zoom.valueProperty().addListener((observable, oldValue, newValue) -> canvas.setZoom(newValue.doubleValue()));
-        HBox bar = new HBox(12, status, new Separator(), snap, new Label(t("designer.zoom")), zoom);
+        HBox bar = new HBox(12, status, new Separator(), showElements, showProperties, new Separator(),
+                snap, new Label(t("designer.zoom")), zoom);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setPadding(new Insets(8, 12, 8, 12));
         HBox.setHgrow(status, Priority.ALWAYS);
