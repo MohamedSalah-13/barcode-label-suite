@@ -35,6 +35,8 @@ public final class BarcodeLabelSuiteApp extends Application {
     private final LanguageSetting languageSetting;
     /** The paper sizes the user named, kept between runs. */
     private final CustomPaperStore paperSizes;
+    /** The label being designed when the app last closed, opened again on start. */
+    private final LastDesign lastDesign;
     /** Asks whether to switch language while CSV data is loaded, which the switch discards. */
     private final Predicate<UiTexts> confirmSwitch;
     private Stage stage;
@@ -46,17 +48,20 @@ public final class BarcodeLabelSuiteApp extends Application {
 
     public BarcodeLabelSuiteApp() {
         this(LanguageSetting.preferences(), BarcodeLabelSuiteApp::askToSwitch,
-                CustomPaperStore.preferences(Preferences.userNodeForPackage(BarcodeLabelSuiteApp.class).node("paperSizes")));
+                CustomPaperStore.preferences(Preferences.userNodeForPackage(BarcodeLabelSuiteApp.class).node("paperSizes")),
+                LastDesign.userFile());
     }
 
     BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch) {
-        this(languageSetting, confirmSwitch, CustomPaperStore.inMemory());
+        this(languageSetting, confirmSwitch, CustomPaperStore.inMemory(), LastDesign.inMemory());
     }
 
-    BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch, CustomPaperStore paperSizes) {
+    BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch, CustomPaperStore paperSizes,
+                         LastDesign lastDesign) {
         this.languageSetting = languageSetting;
         this.confirmSwitch = confirmSwitch;
         this.paperSizes = paperSizes;
+        this.lastDesign = lastDesign;
     }
 
     @Override public void start(Stage stage) {
@@ -64,9 +69,21 @@ public final class BarcodeLabelSuiteApp extends Application {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         language = languageSetting.load();
         startingTemplate = template(language);
-        stage.setScene(new Scene(root(startingTemplate), 1480, 940));
+        // The label from the last run, if there is one; it is the user's, so a language switch keeps it as it is.
+        LabelTemplate first = lastDesign.load().orElse(startingTemplate);
+        stage.setScene(new Scene(root(first), 1480, 940));
         stage.setTitle("Barcode Label Suite");
         stage.setMinWidth(1150); stage.setMinHeight(750); stage.show();
+    }
+
+    /**
+     * Keeps the label being designed for the next run, unless it is still the untouched starting label, which the
+     * next run makes again in its own language.
+     */
+    @Override public void stop() {
+        if (workbench == null) return;
+        LabelTemplate current = workbench.getTemplate();
+        if (current != startingTemplate) lastDesign.save(current);
     }
 
     UiLanguage language() { return language; }
