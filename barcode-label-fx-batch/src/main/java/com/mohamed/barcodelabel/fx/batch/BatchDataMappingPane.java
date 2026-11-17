@@ -31,6 +31,11 @@ import java.util.concurrent.CompletableFuture;
 
 public final class BatchDataMappingPane extends BorderPane {
     private static final String NO_QUANTITY = "— نسخة واحدة لكل صف —";
+    private static final String NOT_PREPARED = "لم يتم إعداد دفعة طباعة";
+    private static final String MAPPING_CHANGED = "تغيّرت المطابقة؛ اضغط «تحقق وجهّز الطباعة» من جديد";
+    private static final int PREVIEW_ROWS = 8;
+    private static final double PREVIEW_ROW_HEIGHT = 30;
+    private static final double PREVIEW_HEADER_HEIGHT = 36;
     private final ObjectProperty<LabelTemplate> template = new SimpleObjectProperty<>(this, "template");
     private final ObjectProperty<CsvDataset> dataset = new SimpleObjectProperty<>(this, "dataset");
     private final ReadOnlyObjectWrapper<BatchPreparationResult> result = new ReadOnlyObjectWrapper<>(this, "result");
@@ -47,16 +52,28 @@ public final class BatchDataMappingPane extends BorderPane {
     private final Spinner<Integer> maxTotalLabelsField = new Spinner<>(1, 5_000_000, 100_000);
     private final ListView<String> issues = new ListView<>();
     private final Label fileSummary = new Label("اختر ملف CSV للبدء");
-    private final Label resultSummary = new Label("لم يتم إعداد دفعة طباعة");
+    private final Label resultSummary = new Label(NOT_PREPARED);
     private final ProgressIndicator busy = new ProgressIndicator();
     private final Button prepareButton = new Button("تحقق وجهّز الطباعة", new FontIcon(Feather.CHECK_CIRCLE));
     private ColumnMapping loadedProfile;
+    /** The name shown for the dataset; the next imported file's name until the dataset listener takes it. */
+    private String pendingDatasetName;
+    private String datasetName = "البيانات";
+    /** The dataset and template fields the mapping controls were last built for. */
+    private CsvDataset mappedDataset;
+    private List<String> mappedFields = List.of();
+    /** True while the mapping controls are being rebuilt, so their value changes do not count as user edits. */
+    private boolean rebuilding;
 
     public BatchDataMappingPane() {
         getStyleClass().add("batch-data-mapping-pane");
         setTop(header()); setCenter(content()); setBottom(actions());
-        template.addListener((obs, oldValue, value) -> rebuildMappings());
-        dataset.addListener((obs, oldValue, value) -> rebuildMappings());
+        template.addListener((obs, oldValue, value) -> templateChanged());
+        dataset.addListener((obs, oldValue, value) -> {
+            datasetName = pendingDatasetName != null ? pendingDatasetName : "البيانات";
+            pendingDatasetName = null;
+            rebuildMappings(false);
+        });
         loadStylesheet();
     }
 
@@ -84,8 +101,9 @@ public final class BatchDataMappingPane extends BorderPane {
         mappings.setHgap(12); mappings.setVgap(9); mappings.setPadding(new Insets(12));
         ScrollPane mappingScroll = new ScrollPane(mappings); mappingScroll.setFitToWidth(true);
         preview.setPlaceholder(new Label("استورد CSV لعرض معاينة البيانات"));
+        preview.setFixedCellSize(PREVIEW_ROW_HEIGHT);
         preview.setPrefHeight(160);
-        VBox mappingSide = new VBox(8, new Label("معاينة البيانات (أول 8 صفوف)"), preview, mappingScroll);
+        VBox mappingSide = new VBox(8, new Label("معاينة البيانات (أول " + PREVIEW_ROWS + " صفوف)"), preview, mappingScroll);
         mappingSide.setPadding(new Insets(12)); VBox.setVgrow(mappingScroll, Priority.ALWAYS);
         issues.setPlaceholder(new Label("لا توجد أخطاء"));
         VBox validation = new VBox(8, new Label("نتيجة التحقق"), resultSummary, issues);
@@ -98,6 +116,10 @@ public final class BatchDataMappingPane extends BorderPane {
         maxCopiesPerRowField.setEditable(true); commitOnFocusLoss(maxCopiesPerRowField); maxCopiesPerRowField.setPrefWidth(90);
         maxTotalLabelsField.setEditable(true); commitOnFocusLoss(maxTotalLabelsField); maxTotalLabelsField.setPrefWidth(110);
         prepareButton.getStyleClass().add("primary-button"); prepareButton.setOnAction(event -> prepare());
+        quantityColumn.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
+        defaultCopies.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
+        maxCopiesPerRowField.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
+        maxTotalLabelsField.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
         HBox box = new HBox(10, new Label("عمود الكمية"), quantityColumn,
                 new Label("الكمية الافتراضية"), defaultCopies,
                 new Label("أقصى نسخ للصف"), maxCopiesPerRowField,
@@ -106,29 +128,60 @@ public final class BatchDataMappingPane extends BorderPane {
         box.setPadding(new Insets(12)); box.setAlignment(Pos.CENTER_LEFT); return box;
     }
 
-    private void rebuildMappings() {
-        rebuildPreview();
-        mappings.getChildren().clear(); fieldBoxes.clear(); result.set(null); issues.getItems().clear();
-        if (getTemplate() == null || getDataset() == null) {
-            mappings.add(new Label("يجب تحديد قالب واستيراد CSV أولًا"), 0, 0); prepareButton.setDisable(true); return;
+    /**
+     * A new template keeps the current mapping and result when it uses the same fields (a style edit, say);
+     * otherwise the controls are rebuilt for its fields, keeping the columns already chosen for the others.
+     */
+    private void templateChanged() {
+        if (getTemplate() != null && getDataset() != null && getDataset() == mappedDataset
+                && templateFields.scan(getTemplate()).equals(mappedFields)) return;
+        rebuildMappings(getDataset() != null && getDataset() == mappedDataset);
+    }
+
+    private void rebuildMappings(boolean keepChoices) {
+        ColumnMapping previous = keepChoices && !fieldBoxes.isEmpty() ? currentMapping() : null;
+        rebuilding = true;
+        try {
+            rebuildPreview();
+            mappings.getChildren().clear(); fieldBoxes.clear(); clearResult(NOT_PREPARED);
+            mappedDataset = null; mappedFields = List.of();
+            if (getTemplate() == null || getDataset() == null) {
+                mappings.add(new Label("يجب تحديد قالب واستيراد CSV أولًا"), 0, 0); prepareButton.setDisable(true); return;
+            }
+            List<String> fields = templateFields.scan(getTemplate());
+            ColumnMapping automatic = ColumnMapping.automatic(fields, getDataset().headers());
+            ColumnMapping chosen = loadedProfile != null ? loadedProfile : previous != null ? previous : automatic;
+            mappings.add(new Label("حقل القالب"), 0, 0); mappings.add(new Label("عمود CSV"), 1, 0);
+            for (int index = 0; index < fields.size(); index++) {
+                String field = fields.get(index); ComboBox<String> box = new ComboBox<>(FXCollections.observableArrayList(getDataset().headers()));
+                String column = chosen.fields().getOrDefault(field, automatic.fields().get(field));
+                box.setPromptText("اختر العمود"); box.setMaxWidth(Double.MAX_VALUE); box.setValue(column);
+                box.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
+                mappings.add(new Label("{{" + field + "}}"), 0, index + 1); mappings.add(box, 1, index + 1); GridPane.setHgrow(box, Priority.ALWAYS);
+                fieldBoxes.put(field, box);
+            }
+            quantityColumn.setItems(FXCollections.observableArrayList()); quantityColumn.getItems().add(NO_QUANTITY); quantityColumn.getItems().addAll(getDataset().headers());
+            quantityColumn.setValue(chosen.quantityColumn() == null ? NO_QUANTITY : chosen.quantityColumn());
+            defaultCopies.getValueFactory().setValue(chosen.defaultCopies());
+            maxCopiesPerRowField.getValueFactory().setValue(chosen.maxCopiesPerRow());
+            maxTotalLabelsField.getValueFactory().setValue(chosen.maxTotalLabels());
+            loadedProfile = null;
+            mappedDataset = getDataset(); mappedFields = fields;
+            prepareButton.setDisable(fields.isEmpty());
+            fileSummary.setText(BatchTexts.fileSummary(datasetName, getDataset().rows().size(), getDataset().headers().size(), fields.size()));
+        } finally {
+            rebuilding = false;
         }
-        List<String> fields = templateFields.scan(getTemplate());
-        ColumnMapping automatic = loadedProfile != null ? loadedProfile : ColumnMapping.automatic(fields, getDataset().headers());
-        mappings.add(new Label("حقل القالب"), 0, 0); mappings.add(new Label("عمود CSV"), 1, 0);
-        for (int index = 0; index < fields.size(); index++) {
-            String field = fields.get(index); ComboBox<String> box = new ComboBox<>(FXCollections.observableArrayList(getDataset().headers()));
-            box.setPromptText("اختر العمود"); box.setMaxWidth(Double.MAX_VALUE); box.setValue(automatic.fields().get(field));
-            mappings.add(new Label("{{" + field + "}}"), 0, index + 1); mappings.add(box, 1, index + 1); GridPane.setHgrow(box, Priority.ALWAYS);
-            fieldBoxes.put(field, box);
-        }
-        quantityColumn.setItems(FXCollections.observableArrayList()); quantityColumn.getItems().add(NO_QUANTITY); quantityColumn.getItems().addAll(getDataset().headers());
-        quantityColumn.setValue(automatic.quantityColumn() == null ? NO_QUANTITY : automatic.quantityColumn());
-        defaultCopies.getValueFactory().setValue(automatic.defaultCopies());
-        maxCopiesPerRowField.getValueFactory().setValue(automatic.maxCopiesPerRow());
-        maxTotalLabelsField.getValueFactory().setValue(automatic.maxTotalLabels());
-        loadedProfile = null;
-        prepareButton.setDisable(fields.isEmpty());
-        fileSummary.setText(getDataset().rows().size() + " صف، " + getDataset().headers().size() + " عمود، " + fields.size() + " حقل مطلوب في القالب");
+    }
+
+    /** Any change to the mapping makes the last result stale: it no longer describes what would print. */
+    private void mappingEdited() {
+        if (!rebuilding && result.get() != null) clearResult(MAPPING_CHANGED);
+    }
+
+    private void clearResult(String summary) {
+        result.set(null); issues.getItems().clear();
+        resultSummary.setText(summary); resultSummary.getStyleClass().removeAll("result-ok", "result-error");
     }
 
     private void rebuildPreview() {
@@ -141,7 +194,9 @@ public final class BatchDataMappingPane extends BorderPane {
             column.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getOrDefault(header, "")));
             preview.getColumns().add(column);
         }
-        preview.getItems().addAll(current.rows().stream().limit(8).toList());
+        preview.getItems().addAll(current.rows().stream().limit(PREVIEW_ROWS).toList());
+        // Tall enough for every previewed row, so "the first 8 rows" are all visible without scrolling.
+        preview.setPrefHeight(PREVIEW_HEADER_HEIGHT + Math.max(1, preview.getItems().size()) * PREVIEW_ROW_HEIGHT + 2);
     }
 
     private ColumnMapping currentMapping() {
@@ -155,14 +210,19 @@ public final class BatchDataMappingPane extends BorderPane {
         LabelTemplate currentTemplate = getTemplate();
         CsvDataset currentDataset = getDataset();
         ColumnMapping mapping = currentMapping();
-        runIo("تحقق وتجهيز الطباعة", () -> preparation.prepare(currentTemplate, currentDataset, mapping), this::applyPreparationResult);
+        runIo("تحقق وتجهيز الطباعة", () -> preparation.prepare(currentTemplate, currentDataset, mapping), prepared -> {
+            // The user may have changed the mapping, the data or the template while this ran in the background.
+            if (getTemplate() == currentTemplate && getDataset() == currentDataset && currentMapping().equals(mapping)) {
+                applyPreparationResult(prepared, mapping);
+            }
+        });
     }
 
-    private void applyPreparationResult(BatchPreparationResult prepared) {
+    private void applyPreparationResult(BatchPreparationResult prepared, ColumnMapping mapping) {
         result.set(prepared); issues.setItems(FXCollections.observableArrayList(prepared.issues().stream()
-                .map(issue -> (issue.severity() == ValidationSeverity.ERROR ? "خطأ" : "تنبيه") + " — صف " + issue.sourceRow() + ": " + issue.message()).toList()));
+                .map(issue -> BatchTexts.describe(issue, mapping)).toList()));
         resultSummary.setText(prepared.ready()
-                ? "جاهز: " + prepared.sourceRows() + " صف سيطبع " + prepared.labelCount() + " ملصق"
+                ? BatchTexts.ready(prepared.sourceRows(), prepared.labelCount())
                 : "توجد أخطاء؛ لن يتم إرسال أي ملصق للطباعة");
         resultSummary.getStyleClass().removeAll("result-ok", "result-error"); resultSummary.getStyleClass().add(prepared.ready() ? "result-ok" : "result-error");
     }
@@ -171,7 +231,7 @@ public final class BatchDataMappingPane extends BorderPane {
         FileChooser chooser = new FileChooser(); chooser.setTitle("استيراد بيانات الدفعة"); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
         java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
         if (!fieldBoxes.isEmpty() && !confirm("استيراد ملف CSV جديد سيفقد إعداد المطابقة الحالي. هل تريد المتابعة؟")) return;
-        runIo("استيراد CSV", () -> csv.read(file.toPath()), value -> { setDataset(value); fileSummary.setText(file.getName()); });
+        runIo("استيراد CSV", () -> csv.read(file.toPath()), value -> { pendingDatasetName = file.getName(); setDataset(value); });
     }
 
     private boolean confirm(String message) {
@@ -191,7 +251,7 @@ public final class BatchDataMappingPane extends BorderPane {
 
     private void loadProfile() {
         FileChooser chooser = profileChooser("فتح مطابقة أعمدة"); java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        runIo("فتح إعداد المطابقة", () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(); resultSummary.setText("تم تحميل إعداد المطابقة"); });
+        runIo("فتح إعداد المطابقة", () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(false); resultSummary.setText("تم تحميل إعداد المطابقة"); });
     }
 
     private <T> void runIo(String operation, IoSupplier<T> supplier, java.util.function.Consumer<T> success) {

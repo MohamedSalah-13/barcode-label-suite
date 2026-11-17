@@ -18,6 +18,8 @@ public final class BatchProductionWorkbench extends BorderPane {
     private final BarcodeLabelWorkbench labelWorkbench;
     private final BatchDataMappingPane batchPane = new BatchDataMappingPane();
     private final TabPane tabs = new TabPane();
+    /** The print data this workbench last handed to the print workspace from a ready batch. */
+    private CsvDataset preparedData;
 
     public BatchProductionWorkbench(LabelTemplate template) {
         labelWorkbench = new BarcodeLabelWorkbench(template);
@@ -26,7 +28,15 @@ public final class BatchProductionWorkbench extends BorderPane {
         Tab batch = tab("مطابقة CSV والكميات", batchPane);
         batch.setOnSelectionChanged(event -> { if (batch.isSelected()) batchPane.setTemplate(labelWorkbench.getTemplate()); });
         batchPane.resultProperty().addListener((obs, oldValue, value) -> {
-            if (value != null && value.ready()) labelWorkbench.setDataset(asDataset(value.printRecords()));
+            if (value != null && value.ready()) {
+                preparedData = asDataset(value.printRecords());
+                labelWorkbench.setDataset(preparedData);
+            } else if (preparedData != null && labelWorkbench.getDataset() == preparedData) {
+                // The batch is no longer valid (new file, changed mapping or errors), so its labels must not be
+                // printed. Data the user imported into the print workspace directly is left alone.
+                labelWorkbench.setDataset(null);
+                preparedData = null;
+            }
         });
         tabs.getTabs().setAll(production, batch); setCenter(tabs);
     }
