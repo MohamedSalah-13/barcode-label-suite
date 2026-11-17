@@ -22,7 +22,7 @@ The print preview of that batch on an A4 sheet, one label per copy.
 
 ## Current release
 
-The current version is `0.7.0`. It provides:
+The current version is `0.7.1`. It provides:
 
 - An immutable label-template model using millimetres.
 - Sheet, single-label and roll page definitions.

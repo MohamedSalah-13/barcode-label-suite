@@ -28,6 +28,7 @@ import static com.mohamed.barcodelabel.fx.designer.FxTestSupport.runFx;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The English designer: left to right, every text in English, and the label surface unchanged. */
 class EnglishDesignerTest {
@@ -69,6 +70,21 @@ class EnglishDesignerTest {
             button(pane, "Undo").fire();
             assertEquals("Redo: Add element", button(pane, "Redo").getText());
             assertEquals("Undo", button(pane, "Undo").getText());
+        });
+    }
+
+    @Test
+    void theContentCaptionAndHintAreInEnglish() {
+        LabelDesignerPane pane = onFx(() -> new LabelDesignerPane(UiLanguage.ENGLISH));
+        runFx(() -> {
+            assertEquals("Content", pane.contentCaption(null));
+            button(pane, "+ Barcode").fire();
+            assertTrue(all(pane).anyMatch(node -> node instanceof javafx.scene.control.Label label
+                    && "Barcode data".equals(label.getText())));
+            button(pane, "+ Text").fire();
+            assertEquals("Text", pane.contentCaption(pane.getTemplate().elements().getLast()));
+            assertTrue(all(pane).anyMatch(node -> node instanceof javafx.scene.control.TextField field
+                    && field.getTooltip() != null && field.getTooltip().getText().endsWith("then press Enter")));
         });
     }
 

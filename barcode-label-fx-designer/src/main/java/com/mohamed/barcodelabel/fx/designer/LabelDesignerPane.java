@@ -39,6 +39,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -68,6 +69,7 @@ public final class LabelDesignerPane extends BorderPane {
     private final TextField widthField = numberField();
     private final TextField heightField = numberField();
     private final TextField rotationField = numberField();
+    private final Label contentLabel = caption("");
     private final TextField contentField = new TextField();
     private final Button browseImageButton = new Button("", new FontIcon(Feather.FOLDER));
     private final ComboBox<ImageFit> imageFitField = new ComboBox<>(javafx.collections.FXCollections.observableArrayList(ImageFit.values()));
@@ -148,6 +150,14 @@ public final class LabelDesignerPane extends BorderPane {
         workspace.getStyleClass().add("designer-workspace");
         workspace.setPannable(true);
         setCenter(workspace);
+        // A double click on an element jumps to the field that edits its text or barcode data. A filter, because the
+        // canvas consumes the element's mouse events; it runs after the press has already selected the element.
+        canvas.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getClickCount() == 2 && !contentField.isDisabled()) {
+                contentField.requestFocus();
+                contentField.selectAll();
+            }
+        });
         session.addListener(() -> {
             template.set(session.template());
             updateHistoryButtons();
@@ -253,7 +263,8 @@ public final class LabelDesignerPane extends BorderPane {
         HBox.setHgrow(contentField, Priority.ALWAYS);
         browseImageButton.setOnAction(event -> browseImage());
         browseImageButton.setMinWidth(Region.USE_PREF_SIZE);
-        grid.add(caption(t("designer.content")), 0, 5);
+        contentField.setTooltip(new Tooltip(t("designer.contentHint")));
+        grid.add(contentLabel, 0, 5);
         grid.add(contentRow, 1, 5);
         GridPane.setHgrow(contentRow, Priority.ALWAYS);
         addPropertyRow(grid, 6, t("designer.imageFit"), imageFitField);
@@ -282,6 +293,10 @@ public final class LabelDesignerPane extends BorderPane {
                 textTitle, textGrid, style, alignment, state, apply);
         propertiesPanel.getStyleClass().add("designer-properties");
         propertiesPanel.setPrefWidth(300);
+        // Enter in any field applies the panel, like the button: without it a typed value silently waits for a click.
+        for (TextField field : List.of(xField, yField, widthField, heightField, rotationField, contentField, fontSizeField)) {
+            field.setOnAction(event -> applyProperties());
+        }
         return propertiesPanel;
     }
 
@@ -351,6 +366,7 @@ public final class LabelDesignerPane extends BorderPane {
             visible.setDisable(disabled);
             if (element == null) {
                 selectionTitle.setText(t("designer.noSelection"));
+                contentLabel.setText(contentCaption(null));
                 for (TextField field : List.of(xField, yField, widthField, heightField, rotationField, contentField, fontSizeField)) field.clear();
                 setTextControlsDisabled(true);
                 browseImageButton.setDisable(true);
@@ -358,6 +374,7 @@ public final class LabelDesignerPane extends BorderPane {
                 return;
             }
             selectionTitle.setText(element.frame().name());
+            contentLabel.setText(contentCaption(element));
             RectMm b = element.frame().bounds();
             xField.setText(format(b.x())); yField.setText(format(b.y()));
             widthField.setText(format(b.width())); heightField.setText(format(b.height()));
@@ -393,6 +410,16 @@ public final class LabelDesignerPane extends BorderPane {
         } finally {
             refreshingProperties = false;
         }
+    }
+
+    /** What the content field holds for {@code element}: its text, its barcode data or its image file. */
+    String contentCaption(LabelElement element) {
+        return t(switch (element) {
+            case TextElement text -> "designer.content.text";
+            case BarcodeElement barcode -> "designer.content.barcode";
+            case ImageElement image -> "designer.content.image";
+            case null, default -> "designer.content";
+        });
     }
 
     private void setTextControlsDisabled(boolean disabled) {

@@ -8,7 +8,7 @@ A Java 21 / JavaFX library and desktop app for designing and printing barcode la
 
 ## Build & run
 
-The root `pom.xml` is a single Maven reactor covering every module, in dependency order, with one shared version (`0.7.0`). Internal dependencies use `${project.version}`; third-party and plugin versions live in the root `dependencyManagement`/`pluginManagement`.
+The root `pom.xml` is a single Maven reactor covering every module, in dependency order, with one shared version (`0.7.1`). Internal dependencies use `${project.version}`; third-party and plugin versions live in the root `dependencyManagement`/`pluginManagement`.
 
 ```powershell
 .\mvnw.cmd clean install                          # build and test everything

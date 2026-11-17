@@ -288,6 +288,26 @@ class TemplateEditSessionTest {
     }
 
     @Test
+    void eachStepRecordsTheActionThePanesNameForUndo() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.selectAll();
+
+        session.moveSelected(1, 1);
+        assertEquals(EditAction.MOVE, session.undoAction());
+        session.align(EditorAlignment.LEFT);
+        assertEquals(EditAction.ALIGN, session.undoAction());
+        session.setContent(id, "{{sku}}");
+        assertEquals(EditAction.CHANGE_CONTENT, session.undoAction());
+        session.setLockedVisible(id, false, false);
+        assertEquals(EditAction.CHANGE_STATE, session.undoAction());
+        session.deleteSelected();
+        assertEquals(EditAction.DELETE, session.undoAction());
+        session.undo();
+        assertEquals(EditAction.DELETE, session.redoAction());
+    }
+
+    @Test
     void undoDropsSelectedElementsThatNoLongerExist() {
         var session = new TemplateEditSession(template());
         session.selectAll();
