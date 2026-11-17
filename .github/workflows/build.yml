@@ -1,13 +1,16 @@
 name: build
 
-# A pull request, and a push to master. A push to any other branch starts nothing: it used to, so
-# every push to a pull request's branch ran this twice on the same commit, once as the push and once
-# as the pull request. The repository is private and the runner is Windows, whose minute is billed
-# at more than a Linux one, out of the 2,000 a month the account has for all its repositories.
+# A pull request, and a push to master. A push to any other branch starts nothing, so a push to a
+# pull request's branch is built once, as the pull request, rather than twice on the same commit.
 on:
   push:
     branches: [ master ]
   pull_request:
+
+# The workflow only reads the repository. Keeping the token read-only matters for a public
+# repository, where anyone can open a pull request that runs this workflow.
+permissions:
+  contents: read
 
 # A new push to a pull request cancels its run still going. Pushes to master never cancel one another.
 concurrency:
@@ -16,6 +19,7 @@ concurrency:
 
 jobs:
   verify:
+    name: verify (windows)
     runs-on: windows-latest
     # About five minutes as a rule. Without a limit a job that hangs runs for GitHub's six hours.
     timeout-minutes: 30
@@ -74,3 +78,25 @@ jobs:
           path: |
             dist/BarcodeLabelSuite
             **/target/site/jacoco
+
+  # The same verification on Linux, so the library is known to build outside Windows. The JavaFX UI
+  # tests need a display, which xvfb provides on the headless runner.
+  verify-linux:
+    name: verify (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Install a virtual display
+        run: command -v xvfb-run || (sudo apt-get update && sudo apt-get install -y xvfb)
+
+      - name: Verify all phases
+        run: xvfb-run -a ./verify-phase6.sh

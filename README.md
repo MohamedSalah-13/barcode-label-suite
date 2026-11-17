@@ -1,6 +1,6 @@
 # Barcode Label Suite
 
-[![CI](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml/badge.svg)](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml) ![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white) ![JavaFX](https://img.shields.io/badge/JavaFX-21-1F6FB2) ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven&logoColor=white)
+[![CI](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml/badge.svg)](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml) ![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white) ![JavaFX](https://img.shields.io/badge/JavaFX-21-1F6FB2) ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven&logoColor=white) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A reusable, modular Java 21 / JavaFX library for designing and printing barcode labels.
 
@@ -22,7 +22,7 @@ The actively developed application is phase 6 final (`0.6.1-SNAPSHOT`). It provi
 ## Requirements
 
 - JDK 21 (`JAVA_HOME` must point to it).
-- Windows for the supplied launch script and desktop printing workflow.
+- Windows for the supplied launch script, packaging and desktop printing workflow. The library and its tests also build on Linux and macOS.
 
 The repository includes Maven Wrapper 3.9.9, so a separate Maven installation is optional.
 
@@ -44,6 +44,16 @@ For the complete phase-6 verification chain, run:
 
 ```powershell
 .\verify-phase6.ps1
+```
+
+On Linux or macOS, use the shell equivalent. The JavaFX UI tests need a display, so on a headless machine run it under `xvfb-run`:
+
+```bash
+./verify-phase6.sh
+```
+
+```bash
+xvfb-run -a ./verify-phase6.sh
 ```
 
 Core modules and the tested JavaFX workbenches enforce a minimum 25% line-coverage baseline with JaCoCo. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
@@ -73,3 +83,7 @@ Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs
 - `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
 
 The root `pom.xml` covers the original milestone modules. Later phases currently retain standalone parent POMs for compatibility; the launch script and CI workflow encode their required build order.
+
+## License
+
+Released under the [MIT License](LICENSE).
