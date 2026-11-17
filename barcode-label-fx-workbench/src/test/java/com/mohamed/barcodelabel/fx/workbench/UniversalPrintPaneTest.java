@@ -14,6 +14,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -77,20 +78,41 @@ class UniversalPrintPaneTest {
     }
 
     @Test
-    void emptyRecordsStillRenderATemplatePreviewButCannotBePrinted() {
+    void withoutCsvOneLabelIsPreviewedFromTypedValues() {
         UniversalPrintPane pane = onFx(UniversalPrintPane::new);
         onFx(() -> {
             pane.setTemplate(template());
             pane.setRecords(null);
             assertTrue(pane.getRecords().isEmpty());
+            assertTrue(label(pane, "بيانات الملصق").getParent().isVisible());
+            assertEquals(List.of("name"), pane.blankManualFields());
+            // A blank field keeps its placeholder in the preview, so the label still renders.
+            assertEquals(Map.of("name", "{{name}}"), pane.manualRecord(true));
+            assertEquals(Map.of("name", ""), pane.manualRecord(false));
             return null;
         });
 
         await(Duration.ofSeconds(15), () -> onFx(() -> imageView(pane).getImage() != null));
         onFx(() -> {
             assertEquals("صفحة 1 من 1", label(pane, "صفحة 1 من 1").getText());
-            assertTrue(button(pane, "طباعة").isDisabled());
-            assertNotNull(imageView(pane).getImage());
+            manualField(pane, "name").setText("  Milk 1L ");
+            assertEquals(List.of(), pane.blankManualFields());
+            assertEquals(Map.of("name", "Milk 1L"), pane.manualRecord(false));
+            return null;
+        });
+    }
+
+    @Test
+    void typedValuesSurviveADesignChangeAndHideOnceCsvIsLoaded() {
+        UniversalPrintPane pane = onFx(UniversalPrintPane::new);
+        onFx(() -> {
+            pane.setTemplate(template());
+            manualField(pane, "name").setText("Milk");
+            pane.setTemplate(LabelTemplate.create("Renamed", template().page(), template().elements()));
+            assertEquals("Milk", manualField(pane, "name").getText());
+
+            pane.setRecords(List.of(Map.of("name", "From CSV")));
+            assertTrue(!label(pane, "بيانات الملصق").getParent().isVisible());
             return null;
         });
     }
@@ -156,6 +178,12 @@ class UniversalPrintPaneTest {
         Spinner<?> found = find(root, Spinner.class, node -> node.getTooltip() != null
                 && node.getTooltip().getText().startsWith("رقم أول خانة"));
         if (found == null) throw new AssertionError("Start slot spinner not found");
+        return found;
+    }
+
+    private static TextField manualField(Parent root, String name) {
+        TextField found = find(root, TextField.class, node -> name.equals(node.getPromptText()));
+        if (found == null) throw new AssertionError("Manual field not found: " + name);
         return found;
     }
 

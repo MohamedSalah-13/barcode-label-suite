@@ -6,6 +6,7 @@
     <artifactId>barcode-label-fx-workbench</artifactId>
     <dependencies>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-workflow</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-batch</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-fx-designer</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-render-java2d</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-print-java2d</artifactId><version>${project.version}</version></dependency>

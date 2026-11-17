@@ -36,10 +36,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ToolBar;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -60,6 +64,7 @@ public final class LabelDesignerPane extends BorderPane {
     private final TextField widthField = numberField();
     private final TextField heightField = numberField();
     private final TextField rotationField = numberField();
+    private final Label contentLabel = new Label("المحتوى");
     private final TextField contentField = new TextField();
     private final Button browseImageButton = new Button("استعراض...");
     private final ComboBox<ImageFit> imageFitField = new ComboBox<>(javafx.collections.FXCollections.observableArrayList(ImageFit.values()));
@@ -111,6 +116,14 @@ public final class LabelDesignerPane extends BorderPane {
         workspace.getStyleClass().add("designer-workspace");
         workspace.setPannable(true);
         setCenter(workspace);
+        // A double click on an element jumps to the field that edits its text or barcode data. A filter, because the
+        // canvas consumes the element's mouse events; it runs after the press has already selected the element.
+        canvas.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getClickCount() == 2 && !contentField.isDisabled()) {
+                contentField.requestFocus();
+                contentField.selectAll();
+            }
+        });
         session.addListener(() -> {
             template.set(session.template());
             updateHistoryButtons();
@@ -202,9 +215,7 @@ public final class LabelDesignerPane extends BorderPane {
     private VBox createPropertiesPanel() {
         Label title = new Label("الخصائص");
         title.getStyleClass().add("panel-title");
-        GridPane grid = new GridPane();
-        grid.setHgap(8);
-        grid.setVgap(8);
+        GridPane grid = propertyGrid();
         addPropertyRow(grid, 0, "X (mm)", xField);
         addPropertyRow(grid, 1, "Y (mm)", yField);
         addPropertyRow(grid, 2, "العرض", widthField);
@@ -213,16 +224,15 @@ public final class LabelDesignerPane extends BorderPane {
         HBox contentRow = new HBox(6, contentField, browseImageButton);
         HBox.setHgrow(contentField, Priority.ALWAYS);
         browseImageButton.setOnAction(event -> browseImage());
-        grid.add(new Label("النص/البيانات/المسار"), 0, 5);
+        contentField.setTooltip(new Tooltip("اكتب النص أو بيانات الباركود، أو {{اسم_العمود}} ليُملأ من ملف CSV، ثم اضغط Enter"));
+        grid.add(contentLabel, 0, 5);
         grid.add(contentRow, 1, 5);
         GridPane.setHgrow(contentRow, Priority.ALWAYS);
         addPropertyRow(grid, 6, "نمط الصورة", imageFitField);
 
         Label textTitle = new Label("تنسيق النص");
         textTitle.getStyleClass().add("panel-title");
-        GridPane textGrid = new GridPane();
-        textGrid.setHgap(8);
-        textGrid.setVgap(8);
+        GridPane textGrid = propertyGrid();
         fontFamilyField.setEditable(true);
         addPropertyRow(textGrid, 0, "الخط", fontFamilyField);
         addPropertyRow(textGrid, 1, "الحجم", fontSizeField);
@@ -240,7 +250,11 @@ public final class LabelDesignerPane extends BorderPane {
         propertiesPanel.getChildren().setAll(title, selectionTitle, grid,
                 textTitle, textGrid, style, state, apply);
         propertiesPanel.getStyleClass().add("designer-properties");
-        propertiesPanel.setPrefWidth(260);
+        propertiesPanel.setPrefWidth(300);
+        // Enter in any field applies the panel, like the button: without it a typed value silently waits for a click.
+        for (TextField field : List.of(xField, yField, widthField, heightField, rotationField, contentField, fontSizeField)) {
+            field.setOnAction(event -> applyProperties());
+        }
         return propertiesPanel;
     }
 
@@ -310,6 +324,7 @@ public final class LabelDesignerPane extends BorderPane {
             visible.setDisable(disabled);
             if (element == null) {
                 selectionTitle.setText("لا يوجد عنصر محدد");
+                contentLabel.setText(contentCaption(null));
                 for (TextField field : List.of(xField, yField, widthField, heightField, rotationField, contentField, fontSizeField)) field.clear();
                 setTextControlsDisabled(true);
                 browseImageButton.setDisable(true);
@@ -317,6 +332,7 @@ public final class LabelDesignerPane extends BorderPane {
                 return;
             }
             selectionTitle.setText(element.frame().name());
+            contentLabel.setText(contentCaption(element));
             RectMm b = element.frame().bounds();
             xField.setText(format(b.x())); yField.setText(format(b.y()));
             widthField.setText(format(b.width())); heightField.setText(format(b.height()));
@@ -352,6 +368,16 @@ public final class LabelDesignerPane extends BorderPane {
         } finally {
             refreshingProperties = false;
         }
+    }
+
+    /** What the content field holds for {@code element}: its text, its barcode data or its image file. */
+    static String contentCaption(LabelElement element) {
+        return switch (element) {
+            case TextElement text -> "النص";
+            case BarcodeElement barcode -> "بيانات الباركود";
+            case ImageElement image -> "مسار الصورة";
+            case null, default -> "المحتوى";
+        };
     }
 
     private void setTextControlsDisabled(boolean disabled) {
@@ -424,6 +450,19 @@ public final class LabelDesignerPane extends BorderPane {
         TextField field = new TextField();
         field.setPrefColumnCount(7);
         return field;
+    }
+
+    /** A two-column grid whose captions keep their full width; only the fields shrink when the panel is narrow. */
+    private static GridPane propertyGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(8);
+        grid.setVgap(8);
+        ColumnConstraints captions = new ColumnConstraints();
+        captions.setMinWidth(Region.USE_PREF_SIZE);
+        ColumnConstraints fields = new ColumnConstraints();
+        fields.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().setAll(captions, fields);
+        return grid;
     }
 
     private static void addPropertyRow(GridPane grid, int row, String label, javafx.scene.control.Control field) {
