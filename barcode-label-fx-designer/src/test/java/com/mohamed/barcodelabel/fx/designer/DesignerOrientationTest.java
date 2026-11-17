@@ -4,7 +4,6 @@ import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -64,6 +63,25 @@ class DesignerOrientationTest {
     }
 
     @Test
+    void theLabelSitsAtTheRightOfTheWorkspaceLikeTheRestOfTheRightToLeftUi() {
+        runFx(() -> {
+            Bounds workspace = sceneBounds(pane.getCenter());
+            Bounds label = sceneBounds(canvas());
+            assertTrue(label.getMinX() - workspace.getMinX() > workspace.getMaxX() - label.getMaxX(),
+                    "the label is closer to the workspace's right edge: " + label + " in " + workspace);
+            // The workspace's 32 px padding, give or take its border.
+            assertEquals(32, workspace.getMaxX() - label.getMaxX(), 3);
+            assertEquals(32, label.getMinY() - workspace.getMinY(), 3);
+
+            canvas().setZoom(2);
+            pane.layout();
+            Bounds zoomed = sceneBounds(canvas());
+            assertEquals(label.getWidth() * 2, zoomed.getWidth(), 0.5);
+            assertEquals(32, workspace.getMaxX() - zoomed.getMaxX(), 3, "it stays on the right when zoomed");
+        });
+    }
+
+    @Test
     void elementsAppearAtTheirDistanceFromTheLabelsLeftEdge() {
         runFx(() -> {
             double labelLeft = sceneBounds(canvas()).getMinX();
@@ -113,7 +131,7 @@ class DesignerOrientationTest {
     }
 
     private DesignerCanvas canvas() {
-        return (DesignerCanvas) ((ScrollPane) pane.getCenter()).getContent();
+        return (DesignerCanvas) pane.lookup(".designer-canvas");
     }
 
     /** Element views in z order: 0 is "First" (x 2 mm), 1 is "Second" (x 30 mm). */
