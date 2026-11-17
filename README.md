@@ -78,6 +78,27 @@ xvfb-run -a ./mvnw clean install
 
 After an install, the application alone starts with `./mvnw -pl barcode-label-app javafx:run`.
 
+### Try it with the sample CSV
+
+The application opens with a product label on an A4 sheet of 3 × 7 labels (63.5 × 38.1 mm). Its fields are `{{product_name}}`, `{{sku}}` and `{{price}}`. [`sample-products-quantities.csv`](sample-products-quantities.csv) has four products and how many labels each needs:
+
+```csv
+Name,Code,Retail Price,Qty
+قلم أزرق,SKU-000001,12.50,2
+دفتر 100 ورقة,SKU-000002,35.00,4
+"علبة أقلام، 12 لون",SKU-000003,79.95,3
+مسطرة 30 سم,SKU-000004,18.00,1
+```
+
+1. Open the **مطابقة CSV والكميات** tab (CSV mapping and quantities).
+2. Click **استيراد CSV** (Import CSV) and choose `sample-products-quantities.csv`.
+3. The columns are matched to the fields from their names: `Name` → `product_name`, `Code` → `sku`, `Retail Price` → `price`, and `Qty` becomes the quantity column (**عمود الكمية**). Check the suggestion and change any wrong match.
+4. Click **تحقق وجهّز الطباعة** (Validate and prepare printing). The summary reads **جاهز: سيُطبع 10 ملصقات من 4 صفوف**: ready, 10 labels from 4 rows (2 + 4 + 3 + 1).
+5. Go back to **تصميم ومعاينة وطباعة** (Design, preview and print) and open **المعاينة والطباعة** (Preview and print). The 10 labels fill the first sheet in order.
+6. Choose a printer, the copies and, if part of the sheet is already used, the slot to start from, then click **طباعة** (Print).
+
+The matching also knows common Arabic and English synonyms (`الصنف`, `الكود`/`Barcode`, `السعر`, `الكمية`, `عدد النسخ`…). Your own CSV files therefore need not use these exact names. To save a mapping and reuse it, use **حفظ المطابقة** (Save mapping) and **فتح مطابقة** (Open mapping). The full guide, in Arabic, is [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md).
+
 Every tested module enforces a minimum 70% line-coverage baseline with JaCoCo. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
 
 ## Package for Windows

@@ -84,7 +84,7 @@ final class CustomPaperDialog extends Dialog<PageDefinition> {
 
     private static double number(TextField field, String name) {
         try { return Double.parseDouble(field.getText().trim()); }
-        catch (NumberFormatException exception) { throw new InvalidInput(name + " يجب أن يكون رقمًا صحيحًا"); }
+        catch (NumberFormatException exception) { throw new InvalidInput(name + " يجب أن يكون رقمًا، مثل 63.5"); }
     }
     private static int integer(TextField field, String name) {
         try { return Integer.parseInt(field.getText().trim()); }
