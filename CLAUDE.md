@@ -23,7 +23,7 @@ Run a single module's tests: `mvnw -pl <module-name> -am test`.
 
 The application is `barcode-label-app` (main class `com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher`). [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md) documents it in Arabic; [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md) documents embedding the modules in another JavaFX app.
 
-JaCoCo enforces a 25% line-coverage baseline on every module with tests.
+JaCoCo enforces a 45% line-coverage baseline on every module with tests.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ JaCoCo enforces a 25% line-coverage baseline on every module with tests.
 
 **Two module systems coexist.** The core modules (`model`, `data`, `render`, `print`) use real JPMS (`module-info.java`, `requires`/`exports`). Every other module (`render-java2d`, `print-java2d`, `workflow`, `batch`, the `fx-*` modules and `app`) builds on the classpath instead, using `Automatic-Module-Name` manifest entries (set via `maven-jar-plugin`) rather than `module-info.java`. Don't assume one of these modules has a module descriptor — check before adding a `requires`.
 
-**Domain model (`barcode-label-model`)** is the immutable core: `LabelTemplate` (schema-versioned, holds a `PageDefinition` and a list of `LabelElement`s — barcode/text/image/shape, each anchored by an `ElementFrame`), geometry types (`DimensionsMm`, `InsetsMm`, `RectMm`) all in millimetres, and page/sheet layout (`PageDefinition`, `PageMode`, `SheetLayout`). Validation lives in compact record constructors; each geometry/element record currently re-implements its own `requireNonNegative`/`requirePositive` helpers rather than sharing one.
+**Domain model (`barcode-label-model`)** is the immutable core: `LabelTemplate` (schema-versioned, holds a `PageDefinition` and a list of `LabelElement`s — barcode/text/image/shape, each anchored by an `ElementFrame`), geometry types (`DimensionsMm`, `InsetsMm`, `RectMm`) all in millimetres, and page/sheet layout (`PageDefinition`, `PageMode`, `SheetLayout`). Validation lives in compact record constructors, using the shared `requireFinite`/`requirePositive`/`requireNonNegative` checks in `com.mohamed.barcodelabel.model.internal.Checks` (a package the module does not export).
 
 **Data flow for the batch/CSV workflow (the actively-developed path):** `CsvImportService`/`CsvDataset` (workflow) parse a CSV → `ColumnMapping` maps CSV columns to template `{{field}}`s (batch) → `BatchPreparationService` validates rows against the mapping and produces `BatchPreparationResult`/`BatchValidationIssue` → `UniversalPagePlanner` (workflow) lays out `PlannedPage`/`PlannedPlacement` against a `PaperPreset` → `barcode-label-print-java2d` renders/prints. The FX layer (`BatchProductionWorkbench`, `BatchDataMappingPane` in `barcode-label-fx-batch`) drives this end to end.
 

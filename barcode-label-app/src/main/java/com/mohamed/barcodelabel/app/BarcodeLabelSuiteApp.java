@@ -20,7 +20,8 @@ public final class BarcodeLabelSuiteApp extends Application {
         stage.setMinWidth(1150); stage.setMinHeight(750); stage.show();
     }
 
-    private static LabelTemplate template() {
+    /** The template the app opens with; its fields match the sample CSV in docs/USER_GUIDE_AR.md. */
+    static LabelTemplate template() {
         var page = new PaperPresetRegistry().find("a4-3x7-63.5x38.1").orElseThrow().page();
         var border = new ShapeElement(ElementFrame.create("Border", new RectMm(1, 1, 61.5, 36.1), 0), ShapeType.ROUNDED_RECTANGLE, "#CBD5E1", "transparent", 0.25);
         var name = new TextElement(ElementFrame.create("Product", new RectMm(4, 3, 55, 7), 1), "{{product_name}}", "Arial", 11, "#111827", true, false, TextAlignment.CENTER);
