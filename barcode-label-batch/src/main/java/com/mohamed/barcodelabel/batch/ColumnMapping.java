@@ -1,8 +1,6 @@
 package com.mohamed.barcodelabel.batch;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public record ColumnMapping(Map<String, String> fields, String quantityColumn,
@@ -18,16 +16,12 @@ public record ColumnMapping(Map<String, String> fields, String quantityColumn,
         if (maxTotalLabels <= 0) throw new IllegalArgumentException("maxTotalLabels must be positive");
     }
 
+    /**
+     * The mapping the CSV's column names suggest: a likely column for each field, and the quantity column if
+     * one is named like one (see {@link ColumnMatcher}). The user reviews it before printing.
+     */
     public static ColumnMapping automatic(List<String> templateFields, List<String> headers) {
-        var mapping = new LinkedHashMap<String, String>();
-        for (String field : templateFields) {
-            headers.stream().filter(header -> normalized(header).equals(normalized(field))).findFirst()
-                    .ifPresent(header -> mapping.put(field, header));
-        }
-        return new ColumnMapping(mapping, null, 1, 999, 100_000);
-    }
-
-    private static String normalized(String value) {
-        return value.toLowerCase(Locale.ROOT).replaceAll("[\\s_-]+", "");
+        return new ColumnMapping(ColumnMatcher.fields(templateFields, headers), ColumnMatcher.quantityColumn(headers),
+                1, 999, 100_000);
     }
 }
