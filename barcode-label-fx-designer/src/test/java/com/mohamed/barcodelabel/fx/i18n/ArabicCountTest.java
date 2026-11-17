@@ -1,4 +1,4 @@
-package com.mohamed.barcodelabel.fx.workbench;
+package com.mohamed.barcodelabel.fx.i18n;
 
 import org.junit.jupiter.api.Test;
 

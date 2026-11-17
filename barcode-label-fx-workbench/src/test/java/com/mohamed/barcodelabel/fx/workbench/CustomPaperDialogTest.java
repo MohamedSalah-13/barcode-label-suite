@@ -60,6 +60,33 @@ class CustomPaperDialogTest {
     }
 
     @Test
+    void theEnglishDialogIsLeftToRightAndExplainsErrorsInEnglish() {
+        runFx(() -> {
+            CustomPaperDialog dialog = new CustomPaperDialog(
+                    com.mohamed.barcodelabel.fx.i18n.UiTexts.load(CustomPaperDialog.class, "messages",
+                            com.mohamed.barcodelabel.fx.i18n.UiLanguage.ENGLISH));
+            assertEquals(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT, dialog.getDialogPane().getNodeOrientation());
+            assertEquals("Custom paper size", dialog.getTitle());
+            @SuppressWarnings("unchecked")
+            ComboBox<PageMode> mode = (ComboBox<PageMode>) control(dialog, "Paper type");
+            assertEquals("Roll", mode.getConverter().toString(PageMode.ROLL));
+            assertEquals("Label sheet", mode.getConverter().toString(PageMode.SHEET));
+            field(dialog, "Page width").setText("abc");
+            assertTrue(pressApply(dialog));
+            assertEquals("Page width must be a number, such as 63.5", error(dialog).getText());
+            field(dialog, "Page width").setText("210");
+            field(dialog, "Columns").setText("2.5");
+            pressApply(dialog);
+            assertEquals("Columns must be a whole number", error(dialog).getText());
+            field(dialog, "Columns").setText("3");
+            field(dialog, "Label width").setText("300");
+            pressApply(dialog);
+            assertEquals("The labels do not fit inside the page margins", error(dialog).getText());
+            assertTrue(dialog.getDialogPane().getButtonTypes().stream().anyMatch(type -> type.getText().equals("Cancel")));
+        });
+    }
+
+    @Test
     void invalidInputIsExplainedInArabicAndKeepsTheDialogOpen() {
         runFx(() -> {
             CustomPaperDialog dialog = new CustomPaperDialog();

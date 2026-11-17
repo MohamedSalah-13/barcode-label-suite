@@ -1,9 +1,10 @@
 package com.mohamed.barcodelabel.fx.batch;
 
+import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
+import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import com.mohamed.barcodelabel.fx.workbench.BarcodeLabelWorkbench;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
@@ -16,16 +17,24 @@ import java.util.Map;
 /** Adds validated column mapping and per-row quantities around the reusable label workbench. */
 public final class BatchProductionWorkbench extends BorderPane {
     private final BarcodeLabelWorkbench labelWorkbench;
-    private final BatchDataMappingPane batchPane = new BatchDataMappingPane();
+    private final BatchDataMappingPane batchPane;
     private final TabPane tabs = new TabPane();
     /** The print data this workbench last handed to the print workspace from a ready batch. */
     private CsvDataset preparedData;
 
+    /** An Arabic production workbench. */
     public BatchProductionWorkbench(LabelTemplate template) {
-        labelWorkbench = new BarcodeLabelWorkbench(template);
-        setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-        Tab production = tab("تصميم ومعاينة وطباعة", labelWorkbench);
-        Tab batch = tab("مطابقة CSV والكميات", batchPane);
+        this(template, UiLanguage.ARABIC);
+    }
+
+    /** A production workbench in this language: Arabic right to left, English left to right. */
+    public BatchProductionWorkbench(LabelTemplate template, UiLanguage language) {
+        UiTexts texts = UiTexts.load(BatchProductionWorkbench.class, "messages", language);
+        labelWorkbench = new BarcodeLabelWorkbench(template, language);
+        batchPane = new BatchDataMappingPane(language);
+        setNodeOrientation(language.orientation());
+        Tab production = tab(texts.get("production.designTab"), labelWorkbench);
+        Tab batch = tab(texts.get("production.batchTab"), batchPane);
         batch.setOnSelectionChanged(event -> { if (batch.isSelected()) batchPane.setTemplate(labelWorkbench.getTemplate()); });
         batchPane.resultProperty().addListener((obs, oldValue, value) -> {
             if (value != null && value.ready()) {
@@ -41,6 +50,7 @@ public final class BatchProductionWorkbench extends BorderPane {
         tabs.getTabs().setAll(production, batch); setCenter(tabs);
     }
 
+    public UiLanguage language() { return batchPane.language(); }
     public BarcodeLabelWorkbench labelWorkbench() { return labelWorkbench; }
     public BatchDataMappingPane batchPane() { return batchPane; }
     public LabelTemplate getTemplate() { return labelWorkbench.getTemplate(); }

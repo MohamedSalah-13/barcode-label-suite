@@ -116,6 +116,53 @@ class BatchProductionWorkbenchTest {
         });
     }
 
+    @Test
+    void theEnglishWorkspaceIsLeftToRightAndPreparesABatchInEnglish() {
+        BatchProductionWorkbench workbench = onFx(() -> {
+            BatchProductionWorkbench english = new BatchProductionWorkbench(template(), com.mohamed.barcodelabel.fx.i18n.UiLanguage.ENGLISH);
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setScene(new javafx.scene.Scene(english, 1400, 900));
+            stage.show();
+            return english;
+        });
+        CsvDataset dataset = new CsvDataset(List.of("Name", "Code", "Retail Price", "Qty"), List.of(
+                Map.of("Name", "Blue pen", "Code", "A1", "Retail Price", "12.5", "Qty", "2"),
+                Map.of("Name", "Notebook", "Code", "B2", "Retail Price", "30", "Qty", "3")), ',');
+        onFx(() -> {
+            assertEquals(com.mohamed.barcodelabel.fx.i18n.UiLanguage.ENGLISH, workbench.language());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, workbench.getEffectiveNodeOrientation());
+            TabPane tabs = (TabPane) workbench.getCenter();
+            assertEquals(List.of("Design, preview and print", "CSV mapping and quantities"),
+                    tabs.getTabs().stream().map(tab -> tab.getText()).toList());
+            tabs.getSelectionModel().select(1);
+            workbench.batchPane().setTemplate(workbench.getTemplate());
+            workbench.batchPane().setDataset(dataset);
+            findButton(workbench.batchPane(), "Validate and prepare printing").fire();
+            return null;
+        });
+        await(Duration.ofSeconds(10), () -> onFx(() -> workbench.batchPane().getResult() != null));
+        onFx(() -> {
+            assertTrue(workbench.batchPane().getResult().ready());
+            assertTrue(texts(workbench).contains("Ready: 5 labels will print from 2 rows"), texts(workbench).toString());
+            texts(workbench).forEach(text -> assertTrue(text.codePoints()
+                    .noneMatch(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.ARABIC), "Arabic text: " + text));
+            List.copyOf(javafx.stage.Window.getWindows()).forEach(javafx.stage.Window::hide);
+            return null;
+        });
+    }
+
+    /** Every label, button and prompt text in the workspace, including the content of both tabs. */
+    private static List<String> texts(Node root) {
+        List<String> result = new java.util.ArrayList<>();
+        if (root instanceof javafx.scene.control.Labeled labeled && labeled.getText() != null) result.add(labeled.getText());
+        if (root instanceof javafx.scene.control.ComboBoxBase<?> box && box.getPromptText() != null) result.add(box.getPromptText());
+        if (root instanceof TabPane tabs) tabs.getTabs().forEach(tab -> { result.add(tab.getText()); result.addAll(texts(tab.getContent())); });
+        else if (root instanceof javafx.scene.control.SplitPane split) split.getItems().forEach(item -> result.addAll(texts(item)));
+        else if (root instanceof javafx.scene.control.ScrollPane scroll && scroll.getContent() != null) result.addAll(texts(scroll.getContent()));
+        else if (root instanceof Parent parent) parent.getChildrenUnmodifiable().forEach(child -> result.addAll(texts(child)));
+        return result;
+    }
+
     private static Button findButton(Parent root, String text) {
         return root.getChildrenUnmodifiable().stream()
                 .map(node -> findButton(node, text))

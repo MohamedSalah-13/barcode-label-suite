@@ -2,11 +2,13 @@
 
 [![CI](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml/badge.svg)](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml) ![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white) ![JavaFX](https://img.shields.io/badge/JavaFX-21-1F6FB2) ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven&logoColor=white) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A reusable, modular Java 21 / JavaFX library for designing and printing barcode labels.
+**English** | [العربية](README.ar.md)
+
+A reusable, modular Java 21 / JavaFX library for designing and printing barcode labels, with an Arabic and English interface.
 
 ## Screenshots
 
-Designing a label: the elements on the right, the label on its own millimetre surface, the properties on the left.
+Designing a label: the elements on the left, the label on its own millimetre surface, the selected element's properties on the right. The language menu is at the end of the tab bar.
 
 ![The label designer](docs/images/designer.png)
 
@@ -28,6 +30,7 @@ The current version is `0.7.0`. It provides:
 - JSON save/load with a schema version.
 - `{{field}}` data binding.
 - A reusable JavaFX label designer and high-quality preview.
+- An Arabic (right-to-left) and English (left-to-right) interface, chosen from a menu and remembered between runs.
 - Java2D barcode rendering and printing for sheets, rolls and single labels.
 - CSV import, automatic column suggestions (English and Arabic names), quantity expansion and batch validation.
 - Page-range printing, cancellation and typed print failures.
@@ -80,24 +83,26 @@ After an install, the application alone starts with `./mvnw -pl barcode-label-ap
 
 ### Try it with the sample CSV
 
-The application opens with a product label on an A4 sheet of 3 × 7 labels (63.5 × 38.1 mm). Its fields are `{{product_name}}`, `{{sku}}` and `{{price}}`. [`sample-products-quantities.csv`](sample-products-quantities.csv) has four products and how many labels each needs:
+The application opens in Arabic the first time. To switch to English, choose **English** in the language menu at the end of the tab bar (top left in Arabic); the window reopens in English, and the choice is remembered. The label you are designing is kept, but an imported CSV file has to be imported again.
+
+The application opens with a product label on an A4 sheet of 3 × 7 labels (63.5 × 38.1 mm). Its fields are `{{product_name}}`, `{{sku}}` and `{{price}}`. [`sample-products-quantities-en.csv`](sample-products-quantities-en.csv) has four products and how many labels each needs ([`sample-products-quantities.csv`](sample-products-quantities.csv) is the same data in Arabic):
 
 ```csv
 Name,Code,Retail Price,Qty
-قلم أزرق,SKU-000001,12.50,2
-دفتر 100 ورقة,SKU-000002,35.00,4
-"علبة أقلام، 12 لون",SKU-000003,79.95,3
-مسطرة 30 سم,SKU-000004,18.00,1
+Blue pen,SKU-000001,12.50,2
+"Notebook, 100 sheets",SKU-000002,35.00,4
+"Colored pencils, box of 12",SKU-000003,79.95,3
+Ruler 30 cm,SKU-000004,18.00,1
 ```
 
-1. Open the **مطابقة CSV والكميات** tab (CSV mapping and quantities).
-2. Click **استيراد CSV** (Import CSV) and choose `sample-products-quantities.csv`.
-3. The columns are matched to the fields from their names: `Name` → `product_name`, `Code` → `sku`, `Retail Price` → `price`, and `Qty` becomes the quantity column (**عمود الكمية**). Check the suggestion and change any wrong match.
-4. Click **تحقق وجهّز الطباعة** (Validate and prepare printing). The summary reads **جاهز: سيُطبع 10 ملصقات من 4 صفوف**: ready, 10 labels from 4 rows (2 + 4 + 3 + 1).
-5. Go back to **تصميم ومعاينة وطباعة** (Design, preview and print) and open **المعاينة والطباعة** (Preview and print). The 10 labels fill the first sheet in order.
-6. Choose a printer, the copies and, if part of the sheet is already used, the slot to start from, then click **طباعة** (Print).
+1. Open the **CSV mapping and quantities** tab.
+2. Click **Import CSV** and choose `sample-products-quantities-en.csv`.
+3. The columns are matched to the fields from their names: `Name` → `product_name`, `Code` → `sku`, `Retail Price` → `price`, and `Qty` becomes the **Quantity column**. Check the suggestion and change any wrong match.
+4. Click **Validate and prepare printing**. The summary reads **Ready: 10 labels will print from 4 rows** (2 + 4 + 3 + 1).
+5. Go back to **Design, preview and print** and open **Preview and print**. The 10 labels fill the first sheet in order.
+6. Choose a printer, the copies and, if part of the sheet is already used, the slot to start from, then click **Print**.
 
-The matching also knows common Arabic and English synonyms (`الصنف`, `الكود`/`Barcode`, `السعر`, `الكمية`, `عدد النسخ`…). Your own CSV files therefore need not use these exact names. To save a mapping and reuse it, use **حفظ المطابقة** (Save mapping) and **فتح مطابقة** (Open mapping). The full guide, in Arabic, is [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md).
+The matching also knows common English and Arabic synonyms (`Product`, `Barcode`, `Price`, `Quantity`, `الصنف`, `الكود`, `السعر`, `الكمية`…). Your own CSV files therefore need not use these exact names. To save a mapping and reuse it, use **Save mapping** and **Open mapping**. The full user guide, in Arabic, is [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md).
 
 Every tested module enforces a minimum 70% line-coverage baseline with JaCoCo. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
 
@@ -131,7 +136,7 @@ The [release workflow](.github/workflows/release.yml) then checks the tag matche
 - `barcode-label-print-java2d`: shared Java2D printing implementation.
 - `barcode-label-workflow`: CSV import and universal page planning.
 - `barcode-label-batch`: mapping, validation and batch preparation.
-- `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
+- `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers. Each takes a `UiLanguage` (`ARABIC` or `ENGLISH`); its texts are in `messages_ar.properties` and `messages_en.properties` next to its classes.
 - `barcode-label-app`: the batch-production desktop application.
 
 ## License
