@@ -17,7 +17,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 - The data preview titled "first 8 rows" showed three.
 - **A template that looked right could fail to print:** the printer accepted only `#RRGGBB` colours while the designer also accepted names such as `red`.
 - The print confirmation ignored copies and page ranges, so it under-reported the job.
-- The custom paper dialog showed the model's English error messages.
+- The custom paper dialog showed the model's English error messages, and asked for a "whole number" (رقمًا صحيحًا) in fields that take decimals such as 63.5.
 
 ### Added
 - **Automatic CSV column suggestions** from column names: exact names, English and Arabic synonyms (`Name`/`الصنف`, `Code`/`Barcode`/`الكود`, `Retail Price`/`السعر`…) and shared words. The quantity column is picked too (`Qty`, `الكمية`, `عدد النسخ`…), and the screen asks the user to review the suggestion.
@@ -25,7 +25,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 - The print confirmation states the labels and pages that will print, the copies and the page range.
 - `CHANGELOG.md`, an MIT `LICENSE`, and a release workflow that builds, tests, packages and publishes the Windows application when a `v*` tag is pushed.
 - CI on Linux as well as Windows.
-- Screenshots of the designer, the CSV screen and the print preview in the README.
+- Screenshots of the designer, the CSV screen and the print preview in the README, and a walkthrough with the sample CSV.
 
 ### Changed
 - **One build:** every module builds and tests from the root `pom.xml` with `mvnw clean install`, at one shared version. `start.cmd`/`start.sh` build and start the app; `package.ps1` makes the Windows app image and takes its version from `pom.xml`.

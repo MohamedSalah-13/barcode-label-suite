@@ -65,7 +65,7 @@ class CustomPaperDialogTest {
             CustomPaperDialog dialog = new CustomPaperDialog();
             field(dialog, "عرض الصفحة").setText("abc");
             assertTrue(pressApply(dialog), "the click is consumed, so the dialog stays open");
-            assertEquals("عرض الصفحة يجب أن يكون رقمًا صحيحًا", error(dialog).getText());
+            assertEquals("عرض الصفحة يجب أن يكون رقمًا، مثل 63.5", error(dialog).getText());
 
             field(dialog, "عرض الصفحة").setText("210");
             field(dialog, "عدد الأعمدة").setText("3.5");
