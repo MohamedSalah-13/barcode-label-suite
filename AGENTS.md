@@ -17,13 +17,13 @@ The root `pom.xml` is a single Maven reactor covering every module, in dependenc
 .\package.ps1                                     # Windows app image via jpackage
 ```
 
-The JavaFX UI tests (`barcode-label-fx-workbench`, `barcode-label-fx-batch`) start the JavaFX toolkit and need a display; on headless Linux run Maven under `xvfb-run -a`.
+The JavaFX UI tests (`barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`) start the JavaFX toolkit and need a display; on headless Linux run Maven under `xvfb-run -a`.
 
 Run a single module's tests: `mvnw -pl <module-name> -am test`.
 
 The application is `barcode-label-app` (main class `com.mohamed.barcodelabel.demo.v6.Phase6Launcher`). [`PHASE6_FINAL_AR.md`](PHASE6_FINAL_AR.md) documents it in Arabic; `docs/INTEGRATION_AR.md` documents consuming the modules as a library from another JavaFX app.
 
-JaCoCo enforces a 25% line-coverage baseline on every module with tests, except `barcode-label-fx-designer`, which sets `jacoco.haltOnFailure=false` until its coverage is raised.
+JaCoCo enforces a 25% line-coverage baseline on every module with tests.
 
 ## Architecture
 
