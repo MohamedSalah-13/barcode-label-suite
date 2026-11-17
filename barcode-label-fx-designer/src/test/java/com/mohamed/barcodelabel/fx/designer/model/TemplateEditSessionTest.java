@@ -212,7 +212,7 @@ class TemplateEditSessionTest {
         var copy = session.find(session.primarySelection());
         assertEquals(new RectMm(4, 5, 20, 6), copy.frame().bounds());
         assertEquals(2, copy.frame().zIndex(), "copies go above the existing elements");
-        assertEquals("Duplicate elements", session.undoDescription());
+        assertEquals("تكرار العناصر", session.undoDescription());
     }
 
     @Test
@@ -282,9 +282,34 @@ class TemplateEditSessionTest {
 
         var id = session.template().elements().getFirst().frame().id();
         session.setRotation(id, 30);
-        assertEquals("Rotate element", session.undoDescription());
+        assertEquals("تدوير العنصر", session.undoDescription());
         session.undo();
-        assertEquals("Rotate element", session.redoDescription());
+        assertEquals("تدوير العنصر", session.redoDescription());
+    }
+
+    @Test
+    void everyActionIsDescribedInArabicForTheUndoButton() {
+        var session = new TemplateEditSession(template());
+        var id = session.template().elements().getFirst().frame().id();
+        session.selectAll();
+
+        session.moveSelected(1, 1);
+        assertEquals("تحريك العناصر", session.undoDescription());
+        session.align(EditorAlignment.LEFT);
+        assertEquals("محاذاة لليسار", session.undoDescription());
+        session.align(EditorAlignment.VERTICAL_CENTER);
+        assertEquals("توسيط رأسي", session.undoDescription());
+        session.setContent(id, "{{sku}}");
+        assertEquals("تغيير المحتوى", session.undoDescription());
+        session.setLockedVisible(id, false, false);
+        assertEquals("تغيير القفل والظهور", session.undoDescription());
+        session.deleteSelected();
+        assertEquals("حذف العناصر", session.undoDescription());
+
+        for (EditorAlignment alignment : EditorAlignment.values()) {
+            String description = TemplateEditSession.alignmentDescription(alignment);
+            assertTrue(description.chars().noneMatch(c -> c < 0x80 && Character.isLetter(c)), description);
+        }
     }
 
     @Test

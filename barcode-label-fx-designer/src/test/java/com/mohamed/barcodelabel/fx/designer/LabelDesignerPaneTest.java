@@ -99,11 +99,11 @@ class LabelDesignerPaneTest {
 
             button(pane, "+ نص").fire();
             assertFalse(undo.isDisabled());
-            assertEquals("تراجع: Add Text", undo.getText());
+            assertEquals("تراجع: إضافة عنصر", undo.getText());
 
             undo.fire();
             assertEquals(2, pane.getTemplate().elements().size());
-            assertEquals("إعادة: Add Text", redo.getText());
+            assertEquals("إعادة: إضافة عنصر", redo.getText());
             assertEquals("تراجع", undo.getText());
 
             redo.fire();
