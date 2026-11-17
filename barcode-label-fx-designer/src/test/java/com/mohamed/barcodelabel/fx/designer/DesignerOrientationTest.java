@@ -8,6 +8,7 @@ import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
@@ -27,6 +28,7 @@ import static com.mohamed.barcodelabel.fx.designer.FxTestSupport.drag;
 import static com.mohamed.barcodelabel.fx.designer.FxTestSupport.key;
 import static com.mohamed.barcodelabel.fx.designer.FxTestSupport.mouse;
 import static com.mohamed.barcodelabel.fx.designer.FxTestSupport.runFx;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,7 +77,7 @@ class DesignerOrientationTest {
     @Test
     void theLabelSitsAtTheRightOfTheWorkspaceLikeTheRestOfTheRightToLeftUi() {
         runFx(() -> {
-            Bounds workspace = sceneBounds(pane.getCenter());
+            Bounds workspace = sceneBounds(pane.workspace());
             Bounds label = sceneBounds(canvas());
             assertTrue(label.getMinX() - workspace.getMinX() > workspace.getMaxX() - label.getMaxX(),
                     "the label is closer to the workspace's right edge: " + label + " in " + workspace);
@@ -89,6 +91,49 @@ class DesignerOrientationTest {
             assertEquals(label.getWidth() * 2, zoomed.getWidth(), 0.5);
             assertEquals(32, workspace.getMaxX() - zoomed.getMaxX(), 3, "it stays on the right when zoomed");
         });
+    }
+
+    @Test
+    void theElementsPanelIsOnTheRightAndThePropertiesOnTheLeftAtTheirWidths() {
+        runFx(() -> {
+            var items = pane.bodyItems();
+            Bounds elements = sceneBounds(items.getFirst());
+            Bounds workspace = sceneBounds(pane.workspace());
+            Bounds properties = sceneBounds(items.getLast());
+            assertTrue(elements.getMinX() > workspace.getMaxX() - 1, "elements on the right: " + elements);
+            assertTrue(properties.getMaxX() < workspace.getMinX() + 1, "properties on the left: " + properties);
+            assertEquals(190, elements.getWidth(), 8);
+            assertEquals(300, properties.getWidth(), 8);
+        });
+    }
+
+    @Test
+    void aWidenedPanelKeepsItsWidthWhenTheOtherIsHiddenAndShown() {
+        runFx(() -> {
+            // A 1,200 px window: 450 + 300 px of panels leave the workspace plenty of room.
+            javafx.scene.control.SplitPane body = (javafx.scene.control.SplitPane) pane.getCenter();
+            body.setDividerPositions(450 / body.getWidth(), body.getDividerPositions()[1]);
+            pane.layout();
+            double widened = sceneBounds(pane.bodyItems().getFirst()).getWidth();
+            assertEquals(450, widened, 8);
+
+            CheckBox properties = (CheckBox) pane.lookupAll(".check-box").stream()
+                    .filter(node -> ((CheckBox) node).getText().equals("لوحة الخصائص")).findFirst().orElseThrow();
+            properties.setSelected(false);
+            pane.layout();
+            properties.setSelected(true);
+            pane.layout();
+            assertEquals(widened, sceneBounds(pane.bodyItems().getFirst()).getWidth(), 3);
+            assertEquals(300, sceneBounds(pane.bodyItems().getLast()).getWidth(), 8);
+        });
+    }
+
+    @Test
+    void panelsThatDoNotFitShareTheShortfallButKeepTheirMinimums() {
+        assertArrayEquals(new double[] {450, 300}, LabelDesignerPane.panelWidths(1000, 450, 120, 300, 200), 1e-9);
+        assertArrayEquals(new double[] {360, 240}, LabelDesignerPane.panelWidths(600, 450, 120, 300, 200), 1e-9);
+        assertArrayEquals(new double[] {120, 200}, LabelDesignerPane.panelWidths(100, 450, 120, 300, 200), 1e-9);
+        assertArrayEquals(new double[] {0, 300}, LabelDesignerPane.panelWidths(1000, 0, 0, 300, 200), 1e-9);
     }
 
     @Test

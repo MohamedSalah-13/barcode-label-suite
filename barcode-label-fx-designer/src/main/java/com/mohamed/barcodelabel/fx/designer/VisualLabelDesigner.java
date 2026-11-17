@@ -5,6 +5,8 @@ import com.mohamed.barcodelabel.model.LabelTemplate;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.scene.Node;
+import javafx.scene.control.ComboBoxBase;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 
@@ -36,10 +38,23 @@ public final class VisualLabelDesigner extends BorderPane {
     private VisualLabelDesigner(LabelDesignerPane delegate) {
         this.delegate = delegate;
         setCenter(delegate);
-        delegate.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> Platform.runLater(() -> {
-            Node selected = delegate.lookup(".selected-element");
-            if (selected != null) selected.requestFocus();
-        }));
+        // After a press the selected element takes the focus back, so arrow keys and shortcuts keep moving it. Not
+        // after a press in a field one types into: that would take the focus from the field before the first key.
+        delegate.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (isTypedInto(event.getPickResult().getIntersectedNode())) return;
+            Platform.runLater(() -> {
+                Node selected = delegate.lookup(".selected-element");
+                if (selected != null) selected.requestFocus();
+            });
+        });
+    }
+
+    /** Whether {@code node} is, or is inside, a text field or a combo box, colour picker or other editable box. */
+    static boolean isTypedInto(Node node) {
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current instanceof TextInputControl || current instanceof ComboBoxBase<?>) return true;
+        }
+        return false;
     }
 
     public LabelTemplate getTemplate() { return delegate.getTemplate(); }

@@ -105,7 +105,7 @@ class EnglishDesignerTest {
         LabelDesignerPane pane = onFx(() -> new LabelDesignerPane(FxTestSupport.twoTextTemplate(), UiLanguage.ENGLISH));
         runFx(() -> {
             button(pane, "+ Text").fire();
-            all(pane.getRight()).filter(node -> node instanceof javafx.scene.control.TextField).map(javafx.scene.control.TextField.class::cast)
+            all(pane.propertiesPanel()).filter(node -> node instanceof javafx.scene.control.TextField).map(javafx.scene.control.TextField.class::cast)
                     .findFirst().orElseThrow().setText("abc");
             button(pane, "Apply properties").fire();
             assertEquals("Invalid value: position, size, rotation and font size must be numbers", status(pane).getText());
@@ -139,6 +139,7 @@ class EnglishDesignerTest {
     private static Stream<Node> all(Node root) {
         Stream<Node> children = Stream.empty();
         if (root instanceof ToolBar toolBar) children = toolBar.getItems().stream();
+        else if (root instanceof javafx.scene.control.SplitPane split) children = split.getItems().stream();
         else if (root instanceof ScrollPane scroll && scroll.getContent() != null) children = Stream.of(scroll.getContent());
         else if (root instanceof Parent parent) children = parent.getChildrenUnmodifiable().stream();
         return Stream.concat(Stream.of(root), children.flatMap(EnglishDesignerTest::all));
@@ -153,7 +154,7 @@ class EnglishDesignerTest {
 
     @SuppressWarnings("unchecked")
     private static ComboBox<ImageFit> imageFit(LabelDesignerPane pane) {
-        return all(pane.getRight()).filter(node -> node instanceof ComboBox<?> box && !box.getItems().isEmpty()
+        return all(pane.propertiesPanel()).filter(node -> node instanceof ComboBox<?> box && !box.getItems().isEmpty()
                         && box.getItems().getFirst() instanceof ImageFit)
                 .map(node -> (ComboBox<ImageFit>) node).findFirst().orElseThrow();
     }
