@@ -143,7 +143,64 @@ class BarcodeLabelSuiteAppTest {
         closeWindows();
     }
 
+    @Test
+    void theLabelBeingDesignedOpensAgainOnTheNextRun() throws Exception {
+        LastDesign lastDesign = LastDesign.inMemory();
+        BarcodeLabelSuiteApp first = started(new MemorySetting(UiLanguage.ARABIC), texts -> true, lastDesign);
+        onFx(() -> { first.stop(); return null; });
+        assertTrue(lastDesign.load().isEmpty(), "the untouched starting label is not kept");
+        LabelTemplate edited = BarcodeLabelSuiteApp.template().withElements(List.of());
+        onFx(() -> { first.workbench().labelWorkbench().setTemplate(edited); first.stop(); return null; });
+        assertEquals(edited, lastDesign.load().orElseThrow());
+        closeWindows();
+
+        BarcodeLabelSuiteApp second = started(new MemorySetting(UiLanguage.ENGLISH), texts -> true, lastDesign);
+        onFx(() -> {
+            assertEquals(edited, second.workbench().getTemplate());
+            second.languagePicker().setValue(UiLanguage.ARABIC);
+            assertEquals(edited, second.workbench().getTemplate(), "a switch keeps the restored label as it is");
+            return null;
+        });
+        closeWindows();
+    }
+
+    @Test
+    void theLastDesignFileKeepsTheLabelAndIgnoresADamagedFile(@org.junit.jupiter.api.io.TempDir java.nio.file.Path directory)
+            throws Exception {
+        java.nio.file.Path file = directory.resolve("app").resolve("last-design.label.json");
+        LastDesign store = LastDesign.file(file);
+        assertTrue(store.load().isEmpty(), "nothing before the first close");
+
+        LabelTemplate template = BarcodeLabelSuiteApp.template(UiLanguage.ENGLISH);
+        store.save(template);
+        assertEquals(template, LastDesign.file(file).load().orElseThrow());
+        assertEquals(List.of(file), java.nio.file.Files.list(file.getParent()).toList(), "no partial file left behind");
+
+        java.nio.file.Files.writeString(file, "{ not json");
+        assertTrue(LastDesign.file(file).load().isEmpty(), "a damaged file is ignored");
+
+        java.nio.file.Path blocked = file.resolve("inside-a-file.label.json");
+        LastDesign.file(blocked).save(template);
+        assertTrue(LastDesign.file(blocked).load().isEmpty(), "a label that cannot be written is only not kept");
+    }
+
+    @Test
+    void theLastDesignIsInAppDataOnWindowsAndInTheHomeFolderElsewhere() {
+        assertEquals(java.nio.file.Path.of("C:/Users/u/AppData/Roaming", "Barcode Label Suite", "last-design.label.json"),
+                LastDesign.userFile("C:/Users/u/AppData/Roaming", "C:/Users/u"));
+        assertEquals(java.nio.file.Path.of("/home/u", ".barcode-label-suite", "last-design.label.json"),
+                LastDesign.userFile(null, "/home/u"));
+        assertEquals(java.nio.file.Path.of("/home/u", ".barcode-label-suite", "last-design.label.json"),
+                LastDesign.userFile(" ", "/home/u"));
+        assertTrue(LastDesign.userFile() != null);
+    }
+
     private static BarcodeLabelSuiteApp started(LanguageSetting setting, java.util.function.Predicate<UiTexts> confirm) throws Exception {
+        return started(setting, confirm, LastDesign.inMemory());
+    }
+
+    private static BarcodeLabelSuiteApp started(LanguageSetting setting, java.util.function.Predicate<UiTexts> confirm,
+                                                LastDesign lastDesign) throws Exception {
         CountDownLatch started = new CountDownLatch(1);
         try {
             Platform.startup(started::countDown);
@@ -152,7 +209,8 @@ class BarcodeLabelSuiteAppTest {
         }
         assertTrue(started.await(10, TimeUnit.SECONDS), "JavaFX toolkit did not start");
         Platform.setImplicitExit(false);
-        BarcodeLabelSuiteApp app = new BarcodeLabelSuiteApp(setting, confirm);
+        BarcodeLabelSuiteApp app = new BarcodeLabelSuiteApp(setting, confirm,
+                com.mohamed.barcodelabel.fx.workbench.CustomPaperStore.inMemory(), lastDesign);
         onFx(() -> { app.start(new Stage()); return null; });
         return app;
     }

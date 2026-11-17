@@ -12,6 +12,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 - In the designer, Enter in a property field applies it, and a double click on an element jumps to its text or barcode data. The content field's caption names what it holds: text, barcode data or image path.
 - **Resizable, hideable designer panels.** The elements and properties panels sit beside the label behind dividers that resize them, and two check boxes in the designer's status bar hide or show each one. A hidden panel comes back at its width; a double click on an element shows the properties panel again. The properties panel scrolls when the window is short.
 - **Named custom paper sizes.** The custom size dialog takes a name (or makes one from the label size). The size is applied, added to the paper list and, in the application, kept in the user's preferences, so it is in the list after a restart. Choosing a saved size and opening the dialog again changes it; "Delete size" removes it. Embedding applications pass a `CustomPaperStore` to `BarcodeLabelWorkbench.setCustomPaperStore`; without one, the sizes last while the application runs.
+- **The app opens the last design.** On closing, the application keeps the label being designed, with its paper size, in `%APPDATA%\Barcode Label Suite\last-design.label.json` (`~/.barcode-label-suite/` elsewhere) and opens it on the next run. The untouched starting label is not kept, and a file that cannot be read is ignored.
 - `README.ar.md`, an Arabic README, and `sample-products-quantities-en.csv`, the sample data in English. The README screenshots are in English, and `README.ar.md` has Arabic ones.
 
 ### Fixed
@@ -20,7 +21,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 - Property names in the designer, the Browse button and the print pane's page-range captions were cut short ("الع…", "…") when the panels were narrow.
 
 ### بالعربية
-- **جديد:** واجهة إنجليزية بجانب العربية، تختارها من قائمة اللغة ويتذكرها البرنامج. طباعة ملصق واحد بدون ملف CSV بكتابة بياناته في تبويب الطباعة، وعدد النسخ هو عدد الملصقات. في المصمّم، Enter يطبّق الخاصية، والنقر المزدوج على العنصر ينقلك لخانة نصه أو بيانات الباركود. ملف README بالعربية. لوحتا العناصر والخصائص يتغير عرضهما بالسحب ويمكن إخفاؤهما من شريط الحالة. المقاس المخصص يُحفظ باسم في قائمة المقاسات ويبقى بعد إغلاق البرنامج، ويمكن تعديله أو حذفه.
+- **جديد:** واجهة إنجليزية بجانب العربية، تختارها من قائمة اللغة ويتذكرها البرنامج. طباعة ملصق واحد بدون ملف CSV بكتابة بياناته في تبويب الطباعة، وعدد النسخ هو عدد الملصقات. في المصمّم، Enter يطبّق الخاصية، والنقر المزدوج على العنصر ينقلك لخانة نصه أو بيانات الباركود. ملف README بالعربية. لوحتا العناصر والخصائص يتغير عرضهما بالسحب ويمكن إخفاؤهما من شريط الحالة. المقاس المخصص يُحفظ باسم في قائمة المقاسات ويبقى بعد إغلاق البرنامج، ويمكن تعديله أو حذفه. البرنامج يفتح آخر تصميم كنت تعمل عليه، بمقاس ورقه، عند تشغيله من جديد.
 - **أخطاء أُصلحت:** لم يكن ممكنًا الكتابة في خانات الخصائص في المصمّم لأن التركيز كان يعود للعنصر المحدد بعد كل نقرة. نصوص إنجليزية كانت تظهر في الواجهة العربية، مثل "تراجع: Move elements" وأسماء العناصر الجديدة وقوائم نوع الورق ونمط الصورة وأزرار الحوارات. وأسماء الخصائص التي كانت تُقص عند ضيق اللوحة.
 
 ## [0.7.1] - 2026-11-17
