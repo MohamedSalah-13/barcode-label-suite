@@ -1,4 +1,4 @@
-package com.mohamed.barcodelabel.demo.v6;
+package com.mohamed.barcodelabel.app;
 
 import com.mohamed.barcodelabel.fx.batch.BatchProductionWorkbench;
 import com.mohamed.barcodelabel.model.LabelTemplate;
@@ -12,11 +12,11 @@ import javafx.stage.Stage;
 
 import java.util.List;
 
-public final class Phase6DemoApplication extends Application {
+public final class BarcodeLabelSuiteApp extends Application {
     @Override public void start(Stage stage) {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         stage.setScene(new Scene(new BatchProductionWorkbench(template()), 1480, 940));
-        stage.setTitle("Barcode Label Suite — Batch Production 0.6");
+        stage.setTitle("Barcode Label Suite");
         stage.setMinWidth(1150); stage.setMinHeight(750); stage.show();
     }
 

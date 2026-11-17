@@ -1,68 +1,99 @@
-# دمج Barcode Label Suite في مشروع JavaFX
+# دمج Barcode Label Suite في برنامج JavaFX
 
 ## 1. تثبيت المكتبة محليًا
 
 من مجلد المشروع الرئيسي:
 
-```powershell
-mvn clean install
+```bash
+./mvnw clean install
 ```
 
-الإصدار الحالي للتطوير هو `0.6.1-SNAPSHOT`.
+على Windows استخدم `mvnw.cmd`. اختبارات الواجهة تحتاج شاشة؛ على Linux بدون شاشة شغّل الأمر عبر `xvfb-run -a`، أو أضف `-DskipTests`.
 
-## 2. إضافة الوحدات إلى `pom.xml`
+الإصدار الحالي هو `0.6.1-SNAPSHOT`، وكل الموديولات تحمل نفس الإصدار.
 
-لإدراج عنصر المعاينة/المصمم داخل مشروع JavaFX:
+## 2. اختر الموديول المناسب
+
+| ما تريده | الموديول | الكلاس |
+|---|---|---|
+| الشاشة الكاملة: تصميم ومعاينة وطباعة ومطابقة CSV والكميات | `barcode-label-fx-batch` | `BatchProductionWorkbench` |
+| التصميم والمعاينة والطباعة بدون شاشة مطابقة CSV | `barcode-label-fx-workbench` | `BarcodeLabelWorkbench` |
+| معاينة وطباعة سجلات جاهزة فقط | `barcode-label-fx-workbench` | `UniversalPrintPane` |
+| مصمم الملصق فقط | `barcode-label-fx-designer` | `VisualLabelDesigner` |
+| حفظ وتحميل القوالب وربط الحقول، بدون واجهة | `barcode-label-data` | `TemplateJsonService`، `TemplateFieldResolver` |
+
+كل موديول يجلب ما يحتاجه من الموديولات الأخرى تلقائيًا، فيكفي أن تضيف واحدًا منها. مثلًا للشاشة الكاملة:
 
 ```xml
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
-    <artifactId>barcode-label-fx</artifactId>
+    <artifactId>barcode-label-fx-batch</artifactId>
     <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```
 
-للحفظ والتحميل وربط حقول البيانات:
+## 3. classpath أو module-info
 
-```xml
-<dependency>
-    <groupId>com.mohamed.barcodelabel</groupId>
-    <artifactId>barcode-label-data</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
-</dependency>
-```
-
-وللطباعة وتخطيط صفحات الملصقات:
-
-```xml
-<dependency>
-    <groupId>com.mohamed.barcodelabel</groupId>
-    <artifactId>barcode-label-print</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
-</dependency>
-```
-
-## 3. إعداد `module-info.java`
+موديولات الواجهة تعمل على الـ classpath، وهذا أبسط طريق. إذا كان برنامجك يستخدم `module-info.java`، فلكل موديول اسم ثابت في ملف الـ manifest، مثل:
 
 ```java
 module my.application {
-    requires com.mohamed.barcodelabel.fx;
-    requires com.mohamed.barcodelabel.data;
-    requires com.mohamed.barcodelabel.print;
+    requires com.mohamed.barcodelabel.fx.batch;
 }
 ```
 
-`barcode-label-fx` يوفّر `barcode-label-model` وJavaFX Controls بشكل transitive، فلا تحتاج لتكرارهما إلا إذا كان مشروعك يستخدمهما مباشرة لأسباب أخرى.
+وأسماء الموديولات الأخرى: `com.mohamed.barcodelabel.fx.workbench` و`com.mohamed.barcodelabel.fx.designer` و`com.mohamed.barcodelabel.data`.
 
-## 4. إدراج المعاينة في الواجهة
+## 4. إدراج الواجهة
+
+الشاشة الكاملة كما في البرنامج نفسه:
 
 ```java
-LabelDesigner designer = new LabelDesigner();
-designer.setTemplate(template);
-mainPane.setCenter(designer);
+BatchProductionWorkbench workbench = new BatchProductionWorkbench(template);
+stage.setScene(new Scene(workbench, 1480, 940));
 ```
 
-## 5. ربط بيانات المنتج
+المصمم فقط، مع متابعة التعديلات وحفظ القالب:
+
+```java
+VisualLabelDesigner designer = new VisualLabelDesigner(template);
+designer.templateProperty().addListener((obs, oldTemplate, edited) -> System.out.println(edited.name()));
+mainPane.setCenter(designer);
+
+designer.save(Path.of("product-label.json"));
+```
+
+معاينة وطباعة سجلات من برنامجك مباشرة، بدون CSV:
+
+```java
+UniversalPrintPane printPane = new UniversalPrintPane();
+printPane.setTemplate(template);
+printPane.setRecords(List.of(
+        Map.of("product_name", "قلم أزرق", "sku", "SKU-000001", "price", "12.50"),
+        Map.of("product_name", "دفتر 100 ورقة", "sku", "SKU-000002", "price", "35.00")));
+mainPane.setCenter(printPane);
+```
+
+الواجهات مصممة بالعربية من اليمين لليسار، أما سطح الملصق في المصمم فيبقى من اليسار لليمين حتى يطابق الطباعة. البرنامج يستخدم مظهر AtlantaFX؛ لنفس الشكل أضف قبل إنشاء النافذة:
+
+```java
+Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+```
+
+## 5. إنشاء قالب من الكود
+
+```java
+PageDefinition page = new PaperPresetRegistry().find("a4-3x7-63.5x38.1").orElseThrow().page();
+TextElement name = new TextElement(ElementFrame.create("Product", new RectMm(4, 3, 55, 7), 0),
+        "{{product_name}}", "Arial", 11, "#111827", true, false, TextAlignment.CENTER);
+BarcodeElement barcode = new BarcodeElement(ElementFrame.create("Barcode", new RectMm(4, 11, 55.5, 19), 1),
+        "{{sku}}", Symbology.CODE_128, 0.25, 2.5, true);
+LabelTemplate template = LabelTemplate.create("قالب المنتجات", page, List.of(name, barcode));
+```
+
+القياسات كلها بالمليمتر. الحقول بين `{{` و`}}` تُملأ من بيانات كل منتج عند المعاينة والطباعة.
+
+## 6. ربط بيانات منتج واحد بدون واجهة
 
 ```java
 Map<String, Object> product = Map.of(
@@ -71,22 +102,10 @@ Map<String, Object> product = Map.of(
     "price", "125.50"
 );
 
-LabelTemplate resolved = new TemplateFieldResolver().resolve(
-    template,
-    product,
-    MissingFieldPolicy.FAIL
-);
+LabelTemplate resolved = new TemplateFieldResolver().resolve(template, product, MissingFieldPolicy.FAIL);
 ```
 
-القالب يمكنه استخدام الحقول التالية مثلًا:
-
-```text
-{{product_name}}
-{{sku}}
-السعر: {{price}} ج.م
-```
-
-## 6. حفظ القالب واستعادته
+## 7. حفظ القالب واستعادته
 
 ```java
 TemplateJsonService json = new TemplateJsonService();
@@ -94,8 +113,3 @@ json.write(Path.of("product-label.json"), template);
 
 LabelTemplate restored = json.read(Path.of("product-label.json"));
 ```
-
-## ملاحظة المرحلة الحالية
-
-المعاينة، نموذج القالب، ربط البيانات وتخطيط الورقة جاهزة. توليد صورة الباركود الفعلية والطباعة عبر `Graphics2D` سيضافان في المرحلة التالية خلف العقود الموجودة في وحدتي `render` و`print`.
-

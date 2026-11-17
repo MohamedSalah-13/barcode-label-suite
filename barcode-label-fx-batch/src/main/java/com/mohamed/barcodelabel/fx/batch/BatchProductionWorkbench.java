@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-/** Adds validated column mapping and per-row quantities around the reusable phase-5 workbench. */
+/** Adds validated column mapping and per-row quantities around the reusable label workbench. */
 public final class BatchProductionWorkbench extends BorderPane {
     private final BarcodeLabelWorkbench labelWorkbench;
     private final BatchDataMappingPane batchPane = new BatchDataMappingPane();

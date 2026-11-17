@@ -70,7 +70,7 @@ Create a self-contained application image (including a private Java runtime) wit
 
 The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful `mvnw clean install` in the current checkout.
 
-Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
+An Arabic user guide is in [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md), and Arabic instructions for embedding the modules in another JavaFX app are in [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
 
 ## Main modules
 
@@ -82,9 +82,8 @@ Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs
 - `barcode-label-print-java2d`: shared Java2D printing implementation.
 - `barcode-label-workflow`: CSV import and universal page planning.
 - `barcode-label-batch`: mapping, validation and batch preparation.
-- `barcode-label-fx-preview`, `barcode-label-fx-print`, `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
+- `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
 - `barcode-label-app`: the batch-production desktop application.
-- `barcode-label-fx`, `barcode-label-demo`: the original milestone-1 preview control and its demo.
 
 ## License
 
