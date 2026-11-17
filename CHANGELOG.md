@@ -4,6 +4,11 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **Designer text was smaller than it prints**, by about 29% at every zoom, and did not grow when zooming in: the canvas used the point size as a pixel size. Text is now scaled like the rest of the label, so it takes the same room on the canvas as on paper. Like the printout, it stays on one line and is cut off at its frame instead of wrapping or ending in "…".
+
 ## [0.7.0] - 2026-11-17
 
 ### Fixed

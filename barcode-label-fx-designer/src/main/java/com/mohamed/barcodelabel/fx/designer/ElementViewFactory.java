@@ -12,6 +12,7 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
@@ -27,13 +28,15 @@ import javafx.scene.text.FontWeight;
 import java.io.File;
 
 final class ElementViewFactory {
+    private static final double MM_PER_POINT = 25.4 / 72;
+
     private final CompositeBarcodeRasterizer barcodeRasterizer = CompositeBarcodeRasterizer.standard();
 
     Node create(LabelElement element, double pixelsPerMm) {
         double width = element.frame().bounds().width() * pixelsPerMm;
         double height = element.frame().bounds().height() * pixelsPerMm;
         Node content = switch (element) {
-            case TextElement text -> textView(text, width, height);
+            case TextElement text -> textView(text, width, height, pixelsPerMm);
             case BarcodeElement barcode -> barcodeView(barcode, width, height);
             case ShapeElement shape -> shapeView(shape, width, height, pixelsPerMm);
             case ImageElement image -> imageView(image, width, height);
@@ -42,15 +45,26 @@ final class ElementViewFactory {
         return content;
     }
 
-    private Node textView(TextElement element, double width, double height) {
+    /**
+     * The canvas pixel size of a font, so text is as large relative to the label as it prints: the Java2D renderer
+     * draws {@code points * dpi / 72} pixels, and the canvas has {@code pixelsPerMm * 25.4} pixels per inch.
+     */
+    static double fontPixels(double points, double pixelsPerMm) {
+        return points * MM_PER_POINT * pixelsPerMm;
+    }
+
+    private Node textView(TextElement element, double width, double height, double pixelsPerMm) {
         Label label = new Label(element.textTemplate());
-        label.setWrapText(true);
+        // Printed text is one line, cut off at the element's frame; show it the same way.
+        label.setWrapText(false);
+        label.setTextOverrun(OverrunStyle.CLIP);
         label.setPrefSize(width, height);
         label.setMinSize(0, 0);
         label.setMaxSize(width, height);
         label.setTextFill(parseColor(element.color()));
         label.setFont(Font.font(element.fontFamily(), element.bold() ? FontWeight.BOLD : FontWeight.NORMAL,
-                element.italic() ? FontPosture.ITALIC : FontPosture.REGULAR, element.fontSizePoints()));
+                element.italic() ? FontPosture.ITALIC : FontPosture.REGULAR,
+                fontPixels(element.fontSizePoints(), pixelsPerMm)));
         label.setAlignment(switch (element.alignment()) {
             case LEFT -> Pos.CENTER_LEFT;
             case CENTER -> Pos.CENTER;
