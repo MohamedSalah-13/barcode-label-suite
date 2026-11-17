@@ -2,6 +2,8 @@ package com.mohamed.barcodelabel.model.element;
 
 import java.util.Objects;
 
+import static com.mohamed.barcodelabel.model.internal.Checks.requireNonNegative;
+
 public record ShapeElement(
         ElementFrame frame,
         ShapeType shapeType,
@@ -14,9 +16,7 @@ public record ShapeElement(
         Objects.requireNonNull(shapeType, "shapeType");
         Objects.requireNonNull(strokeColor, "strokeColor");
         Objects.requireNonNull(fillColor, "fillColor");
-        if (!Double.isFinite(strokeWidthMm) || strokeWidthMm < 0) {
-            throw new IllegalArgumentException("strokeWidthMm must be finite and non-negative");
-        }
+        requireNonNegative(strokeWidthMm, "strokeWidthMm");
     }
 }
 

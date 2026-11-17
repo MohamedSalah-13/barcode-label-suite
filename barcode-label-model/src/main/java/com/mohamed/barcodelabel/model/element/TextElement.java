@@ -2,6 +2,8 @@ package com.mohamed.barcodelabel.model.element;
 
 import java.util.Objects;
 
+import static com.mohamed.barcodelabel.model.internal.Checks.requirePositive;
+
 public record TextElement(
         ElementFrame frame,
         String textTemplate,
@@ -18,9 +20,7 @@ public record TextElement(
         Objects.requireNonNull(fontFamily, "fontFamily");
         Objects.requireNonNull(color, "color");
         Objects.requireNonNull(alignment, "alignment");
-        if (!Double.isFinite(fontSizePoints) || fontSizePoints <= 0) {
-            throw new IllegalArgumentException("fontSizePoints must be a finite positive number");
-        }
+        requirePositive(fontSizePoints, "fontSizePoints");
     }
 }
 

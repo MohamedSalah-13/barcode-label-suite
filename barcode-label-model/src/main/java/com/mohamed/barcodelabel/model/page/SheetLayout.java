@@ -4,6 +4,9 @@ import com.mohamed.barcodelabel.model.geometry.DimensionsMm;
 
 import java.util.Objects;
 
+import static com.mohamed.barcodelabel.model.internal.Checks.requireNonNegative;
+import static com.mohamed.barcodelabel.model.internal.Checks.requirePositive;
+
 public record SheetLayout(
         int columns,
         int rows,
@@ -12,9 +15,8 @@ public record SheetLayout(
         double verticalGap
 ) {
     public SheetLayout {
-        if (columns <= 0 || rows <= 0) {
-            throw new IllegalArgumentException("columns and rows must be positive");
-        }
+        requirePositive(columns, "columns");
+        requirePositive(rows, "rows");
         Objects.requireNonNull(labelSize, "labelSize");
         requireNonNegative(horizontalGap, "horizontalGap");
         requireNonNegative(verticalGap, "verticalGap");
@@ -30,12 +32,6 @@ public record SheetLayout(
 
     public double occupiedHeight() {
         return rows * labelSize.height() + (rows - 1) * verticalGap;
-    }
-
-    private static void requireNonNegative(double value, String name) {
-        if (!Double.isFinite(value) || value < 0) {
-            throw new IllegalArgumentException(name + " must be finite and non-negative");
-        }
     }
 }
 
