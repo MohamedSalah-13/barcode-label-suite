@@ -12,6 +12,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Line;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.AfterEach;
@@ -199,14 +201,18 @@ class DesignerOrientationTest {
             pane.layout();
 
             Bounds leftElement = sceneBounds(view(0));
-            Bounds leftText = sceneBounds(view(0).lookup(".text"));
+            Bounds leftText = sceneBounds(view(0).lookup(".element-text"));
             assertEquals(leftElement.getMinX(), leftText.getMinX(), 1.5, "LEFT text starts at the element's left edge");
             assertTrue(leftElement.getMaxX() - leftText.getMaxX() > 50, "and leaves the space on its right");
 
             Bounds rightElement = sceneBounds(view(1));
-            Bounds rightText = sceneBounds(view(1).lookup(".text"));
+            Bounds rightText = sceneBounds(view(1).lookup(".element-text"));
             assertEquals(rightElement.getMaxX(), rightText.getMaxX(), 1.5, "RIGHT text ends at the element's right edge");
             assertTrue(rightText.getMinX() - rightElement.getMinX() > 50, "and leaves the space on its left");
+
+            // The designer's stylesheet sets a font family on the pane; the element keeps its own font and size.
+            assertEquals(Font.font("Arial", ElementViewFactory.fontPixels(10, PX)),
+                    ((Text) view(0).lookup(".element-text")).getFont());
         });
     }
 

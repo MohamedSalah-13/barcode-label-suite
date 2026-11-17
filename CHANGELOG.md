@@ -7,7 +7,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 ## [Unreleased]
 
 ### Fixed
-- **Designer text was smaller than it prints**, by about 29% at every zoom, and did not grow when zooming in: the canvas used the point size as a pixel size. Text is now scaled like the rest of the label, so it takes the same room on the canvas as on paper. Like the printout, it stays on one line and is cut off at its frame instead of wrapping or ending in "…".
+- **Designer text was smaller than it prints**, by about 29% at every zoom, and did not grow when zooming in: the canvas used the point size as a pixel size. Text is now scaled like the rest of the label, so it takes the same room on the canvas as on paper. Like the printout, it stays on one line, placed by its alignment and cut off at its frame, instead of wrapping or ending in "…": text too long for its frame shows its start, middle or end as on paper.
 - **Text the label's font has no glyphs for printed as boxes**, for example Arabic in a Latin-only font such as Liberation Sans, while the designer showed it correctly in a substitute font. Those characters now print in a font that has them (Java's `Dialog` font), and the rest of the text keeps the chosen font.
 
 ## [0.7.0] - 2026-11-17

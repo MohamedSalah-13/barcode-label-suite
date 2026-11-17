@@ -10,10 +10,9 @@ import com.mohamed.barcodelabel.model.element.Symbology;
 import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
-import javafx.geometry.Pos;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
-import javafx.scene.control.OverrunStyle;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -54,32 +53,71 @@ class ElementViewFactoryTest {
     }
 
     @Test
-    void textUsesTheElementsStyleAndAlignment() {
+    void textUsesTheElementsStyle() {
         var element = new TextElement(frame(), "Hello", "Arial", 12, "#FF0000", true, true, TextAlignment.RIGHT);
-        Label label = assertInstanceOf(Label.class, create(element));
+        Node view = create(element);
+        Text text = textOf(view);
 
-        assertEquals("Hello", label.getText());
-        assertEquals(Color.web("#FF0000"), label.getTextFill());
-        assertEquals(Pos.CENTER_RIGHT, label.getAlignment());
+        assertEquals("Hello", text.getText());
+        assertEquals(Color.web("#FF0000"), text.getFill());
         // 12 pt is 12/72 inch = 4.233 mm, at 4 px per mm.
-        assertEquals(12 * 25.4 / 72 * PX_PER_MM, label.getFont().getSize(), 0.001);
-        assertEquals(30 * PX_PER_MM, label.getPrefWidth(), 0.001);
-        assertTrue(label.isMouseTransparent(), "element content must not steal mouse events from its wrapper");
+        assertEquals(12 * 25.4 / 72 * PX_PER_MM, text.getFont().getSize(), 0.001);
+        assertEquals(30 * PX_PER_MM, ((Pane) view).getPrefWidth(), 0.001);
+        assertTrue(view.isMouseTransparent(), "element content must not steal mouse events from its wrapper");
     }
 
     @Test
     void textSizeFollowsTheZoom() {
         var element = new TextElement(frame(), "Hello", "Arial", 10, "#000000", false, false, TextAlignment.LEFT);
-        Label atOne = (Label) create(element);
-        Label atTwo = (Label) onFx(() -> new ElementViewFactory().create(element, 2 * PX_PER_MM));
+        Text atOne = textOf(create(element));
+        Text atTwo = textOf(onFx(() -> new ElementViewFactory().create(element, 2 * PX_PER_MM)));
         assertEquals(2 * atOne.getFont().getSize(), atTwo.getFont().getSize(), 0.001);
     }
 
     @Test
-    void textIsOneLineCutOffAtTheFrameAsItPrints() {
-        Label label = (Label) create(textAligned(TextAlignment.LEFT));
-        assertFalse(label.isWrapText());
-        assertEquals(OverrunStyle.CLIP, label.getTextOverrun());
+    void textIsPlacedByItsAlignmentAndCentredVertically() {
+        double width = 30 * PX_PER_MM;
+        double height = 10 * PX_PER_MM;
+        Text left = textOf(create(textAligned(TextAlignment.LEFT)));
+        Text center = textOf(create(textAligned(TextAlignment.CENTER)));
+        Text right = textOf(create(textAligned(TextAlignment.RIGHT)));
+
+        assertEquals(0, left.getLayoutBounds().getMinX(), 0.001);
+        assertEquals(width / 2, center.getLayoutBounds().getCenterX(), 0.001);
+        assertEquals(width, right.getLayoutBounds().getMaxX(), 0.001);
+        assertEquals(height / 2, left.getLayoutBounds().getCenterY(), 0.001);
+    }
+
+    @Test
+    void overflowingTextIsLaidOutWholeAndCutOffAtTheFrameAsItPrints() {
+        // Far wider than the 30 mm frame. The printout positions the whole line by its alignment and clips it to
+        // the frame, so right-aligned text shows its end and centred text its middle; the canvas must too.
+        String value = "A long product name 0123456789 that does not fit";
+        for (TextAlignment alignment : TextAlignment.values()) {
+            var element = new TextElement(frame(), value, "Arial", 10, "#000000", false, false, alignment);
+            Node view = create(element);
+            Text text = textOf(view);
+            Bounds line = text.getLayoutBounds();
+            double width = 30 * PX_PER_MM;
+
+            assertEquals(value, text.getText(), alignment + ": the whole text, not the part that fits");
+            assertTrue(line.getWidth() > width, alignment + ": the text overflows its frame");
+            switch (alignment) {
+                case LEFT -> assertEquals(0, line.getMinX(), 0.001, "the start shows");
+                case CENTER -> assertEquals(width / 2, line.getCenterX(), 0.001, "the middle shows");
+                case RIGHT -> assertEquals(width, line.getMaxX(), 0.001, "the end shows");
+            }
+            Rectangle clip = assertInstanceOf(Rectangle.class, view.getClip(), "cut off at the frame");
+            assertEquals(width, clip.getWidth(), 0.001);
+            assertEquals(10 * PX_PER_MM, clip.getHeight(), 0.001);
+        }
+    }
+
+    @Test
+    void textTallerThanItsFrameStartsAtTheTop() {
+        var element = new TextElement(ElementFrame.create("short", new RectMm(0, 0, 30, 2), 0), "Tall", "Arial", 24,
+                "#000000", false, false, TextAlignment.LEFT);
+        assertEquals(0, textOf(create(element)).getLayoutBounds().getMinY(), 0.001);
     }
 
     @Test
@@ -94,9 +132,7 @@ class ElementViewFactoryTest {
         java.awt.Font awtFont = new java.awt.Font(family, java.awt.Font.PLAIN, 1).deriveFont((float) (10 * dpi / 72));
         double printed = new TextLayout(value, awtFont, new FontRenderContext(null, true, true)).getAdvance();
         double onCanvas = onFx(() -> {
-            Label label = (Label) new ElementViewFactory().create(element, PX_PER_MM);
-            Text text = new Text(value);
-            text.setFont(label.getFont());
+            Text text = textOf(new ElementViewFactory().create(element, PX_PER_MM));
             return text.getLayoutBounds().getWidth();
         });
         // Before the font was scaled to the canvas resolution, the canvas text was about 29% narrower.
@@ -115,15 +151,9 @@ class ElementViewFactoryTest {
     }
 
     @Test
-    void textAlignmentMapsLeftAndCenter() {
-        assertEquals(Pos.CENTER_LEFT, ((Label) create(textAligned(TextAlignment.LEFT))).getAlignment());
-        assertEquals(Pos.CENTER, ((Label) create(textAligned(TextAlignment.CENTER))).getAlignment());
-    }
-
-    @Test
     void invalidOrTransparentColorsFallBack() {
         var badText = new TextElement(frame(), "x", "Arial", 10, "not-a-color", false, false, TextAlignment.LEFT);
-        assertEquals(Color.BLACK, ((Label) create(badText)).getTextFill());
+        assertEquals(Color.BLACK, textOf(create(badText)).getFill());
 
         var transparentShape = new ShapeElement(frame(), ShapeType.RECTANGLE, "", "transparent", 0.3);
         Shape shape = shapeOf(create(transparentShape));
@@ -195,6 +225,11 @@ class ElementViewFactoryTest {
 
     private static Node create(com.mohamed.barcodelabel.model.element.LabelElement element) {
         return onFx(() -> new ElementViewFactory().create(element, PX_PER_MM));
+    }
+
+    private static Text textOf(Node node) {
+        Pane frame = assertInstanceOf(Pane.class, node);
+        return assertInstanceOf(Text.class, frame.getChildren().getFirst());
     }
 
     private static Shape shapeOf(Node node) {

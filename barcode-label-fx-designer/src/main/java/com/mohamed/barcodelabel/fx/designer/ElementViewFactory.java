@@ -9,10 +9,11 @@ import com.mohamed.barcodelabel.model.element.ShapeType;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.render.java2d.CompositeBarcodeRasterizer;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
-import javafx.scene.control.OverrunStyle;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
@@ -24,6 +25,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 import java.io.File;
 
@@ -53,24 +55,34 @@ final class ElementViewFactory {
         return points * MM_PER_POINT * pixelsPerMm;
     }
 
+    /**
+     * Text laid out as BufferedImageLabelRenderer prints it: the whole string on one line, placed by its full width
+     * at its alignment, its line vertically centred (or at the top when taller than the frame), and cut off at the
+     * element's frame. A clipped Label would instead keep the part that fits and align that, showing other
+     * characters than the printout when right-aligned or centred text overflows.
+     */
     private Node textView(TextElement element, double width, double height, double pixelsPerMm) {
-        Label label = new Label(element.textTemplate());
-        // Printed text is one line, cut off at the element's frame; show it the same way.
-        label.setWrapText(false);
-        label.setTextOverrun(OverrunStyle.CLIP);
-        label.setPrefSize(width, height);
-        label.setMinSize(0, 0);
-        label.setMaxSize(width, height);
-        label.setTextFill(parseColor(element.color()));
-        label.setFont(Font.font(element.fontFamily(), element.bold() ? FontWeight.BOLD : FontWeight.NORMAL,
+        Text text = new Text(element.textTemplate());
+        text.getStyleClass().add("element-text");
+        text.setFill(parseColor(element.color()));
+        text.setFont(Font.font(element.fontFamily(), element.bold() ? FontWeight.BOLD : FontWeight.NORMAL,
                 element.italic() ? FontPosture.ITALIC : FontPosture.REGULAR,
                 fontPixels(element.fontSizePoints(), pixelsPerMm)));
-        label.setAlignment(switch (element.alignment()) {
-            case LEFT -> Pos.CENTER_LEFT;
-            case CENTER -> Pos.CENTER;
-            case RIGHT -> Pos.CENTER_RIGHT;
+        text.setTextOrigin(VPos.TOP);
+        Bounds line = text.getLayoutBounds();
+        text.setX(switch (element.alignment()) {
+            case LEFT -> 0;
+            case CENTER -> (width - line.getWidth()) / 2;
+            case RIGHT -> width - line.getWidth();
         });
-        return label;
+        text.setY(Math.max(0, (height - line.getHeight()) / 2));
+
+        Pane frame = new Pane(text);
+        frame.setMinSize(0, 0);
+        frame.setPrefSize(width, height);
+        frame.setMaxSize(width, height);
+        frame.setClip(new Rectangle(width, height));
+        return frame;
     }
 
     private Node barcodeView(BarcodeElement element, double width, double height) {
