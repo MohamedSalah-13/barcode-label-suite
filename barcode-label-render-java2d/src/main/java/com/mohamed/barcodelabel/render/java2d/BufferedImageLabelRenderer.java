@@ -3,6 +3,7 @@ package com.mohamed.barcodelabel.render.java2d;
 import com.mohamed.barcodelabel.data.MissingFieldPolicy;
 import com.mohamed.barcodelabel.data.TemplateFieldResolver;
 import com.mohamed.barcodelabel.model.LabelTemplate;
+import com.mohamed.barcodelabel.model.color.LabelColors;
 import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.model.element.ImageElement;
 import com.mohamed.barcodelabel.model.element.ImageFit;
@@ -219,20 +220,9 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
         return Math.max(1, (int) Math.ceil(UnitConversions.mmToPixels(millimetres, dpi)));
     }
 
+    /** Reads colours exactly as the designer does, so a label prints in the colours it shows. */
     static Color parseColor(String value) {
-        if (value == null || value.isBlank() || "transparent".equalsIgnoreCase(value)) {
-            return new Color(0, 0, 0, 0);
-        }
-        String hex = value.startsWith("#") ? value.substring(1) : value;
-        try {
-            return switch (hex.length()) {
-                case 6 -> new Color(Integer.parseInt(hex, 16));
-                case 8 -> new Color((int) Long.parseLong(hex, 16), true);
-                default -> throw new IllegalArgumentException("expected #RRGGBB or #AARRGGBB");
-            };
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Invalid color: " + value, exception);
-        }
+        return new Color(LabelColors.toArgbOrBlack(value), true);
     }
 
     private static final class UncheckedRenderException extends RuntimeException {

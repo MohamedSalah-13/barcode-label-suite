@@ -1,5 +1,6 @@
 package com.mohamed.barcodelabel.fx.designer;
 
+import com.mohamed.barcodelabel.model.color.LabelColors;
 import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.model.element.ImageElement;
 import com.mohamed.barcodelabel.model.element.LabelElement;
@@ -119,9 +120,10 @@ final class ElementViewFactory {
         }
     }
 
-    private static Color parseColor(String value) {
-        if (value == null || value.isBlank() || value.equalsIgnoreCase("transparent")) return Color.TRANSPARENT;
-        try { return Color.web(value); } catch (IllegalArgumentException ignored) { return Color.BLACK; }
+    /** Reads colours exactly as printing does (see LabelColors), so the label shows the colours it prints. */
+    static Color parseColor(String value) {
+        int argb = LabelColors.toArgbOrBlack(value);
+        return Color.rgb(argb >> 16 & 0xFF, argb >> 8 & 0xFF, argb & 0xFF, (argb >>> 24) / 255.0);
     }
 }
 

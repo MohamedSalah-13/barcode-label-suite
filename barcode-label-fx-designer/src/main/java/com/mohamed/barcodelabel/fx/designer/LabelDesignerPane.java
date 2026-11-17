@@ -340,7 +340,7 @@ public final class LabelDesignerPane extends BorderPane {
             if (element instanceof TextElement text) {
                 fontFamilyField.setValue(text.fontFamily());
                 fontSizeField.setText(format(text.fontSizePoints()));
-                colorField.setValue(parseColor(text.color()));
+                colorField.setValue(ElementViewFactory.parseColor(text.color()));
                 boldToggle.setSelected(text.bold());
                 italicToggle.setSelected(text.italic());
                 textAlignGroup.selectToggle(switch (text.alignment()) {
@@ -435,14 +435,6 @@ public final class LabelDesignerPane extends BorderPane {
 
     private static double parse(TextField field) { return Double.parseDouble(field.getText().trim()); }
     private static String format(double value) { return String.format(java.util.Locale.ROOT, "%.2f", value); }
-
-    private static Color parseColor(String hex) {
-        try {
-            return Color.web(hex);
-        } catch (IllegalArgumentException exception) {
-            return Color.BLACK;
-        }
-    }
 
     private static String toHex(Color color) {
         return String.format("#%02X%02X%02X",

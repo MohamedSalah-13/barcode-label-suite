@@ -187,14 +187,26 @@ class BufferedImageLabelRendererTest {
     }
 
     @Test
-    void coloursAreHexWithOptionalAlpha() {
+    void coloursAreReadAsTheDesignerReadsThem() {
         assertEquals(new Color(0x12, 0x34, 0x56), BufferedImageLabelRenderer.parseColor("#123456"));
         assertEquals(new Color(0x12, 0x34, 0x56), BufferedImageLabelRenderer.parseColor("123456"));
-        assertEquals(new Color(0x34, 0x56, 0x78, 0x12), BufferedImageLabelRenderer.parseColor("#12345678"));
+        assertEquals(new Color(0x12, 0x34, 0x56, 0x78), BufferedImageLabelRenderer.parseColor("#12345678"),
+                "alpha comes last, as in the designer and CSS");
+        assertEquals(Color.RED, BufferedImageLabelRenderer.parseColor("red"));
+        assertEquals(new Color(0, 128, 0), BufferedImageLabelRenderer.parseColor("Green"));
+        assertEquals(new Color(255, 0, 0, 128), BufferedImageLabelRenderer.parseColor("rgba(255, 0, 0, 0.5)"));
         assertEquals(0, BufferedImageLabelRenderer.parseColor("transparent").getAlpha());
         assertEquals(0, BufferedImageLabelRenderer.parseColor("").getAlpha());
-        assertThrows(IllegalArgumentException.class, () -> BufferedImageLabelRenderer.parseColor("#12"));
-        assertThrows(IllegalArgumentException.class, () -> BufferedImageLabelRenderer.parseColor("#GGGGGG"));
+        assertEquals(Color.BLACK, BufferedImageLabelRenderer.parseColor("#12"), "the designer shows black too");
+        assertEquals(Color.BLACK, BufferedImageLabelRenderer.parseColor("not-a-color"));
+    }
+
+    @Test
+    void aNamedColourPrintsInThatColour() throws RenderException {
+        // Rendering used to fail on colour names, though the designer showed them.
+        BufferedImage image = render(List.of(new ShapeElement(frame(new RectMm(0, 0, 25.4, 25.4), 0),
+                ShapeType.RECTANGLE, "navy", "orange", 0.1)));
+        assertEquals(0xFFFFA500, image.getRGB(50, 50));
     }
 
     private BufferedImage render(List<LabelElement> elements) throws RenderException {
