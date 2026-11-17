@@ -12,12 +12,12 @@ mvn clean install
 
 ## 2. إضافة الوحدات إلى `pom.xml`
 
-لإدراج عنصر المعاينة/المصمم داخل مشروع JavaFX:
+لإدراج مصمم الملصقات داخل مشروع JavaFX:
 
 ```xml
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
-    <artifactId>barcode-label-fx</artifactId>
+    <artifactId>barcode-label-fx-designer</artifactId>
     <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```
@@ -46,18 +46,18 @@ mvn clean install
 
 ```java
 module my.application {
-    requires com.mohamed.barcodelabel.fx;
+    requires com.mohamed.barcodelabel.fx.designer;
     requires com.mohamed.barcodelabel.data;
     requires com.mohamed.barcodelabel.print;
 }
 ```
 
-`barcode-label-fx` يوفّر `barcode-label-model` وJavaFX Controls بشكل transitive، فلا تحتاج لتكرارهما إلا إذا كان مشروعك يستخدمهما مباشرة لأسباب أخرى.
+`barcode-label-fx-designer` يجلب `barcode-label-model` و`barcode-label-data` وJavaFX Controls كاعتماديات Maven بشكل transitive، فلا تحتاج لإضافتها إلى `pom.xml` إلا إذا كان مشروعك يستخدمها مباشرة لأسباب أخرى.
 
-## 4. إدراج المعاينة في الواجهة
+## 4. إدراج المصمم في الواجهة
 
 ```java
-LabelDesigner designer = new LabelDesigner();
+VisualLabelDesigner designer = new VisualLabelDesigner();
 designer.setTemplate(template);
 mainPane.setCenter(designer);
 ```
