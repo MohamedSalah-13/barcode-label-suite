@@ -1,5 +1,6 @@
 package com.mohamed.barcodelabel.fx.workbench;
 
+import com.mohamed.barcodelabel.batch.TemplateFields;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.page.PageMode;
 import com.mohamed.barcodelabel.model.unit.UnitConversions;
@@ -22,8 +23,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.awt.BasicStroke;
@@ -31,6 +36,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,6 +58,11 @@ public final class UniversalPrintPane extends BorderPane {
     private final CheckBox allPages = new CheckBox("طباعة كل الصفحات");
     private final Spinner<Integer> fromPage = new Spinner<>(1, 1, 1);
     private final Spinner<Integer> toPage = new Spinner<>(1, 1, 1);
+    /** Without CSV data, one label is printed from the values typed here, one field per {{placeholder}}. */
+    private final Map<String, TextField> manualValues = new LinkedHashMap<>();
+    private final GridPane manualGrid = new GridPane();
+    private final VBox manualBox = new VBox(6);
+    private final TemplateFields templateFields = new TemplateFields();
     private final UniversalPagePlanner planner = new UniversalPagePlanner();
     private final BufferedImageLabelRenderer renderer = new BufferedImageLabelRenderer();
     private final PrinterCatalog printerCatalog = new PrinterCatalog();
@@ -66,8 +77,8 @@ public final class UniversalPrintPane extends BorderPane {
         preview.setPreserveRatio(true); preview.setSmooth(true); preview.setFitHeight(670);
         ScrollPane scroll = new ScrollPane(preview); scroll.setFitToWidth(true); scroll.setPannable(true);
         setCenter(scroll); setRight(settings()); setBottom(navigation());
-        template.addListener((obs, oldValue, value) -> reset());
-        records.addListener((obs, oldValue, value) -> reset());
+        template.addListener((obs, oldValue, value) -> { rebuildManualFields(); reset(); });
+        records.addListener((obs, oldValue, value) -> { updateManualVisibility(); reset(); });
         startSlot.valueProperty().addListener((obs, oldValue, value) -> resetPreview());
         previous.setOnAction(event -> move(-1)); next.setOnAction(event -> move(1)); print.setOnAction(event -> print());
         loadPrinters(); updateNavigation();
@@ -98,7 +109,17 @@ public final class UniversalPrintPane extends BorderPane {
         print.getStyleClass().add("primary-button"); print.setMaxWidth(Double.MAX_VALUE);
         cancelPrint.setMaxWidth(Double.MAX_VALUE); cancelPrint.setDisable(true);
         cancelPrint.setOnAction(event -> { labelPrinter.cancelCurrent(); status.setText("جارٍ إلغاء الطباعة..."); });
-        VBox box = new VBox(8, new Label("الطابعة"), printers, new Label("عدد النسخ"), copies,
+        Label manualTitle = new Label("بيانات الملصق");
+        manualTitle.getStyleClass().add("panel-title");
+        Label manualHint = new Label("بدون ملف CSV يُطبع ملصق واحد بهذه البيانات، وعدد النسخ هو عدد الملصقات.");
+        manualHint.setWrapText(true);
+        manualGrid.setHgap(8); manualGrid.setVgap(6);
+        ColumnConstraints captions = new ColumnConstraints(); captions.setMinWidth(Region.USE_PREF_SIZE);
+        ColumnConstraints inputs = new ColumnConstraints(); inputs.setHgrow(Priority.ALWAYS);
+        manualGrid.getColumnConstraints().setAll(captions, inputs);
+        manualBox.getChildren().setAll(manualTitle, manualHint, manualGrid, new Separator());
+        updateManualVisibility();
+        VBox box = new VBox(8, manualBox, new Label("الطابعة"), printers, new Label("عدد النسخ"), copies,
                 new Label("ابدأ من الخانة (A4 فقط)"), startSlot, allPages, range, print, cancelPrint, status);
         box.getStyleClass().add("print-settings"); box.setPrefWidth(270); return box;
     }
@@ -132,7 +153,7 @@ public final class UniversalPrintPane extends BorderPane {
             updatePrintAvailability();
             return;
         }
-        previewRecords = getRecords().isEmpty() ? List.of(Map.of()) : getRecords();
+        previewRecords = getRecords().isEmpty() ? List.of(manualRecord(true)) : getRecords();
         try {
             pages = planner.plan(getTemplate().page(), previewRecords.size(), startSlotIndex());
         } catch (RuntimeException exception) {
@@ -156,12 +177,12 @@ public final class UniversalPrintPane extends BorderPane {
         if (pages.isEmpty()) return;
         long request = generation.incrementAndGet(); int requestedPage = pageIndex;
         LabelTemplate currentTemplate = getTemplate(); List<Map<String, ?>> currentRecords = previewRecords; PlannedPage page = pages.get(requestedPage);
-        boolean templateOnly = getRecords().isEmpty();
-        status.setText(templateOnly ? "جارٍ إنشاء معاينة القالب..." : "جارٍ إنشاء المعاينة...");
+        boolean manual = getRecords().isEmpty();
+        status.setText("جارٍ إنشاء المعاينة...");
         Thread.ofVirtual().name("universal-label-preview").start(() -> {
             try {
                 BufferedImage image = renderPage(currentTemplate, currentRecords, page, 96, true);
-                Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(SwingFXUtils.toFXImage(image, null)); status.setText(templateOnly ? "معاينة القالب — استورد بيانات CSV للطباعة" : "المعاينة جاهزة"); } });
+                Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(SwingFXUtils.toFXImage(image, null)); status.setText(manual ? "المعاينة جاهزة — ملصق واحد من البيانات المكتوبة" : "المعاينة جاهزة"); } });
             } catch (Exception exception) {
                 Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(null); status.setText("خطأ في المعاينة: " + rootMessage(exception)); } });
             }
@@ -205,11 +226,19 @@ public final class UniversalPrintPane extends BorderPane {
     }
 
     private void updatePrintAvailability() {
-        print.setDisable(printers.getItems().isEmpty() || getTemplate() == null || getRecords().isEmpty() || pages.isEmpty());
+        print.setDisable(printers.getItems().isEmpty() || getTemplate() == null || pages.isEmpty());
     }
 
     private void print() {
-        if (printers.getValue() == null || getTemplate() == null || getRecords().isEmpty() || pages.isEmpty()) return;
+        if (printers.getValue() == null || getTemplate() == null || pages.isEmpty()) return;
+        boolean manual = getRecords().isEmpty();
+        List<String> blank = manual ? blankManualFields() : List.of();
+        if (!blank.isEmpty()) {
+            status.setText("اكتب قيمة لكل حقل قبل الطباعة: " + String.join("، ", blank));
+            manualValues.get(blank.getFirst()).requestFocus();
+            return;
+        }
+        List<Map<String, ?>> printRecords = manual ? List.of(manualRecord(false)) : getRecords();
         boolean restrictRange = !allPages.isSelected();
         int first = restrictRange ? fromPage.getValue() : 0;
         int last = restrictRange ? toPage.getValue() : 0;
@@ -226,7 +255,7 @@ public final class UniversalPrintPane extends BorderPane {
                 ButtonType.OK, ButtonType.CANCEL);
         alert.setHeaderText("تأكيد الطباعة"); if (alert.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
         print.setDisable(true); cancelPrint.setDisable(false); status.setText("جارٍ إرسال مهمة الطباعة...");
-        var request = new LabelPrintRequest(getTemplate(), getRecords(), printers.getValue(),
+        var request = new LabelPrintRequest(getTemplate(), printRecords, printers.getValue(),
                 copies.getValue(), startSlotIndex(), first, last);
         labelPrinter.print(request).whenComplete((result, error) -> Platform.runLater(() -> {
             print.setDisable(false); cancelPrint.setDisable(true);
@@ -247,6 +276,50 @@ public final class UniversalPrintPane extends BorderPane {
             return "فشلت الطباعة بعد " + failed.pagesCompleted() + " من " + failed.totalPages() + " صفحة: " + rootMessage(error);
         }
         return "فشلت الطباعة: " + rootMessage(error);
+    }
+
+    /** One field per placeholder of the template, keeping what was already typed for a field of the same name. */
+    private void rebuildManualFields() {
+        Map<String, String> typed = new LinkedHashMap<>();
+        manualValues.forEach((name, field) -> typed.put(name, field.getText()));
+        manualValues.clear();
+        manualGrid.getChildren().clear();
+        List<String> names = getTemplate() == null ? List.of() : templateFields.scan(getTemplate());
+        for (int row = 0; row < names.size(); row++) {
+            String name = names.get(row);
+            TextField field = new TextField(typed.getOrDefault(name, ""));
+            field.setPromptText(name);
+            field.setMaxWidth(Double.MAX_VALUE);
+            field.textProperty().addListener((obs, oldValue, value) -> { if (getRecords().isEmpty()) resetPreview(); });
+            manualValues.put(name, field);
+            manualGrid.add(new Label(name), 0, row);
+            manualGrid.add(field, 1, row);
+        }
+        updateManualVisibility();
+    }
+
+    private void updateManualVisibility() {
+        boolean show = getRecords().isEmpty() && !manualValues.isEmpty();
+        manualBox.setVisible(show); manualBox.setManaged(show);
+    }
+
+    /** The template's fields, in order, for which nothing has been typed. */
+    List<String> blankManualFields() {
+        return manualValues.entrySet().stream()
+                .filter(entry -> entry.getValue().getText().isBlank()).map(Map.Entry::getKey).toList();
+    }
+
+    /**
+     * The typed values as one record. For the preview a blank field keeps its {{placeholder}}, so the label still
+     * shows where the value goes and a barcode still has data to draw.
+     */
+    Map<String, String> manualRecord(boolean forPreview) {
+        Map<String, String> record = new LinkedHashMap<>();
+        manualValues.forEach((name, field) -> {
+            String value = field.getText().strip();
+            record.put(name, value.isEmpty() && forPreview ? "{{" + name + "}}" : value);
+        });
+        return record;
     }
 
     int startSlotIndex() {

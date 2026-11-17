@@ -187,7 +187,7 @@ class LabelDesignerPaneTest {
         runFx(() -> {
             button(pane, "+ نص").fire();
             assertEquals("5.00", field(pane, "X (mm)").getText());
-            assertEquals("نص جديد", field(pane, "النص/البيانات/المسار").getText());
+            assertEquals("نص جديد", field(pane, "النص").getText());
             assertTrue(toggle(pane, "توسيط").isSelected());
 
             field(pane, "X (mm)").setText("10");
@@ -195,7 +195,7 @@ class LabelDesignerPaneTest {
             field(pane, "العرض").setText("25");
             field(pane, "الارتفاع").setText("6");
             field(pane, "الدوران (°)").setText("15");
-            field(pane, "النص/البيانات/المسار").setText("Hello");
+            field(pane, "النص").setText("Hello");
             field(pane, "الحجم").setText("14");
             ((ColorPicker) control(pane, "اللون")).setValue(Color.RED);
             toggle(pane, "B").setSelected(true);
@@ -240,13 +240,44 @@ class LabelDesignerPaneTest {
         LabelDesignerPane pane = pane();
         runFx(() -> {
             button(pane, "+ باركود").fire();
-            assertEquals("{{barcode}}", field(pane, "النص/البيانات/المسار").getText());
+            assertEquals("{{barcode}}", field(pane, "بيانات الباركود").getText());
             assertTrue(control(pane, "الحجم").isDisabled());
             assertTrue(control(pane, "نمط الصورة").isDisabled());
 
-            field(pane, "النص/البيانات/المسار").setText("{{sku}}");
+            field(pane, "بيانات الباركود").setText("{{sku}}");
             button(pane, "تطبيق الخصائص").fire();
             assertEquals("{{sku}}", ((BarcodeElement) last(pane)).dataTemplate());
+        });
+    }
+
+    @Test
+    void enterInAFieldAppliesItWithoutTheButton() {
+        LabelDesignerPane pane = pane();
+        runFx(() -> {
+            button(pane, "+ باركود").fire();
+            TextField data = field(pane, "بيانات الباركود");
+            data.setText("6221234567890");
+            data.fireEvent(new javafx.event.ActionEvent());
+            assertEquals("6221234567890", ((BarcodeElement) last(pane)).dataTemplate());
+
+            TextField x = field(pane, "X (mm)");
+            x.setText("12");
+            x.fireEvent(new javafx.event.ActionEvent());
+            assertEquals(12, last(pane).frame().bounds().x(), 0.0001);
+            assertEquals("تم تطبيق الخصائص", status(pane).getText());
+        });
+    }
+
+    @Test
+    void theContentCaptionNamesWhatTheFieldHolds() {
+        LabelDesignerPane pane = pane();
+        runFx(() -> {
+            button(pane, "+ نص").fire();
+            assertEquals("نص جديد", field(pane, "النص").getText());
+            button(pane, "+ QR Code").fire();
+            assertEquals("{{qr_value}}", field(pane, "بيانات الباركود").getText());
+            pane.setTemplate(FxTestSupport.template(List.of()));
+            assertTrue(field(pane, "المحتوى").isDisabled());
         });
     }
 
@@ -258,7 +289,7 @@ class LabelDesignerPaneTest {
         runFx(() -> {
             mouse(elementView(pane), MouseEvent.MOUSE_PRESSED, 10, 10, false);
             assertEquals("Logo", title(pane).getText());
-            assertEquals(source, field(pane, "النص/البيانات/المسار").getText());
+            assertEquals(source, field(pane, "مسار الصورة").getText());
             @SuppressWarnings("unchecked")
             ComboBox<ImageFit> fit = (ComboBox<ImageFit>) control(pane, "نمط الصورة");
             assertFalse(fit.isDisabled());
