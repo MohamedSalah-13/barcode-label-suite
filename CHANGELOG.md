@@ -4,7 +4,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.0] - 2026-11-17
 
 ### Added
 - **An English interface.** Every screen is in Arabic (right to left) or English (left to right), chosen from a language menu at the end of the tab bar and remembered between runs. Switching keeps the label being designed; the untouched starting label switches language too. Embedding applications pass a `UiLanguage` to the panes' constructors; without one they stay Arabic. The texts live in `messages_ar.properties`/`messages_en.properties` per module, and the tests check that both languages have every text and that the English screens show no Arabic.
