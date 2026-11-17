@@ -19,6 +19,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -73,6 +74,7 @@ public final class BarcodeLabelSuiteApp extends Application {
         LabelTemplate first = lastDesign.load().orElse(startingTemplate);
         stage.setScene(new Scene(root(first), 1480, 940));
         stage.setTitle("Barcode Label Suite");
+        stage.getIcons().setAll(icons());
         stage.setMinWidth(1150); stage.setMinHeight(750); stage.show();
     }
 
@@ -84,6 +86,18 @@ public final class BarcodeLabelSuiteApp extends Application {
         if (workbench == null) return;
         LabelTemplate current = workbench.getTemplate();
         if (current != startingTemplate) lastDesign.save(current);
+    }
+
+    /**
+     * The window icon in each size scripts/AppIcon.java draws; the system picks the one that fits the title bar,
+     * the taskbar or the task switcher.
+     */
+    static List<Image> icons() {
+        return java.util.stream.IntStream.of(16, 24, 32, 48, 64, 128, 256)
+                .mapToObj(size -> BarcodeLabelSuiteApp.class.getResource("icons/app-" + size + ".png"))
+                .filter(java.util.Objects::nonNull)
+                .map(url -> new Image(url.toExternalForm()))
+                .toList();
     }
 
     UiLanguage language() { return language; }

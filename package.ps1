@@ -15,6 +15,8 @@ $outputDirectory = Join-Path $projectRoot 'dist'
 $appName = 'BarcodeLabelSuite'
 $mainJar = 'barcode-label-app.jar'
 $mainClass = 'com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher'
+# Drawn by scripts/AppIcon.java; the window icons inside the app come from the same drawing.
+$iconFile = Join-Path $demoDirectory 'src\main\package\BarcodeLabelSuite.ico'
 # The version comes from the root POM, so the installer never drifts from the build.
 $appVersion = ([xml](Get-Content -LiteralPath (Join-Path $projectRoot 'pom.xml') -Raw)).project.version
 if (-not ($appVersion -match '^\d+\.\d+\.\d+$')) {
@@ -58,6 +60,10 @@ if ($LASTEXITCODE -ne 0 -or -not ($jpackageVersion -match '^21(?:\.|$)')) {
     throw "JDK 21 jpackage is required; found version '$jpackageVersion'."
 }
 
+if (-not (Test-Path -LiteralPath $iconFile -PathType Leaf)) {
+    throw "Application icon was not found: $iconFile. Run: java scripts/AppIcon.java"
+}
+
 $inputDirectory = Assert-ProjectPath $inputDirectory
 $outputDirectory = Assert-ProjectPath $outputDirectory
 $packagedApplication = Assert-ProjectPath (Join-Path $outputDirectory $appName)
@@ -94,6 +100,7 @@ $arguments = @(
     '--input', $inputDirectory,
     '--main-jar', $mainJar,
     '--main-class', $mainClass,
+    '--icon', $iconFile,
     '--java-options', '-Dfile.encoding=UTF-8'
 )
 
