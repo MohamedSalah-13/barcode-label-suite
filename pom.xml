@@ -33,14 +33,10 @@
         <module>barcode-label-workflow</module>
         <module>barcode-label-batch</module>
         <!-- JavaFX UI layers. -->
-        <module>barcode-label-fx</module>
-        <module>barcode-label-fx-preview</module>
-        <module>barcode-label-fx-print</module>
         <module>barcode-label-fx-designer</module>
         <module>barcode-label-fx-workbench</module>
         <module>barcode-label-fx-batch</module>
         <!-- Applications. -->
-        <module>barcode-label-demo</module>
         <module>barcode-label-app</module>
     </modules>
 

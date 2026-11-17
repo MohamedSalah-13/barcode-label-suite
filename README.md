@@ -82,9 +82,8 @@ Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs
 - `barcode-label-print-java2d`: shared Java2D printing implementation.
 - `barcode-label-workflow`: CSV import and universal page planning.
 - `barcode-label-batch`: mapping, validation and batch preparation.
-- `barcode-label-fx-preview`, `barcode-label-fx-print`, `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
+- `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
 - `barcode-label-app`: the batch-production desktop application.
-- `barcode-label-fx`, `barcode-label-demo`: the original milestone-1 preview control and its demo.
 
 ## License
 
