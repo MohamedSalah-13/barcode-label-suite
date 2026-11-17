@@ -25,6 +25,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 - The print confirmation states the labels and pages that will print, the copies and the page range.
 - `CHANGELOG.md`, an MIT `LICENSE`, and a release workflow that builds, tests, packages and publishes the Windows application when a `v*` tag is pushed.
 - CI on Linux as well as Windows.
+- Screenshots of the designer, the CSV screen and the print preview in the README.
 
 ### Changed
 - **One build:** every module builds and tests from the root `pom.xml` with `mvnw clean install`, at one shared version. `start.cmd`/`start.sh` build and start the app; `package.ps1` makes the Windows app image and takes its version from `pom.xml`.
