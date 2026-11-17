@@ -1,0 +1,60 @@
+name: release
+
+# Pushing a tag such as v0.7.0 builds, tests and packages the Windows application and publishes it as a
+# GitHub release, with that version's CHANGELOG.md section as the notes. To release:
+#   1. set the version in the root pom.xml (every module inherits it) and add its CHANGELOG.md section;
+#   2. merge that to master;
+#   3. git tag v<version> on that commit and push the tag.
+on:
+  push:
+    tags: [ 'v*' ]
+
+# Creating the release needs write access to the repository's contents; nothing else.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches the project version and has release notes
+        shell: bash
+        run: |
+          version=$(scripts/project-version.sh)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the version in pom.xml ($version)"
+            exit 1
+          fi
+          scripts/release-notes.sh "$version" > release-notes.md
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test all modules
+        shell: pwsh
+        run: .\mvnw.cmd -B clean install
+
+      - name: Package the Windows application
+        shell: pwsh
+        run: .\package.ps1 -SkipBuild
+
+      - name: Zip the application
+        shell: pwsh
+        run: Compress-Archive -Path dist/BarcodeLabelSuite -DestinationPath "dist/BarcodeLabelSuite-$env:VERSION-windows.zip"
+
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/BarcodeLabelSuite-$VERSION-windows.zip" \
+            --title "Barcode Label Suite $VERSION" \
+            --notes-file release-notes.md

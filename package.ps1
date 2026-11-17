@@ -15,6 +15,11 @@ $outputDirectory = Join-Path $projectRoot 'dist'
 $appName = 'BarcodeLabelSuite'
 $mainJar = 'barcode-label-app.jar'
 $mainClass = 'com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher'
+# The version comes from the root POM, so the installer never drifts from the build.
+$appVersion = ([xml](Get-Content -LiteralPath (Join-Path $projectRoot 'pom.xml') -Raw)).project.version
+if (-not ($appVersion -match '^\d+\.\d+\.\d+$')) {
+    throw "jpackage needs a numeric version such as 1.2.3; pom.xml has '$appVersion'."
+}
 
 function Assert-ProjectPath {
     param([Parameter(Mandatory)][string]$Path)
@@ -84,7 +89,7 @@ $arguments = @(
     '--type', $Type,
     '--dest', $outputDirectory,
     '--name', $appName,
-    '--app-version', '0.6.1',
+    '--app-version', $appVersion,
     '--vendor', 'Mohamed',
     '--input', $inputDirectory,
     '--main-jar', $mainJar,
