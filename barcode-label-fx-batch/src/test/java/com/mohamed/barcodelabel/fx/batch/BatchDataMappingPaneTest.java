@@ -60,10 +60,15 @@ class BatchDataMappingPaneTest {
     @Test
     void validationErrorsAreInArabicAndConfigurationErrorsHaveNoRowNumber() {
         BatchDataMappingPane pane = loadedPane(template(textWith("{{product_name}} {{price}}")), dataset());
+        onFx(() -> {
+            // The automatic mapping fills both; the user clears them.
+            fieldBox(pane, 0).setValue(null);
+            fieldBox(pane, 1).setValue(null);
+            return null;
+        });
         prepareAndWait(pane);
         onFx(() -> {
             assertFalse(pane.getResult().ready());
-            // No header is called product_name or price, so the automatic mapping leaves both unmapped.
             assertEquals(List.of("خطأ — الحقل {{product_name}} غير مربوط بأي عمود",
                     "خطأ — الحقل {{price}} غير مربوط بأي عمود"), issueLines(pane));
             return null;
@@ -107,7 +112,7 @@ class BatchDataMappingPaneTest {
 
         prepareAndWait(pane);
         onFx(() -> {
-            quantityBox(pane).setValue("Qty");
+            quantityBox(pane).getSelectionModel().selectFirst(); // "one copy per row" instead of Qty
             assertNull(pane.getResult(), "the quantity column is part of the mapping too");
             return null;
         });
@@ -156,15 +161,36 @@ class BatchDataMappingPaneTest {
     void aTemplateWithNewFieldsKeepsTheColumnsAlreadyChosen() {
         BatchDataMappingPane pane = loadedPane(template(textWith("{{product_name}} {{price}}")), dataset());
         onFx(() -> {
-            fieldBox(pane, 1).setValue("Retail Price");
-            quantityBox(pane).setValue("Qty");
+            fieldBox(pane, 1).setValue("Code"); // a manual choice the automatic mapping would not make
+            quantityBox(pane).getSelectionModel().selectFirst();
             pane.setTemplate(template(textWith("{{product_name}} {{price}}"), barcode("{{sku}}")));
 
             assertEquals(3, fieldBoxes(pane).size());
-            assertEquals("Retail Price", fieldBox(pane, 1).getValue(), "the manual choice survives");
-            assertNull(fieldBox(pane, 2).getValue(), "nothing in the file is called sku");
-            assertEquals("Qty", quantityBox(pane).getValue());
+            assertEquals("Name", fieldBox(pane, 0).getValue());
+            assertEquals("Code", fieldBox(pane, 1).getValue(), "the manual choice survives");
+            assertEquals("Code", fieldBox(pane, 2).getValue(), "the new field gets the automatic suggestion");
+            assertEquals(quantityBox(pane).getItems().getFirst(), quantityBox(pane).getValue(),
+                    "the manual quantity choice survives too");
             assertNull(pane.getResult());
+            return null;
+        });
+    }
+
+    @Test
+    void theSampleFileIsMappedAutomaticallyAndTheUserIsAskedToCheck() {
+        BatchDataMappingPane pane = loadedPane(template(textWith("{{product_name}} {{price}}"), barcode("{{sku}}")),
+                dataset());
+        onFx(() -> {
+            assertEquals(List.of("Name", "Retail Price", "Code"),
+                    fieldBoxes(pane).stream().map(ComboBox::getValue).toList());
+            assertEquals("Qty", quantityBox(pane).getValue());
+            assertEquals(BatchTexts.suggested(3, 3), resultSummary(pane).getText());
+            return null;
+        });
+        prepareAndWait(pane);
+        onFx(() -> {
+            assertTrue(pane.getResult().ready(), "the suggested mapping is complete");
+            assertEquals(10, pane.getResult().labelCount(), "with the quantities from Qty");
             return null;
         });
     }

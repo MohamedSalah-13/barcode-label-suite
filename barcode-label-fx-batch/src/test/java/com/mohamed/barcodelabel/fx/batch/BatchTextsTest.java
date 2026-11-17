@@ -22,6 +22,14 @@ class BatchTextsTest {
     }
 
     @Test
+    void theSuggestionMessageCountsTheFields() {
+        assertEquals("اقترح البرنامج أعمدة لـ 3 من 3 حقول حسب أسمائها؛ راجعها ثم اضغط «تحقق وجهّز الطباعة»",
+                BatchTexts.suggested(3, 3));
+        assertEquals("اقترح البرنامج أعمدة لـ 1 من حقلين حسب أسمائها؛ راجعها ثم اضغط «تحقق وجهّز الطباعة»",
+                BatchTexts.suggested(1, 2));
+    }
+
+    @Test
     void configurationIssuesHaveNoRowNumber() {
         assertEquals("خطأ — الحقل {{price}} غير مربوط بأي عمود",
                 describe(BatchIssueKind.UNMAPPED_FIELD, 1, "price", ""));

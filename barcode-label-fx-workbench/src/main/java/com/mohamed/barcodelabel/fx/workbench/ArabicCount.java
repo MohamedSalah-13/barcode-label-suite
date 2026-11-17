@@ -11,6 +11,7 @@ public final class ArabicCount {
     public static final Noun LABELS = masculine("ملصق", "ملصقان", "ملصقات", "ملصقاً");
     public static final Noun ROWS = masculine("صف", "صفان", "صفوف", "صفاً");
     public static final Noun COLUMNS = masculine("عمود", "عمودان", "أعمدة", "عموداً");
+    public static final Noun FIELDS = masculine("حقل", "حقلان", "حقول", "حقلاً");
     public static final Noun PAGES = feminine("صفحة", "صفحتان", "صفحات", "صفحةً");
     public static final Noun COPIES = feminine("نسخة", "نسختان", "نسخ", "نسخةً");
     public static final Noun PRINTERS = feminine("طابعة", "طابعتان", "طابعات", "طابعةً");

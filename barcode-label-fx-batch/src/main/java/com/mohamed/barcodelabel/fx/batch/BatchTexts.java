@@ -17,6 +17,12 @@ final class BatchTexts {
         return ArabicCount.ROWS.count(rows) + "، " + ArabicCount.COLUMNS.count(columns) + " — حقول القالب: " + fields + " — الملف: " + fileName;
     }
 
+    /** Shown when the column names suggested a column for some fields, which the user should check. */
+    static String suggested(int matched, int fields) {
+        return "اقترح البرنامج أعمدة لـ " + matched + " من " + ArabicCount.FIELDS.afterPreposition(fields)
+                + " حسب أسمائها؛ راجعها ثم اضغط «تحقق وجهّز الطباعة»";
+    }
+
     static String ready(int sourceRows, int labels) {
         return "جاهز: سيُطبع " + ArabicCount.LABELS.count(labels) + " من " + ArabicCount.ROWS.afterPreposition(sourceRows);
     }

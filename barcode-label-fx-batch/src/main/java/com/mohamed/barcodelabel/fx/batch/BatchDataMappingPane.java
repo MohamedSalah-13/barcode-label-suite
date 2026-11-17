@@ -167,6 +167,10 @@ public final class BatchDataMappingPane extends BorderPane {
             maxTotalLabelsField.getValueFactory().setValue(chosen.maxTotalLabels());
             loadedProfile = null;
             mappedDataset = getDataset(); mappedFields = fields;
+            long suggested = fields.stream().filter(field -> automatic.fields().containsKey(field)).count();
+            if (chosen == automatic && suggested > 0) {
+                resultSummary.setText(BatchTexts.suggested((int) suggested, fields.size()));
+            }
             prepareButton.setDisable(fields.isEmpty());
             fileSummary.setText(BatchTexts.fileSummary(datasetName, getDataset().rows().size(), getDataset().headers().size(), fields.size()));
         } finally {
