@@ -251,11 +251,28 @@ public final class LabelDesignerPane extends BorderPane {
         if (width <= 0) return;
         boolean elements = body.getItems().contains(toolbox);
         boolean properties = body.getItems().contains(propertiesScroll);
-        double start = Math.min(toolboxWidth, width / 3) / width;
-        double end = 1 - Math.min(propertiesWidth, width / 2) / width;
+        double[] widths = panelWidths(width - workspace.getMinWidth(),
+                elements ? toolboxWidth : 0, elements ? toolbox.getMinWidth() : 0,
+                properties ? propertiesWidth : 0, properties ? propertiesScroll.getMinWidth() : 0);
+        double start = widths[0] / width;
+        double end = 1 - widths[1] / width;
         if (elements && properties) body.setDividerPositions(start, Math.max(start, end));
         else if (elements) body.setDividerPositions(start);
         else if (properties) body.setDividerPositions(end);
+    }
+
+    /**
+     * The widths to give the two side panels in {@code room} pixels, the split pane's width less the workspace's
+     * minimum. Panels that fit keep the widths they had; otherwise both give up the excess in proportion to their
+     * widths, but neither below its minimum. A hidden panel has width and minimum 0.
+     */
+    static double[] panelWidths(double room, double first, double firstMin, double second, double secondMin) {
+        double excess = first + second - Math.max(0, room);
+        if (excess <= 0) return new double[] {first, second};
+        double total = first + second;
+        return new double[] {
+                Math.max(firstMin, first - excess * first / total),
+                Math.max(secondMin, second - excess * second / total)};
     }
 
     public void save(Path path) throws IOException {
