@@ -1,28 +1,30 @@
-# تشغيل المرحلة السادسة النهائية
+# تشغيل البرنامج
 
-الإصدار النهائي هو `0.6.1-SNAPSHOT`. استخدم:
+الإصدار الحالي هو `0.6.1-SNAPSHOT`. كل الموديولات تُبنى من ملف `pom.xml` الرئيسي بأمر واحد.
+
+لبناء المشروع وتشغيل الاختبارات ثم فتح البرنامج:
 
 ```powershell
 cd <مسار المشروع>\barcode-label-suite
-.\start-phase6-v2.cmd
+.\start.cmd
 ```
 
-ملف `start-phase6-v2.cmd` يبني الإصدار الحالي ويشغله.
+على Linux أو macOS استخدم `./start.sh`.
 
-للتحقق من جميع المراحل بدون تشغيل الواجهة:
+للبناء والاختبار فقط بدون فتح الواجهة:
 
 ```powershell
-.\verify-phase6.ps1
+.\mvnw.cmd clean install
 ```
 
-بعد نجاح التحقق، أنشئ تطبيق Windows مستقلًا يحتوي على Java runtime خاص به:
+بعد نجاح البناء، أنشئ تطبيق Windows مستقلًا يحتوي على Java runtime خاص به:
 
 ```powershell
-.\package-phase6.ps1 -SkipBuild
+.\package.ps1 -SkipBuild
 ```
 
 ستجد الملف التنفيذي في `dist\BarcodeLabelSuite\BarcodeLabelSuite.exe`. لا تستخدم
-`-SkipBuild` إلا بعد نجاح `verify-phase6.ps1` على النسخة الحالية من الكود.
+`-SkipBuild` إلا بعد نجاح `mvnw.cmd clean install` على النسخة الحالية من الكود.
 
 ## تجربة سريعة
 

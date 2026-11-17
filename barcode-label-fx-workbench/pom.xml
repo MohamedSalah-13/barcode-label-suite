@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.mohamed.barcodelabel</groupId><artifactId>barcode-label-suite</artifactId><version>0.6.1-SNAPSHOT</version></parent>
+    <artifactId>barcode-label-fx-workbench</artifactId>
+    <dependencies>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-workflow</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-fx-designer</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-render-java2d</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-print-java2d</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></dependency>
+        <dependency><groupId>org.openjfx</groupId><artifactId>javafx-swing</artifactId></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><configuration><archive><manifestEntries><Automatic-Module-Name>com.mohamed.barcodelabel.fx.workbench</Automatic-Module-Name></manifestEntries></archive></configuration></plugin>
+        </plugins>
+    </build>
+</project>

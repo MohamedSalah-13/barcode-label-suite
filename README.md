@@ -1,12 +1,12 @@
 # Barcode Label Suite
 
-[![CI](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml/badge.svg)](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml) ![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white) ![JavaFX](https://img.shields.io/badge/JavaFX-21-1F6FB2) ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven&logoColor=white)
+[![CI](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml/badge.svg)](https://github.com/MohamedSalah-13/barcode-label-suite/actions/workflows/build.yml) ![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white) ![JavaFX](https://img.shields.io/badge/JavaFX-21-1F6FB2) ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven&logoColor=white) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A reusable, modular Java 21 / JavaFX library for designing and printing barcode labels.
 
 ## Current release
 
-The actively developed application is phase 6 final (`0.6.1-SNAPSHOT`). It provides:
+The current version is `0.6.1-SNAPSHOT`. It provides:
 
 - An immutable label-template model using millimetres.
 - Sheet, single-label and roll page definitions.
@@ -22,41 +22,53 @@ The actively developed application is phase 6 final (`0.6.1-SNAPSHOT`). It provi
 ## Requirements
 
 - JDK 21 (`JAVA_HOME` must point to it).
-- Windows for the supplied launch script and desktop printing workflow.
+- Windows for the supplied launch script, packaging and desktop printing workflow. The library and its tests also build on Linux and macOS.
 
 The repository includes Maven Wrapper 3.9.9, so a separate Maven installation is optional.
 
-## Build and run phase 6
+## Build and run
+
+All modules build in a single Maven reactor from the root `pom.xml`, in dependency order, with one shared version.
+
+Build, test and start the application:
 
 ```powershell
-.\start-phase6-v2.cmd
+.\start.cmd
 ```
 
-This installs the required phase artifacts in dependency order, runs the tests, and starts the final demo.
+```bash
+./start.sh
+```
 
-To verify without starting the desktop application, run the same Maven stages shown in [the CI workflow](.github/workflows/build.yml). The base milestone alone can still be built with:
+Build and test without starting the application:
 
 ```powershell
-.\mvnw.cmd clean verify
+.\mvnw.cmd clean install
 ```
 
-For the complete phase-6 verification chain, run:
-
-```powershell
-.\verify-phase6.ps1
+```bash
+./mvnw clean install
 ```
 
-Core modules and the tested JavaFX workbenches enforce a minimum 25% line-coverage baseline with JaCoCo. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
+The JavaFX UI tests need a display, so on a headless Linux machine run the build under `xvfb-run`:
+
+```bash
+xvfb-run -a ./mvnw clean install
+```
+
+After an install, the application alone starts with `./mvnw -pl barcode-label-app javafx:run`.
+
+Every tested module except `barcode-label-fx-designer` enforces a minimum 25% line-coverage baseline with JaCoCo; the designer's report is still written, but its coverage (about 20%) does not yet fail the build. The UI integration tests start the JavaFX toolkit, prepare a mapped batch, propagate it into the print workspace, render a multi-page preview and exercise page navigation. HTML reports are written to each tested module's `target/site/jacoco` directory.
 
 ## Package for Windows
 
 Create a self-contained application image (including a private Java runtime) with JDK 21 `jpackage`:
 
 ```powershell
-.\package-phase6.ps1
+.\package.ps1
 ```
 
-The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful full verification in the current checkout.
+The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful `mvnw clean install` in the current checkout.
 
 Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
 
@@ -70,6 +82,10 @@ Arabic integration instructions are available in [`docs/INTEGRATION_AR.md`](docs
 - `barcode-label-print-java2d`: shared Java2D printing implementation.
 - `barcode-label-workflow`: CSV import and universal page planning.
 - `barcode-label-batch`: mapping, validation and batch preparation.
-- `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
+- `barcode-label-fx-preview`, `barcode-label-fx-print`, `barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`: reusable JavaFX UI layers.
+- `barcode-label-app`: the batch-production desktop application.
+- `barcode-label-fx`, `barcode-label-demo`: the original milestone-1 preview control and its demo.
 
-The root `pom.xml` covers the original milestone modules. Later phases currently retain standalone parent POMs for compatibility; the launch script and CI workflow encode their required build order.
+## License
+
+Released under the [MIT License](LICENSE).

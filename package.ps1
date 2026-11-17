@@ -8,12 +8,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\')
 $mavenWrapper = Join-Path $projectRoot 'mvnw.cmd'
-$demoDirectory = Join-Path $projectRoot 'phase6-build\demo-final'
+$demoDirectory = Join-Path $projectRoot 'barcode-label-app'
 $targetDirectory = Join-Path $demoDirectory 'target'
 $inputDirectory = Join-Path $targetDirectory 'package-input'
 $outputDirectory = Join-Path $projectRoot 'dist'
 $appName = 'BarcodeLabelSuite'
-$mainJar = 'barcode-label-demo-v6-final-0.6.1-SNAPSHOT.jar'
+$mainJar = 'barcode-label-app.jar'
 $mainClass = 'com.mohamed.barcodelabel.demo.v6.Phase6Launcher'
 
 function Assert-ProjectPath {
@@ -36,7 +36,7 @@ function Invoke-Maven {
 }
 
 if (-not $SkipBuild) {
-    & (Join-Path $projectRoot 'verify-phase6.ps1')
+    Invoke-Maven @('clean', 'install')
 }
 
 $jpackage = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin\jpackage.exe' } else { $null }

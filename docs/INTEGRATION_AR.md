@@ -8,7 +8,7 @@
 mvn clean install
 ```
 
-الإصدار الحالي للتطوير هو `0.1.0-SNAPSHOT`.
+الإصدار الحالي للتطوير هو `0.6.1-SNAPSHOT`.
 
 ## 2. إضافة الوحدات إلى `pom.xml`
 
@@ -18,7 +18,7 @@ mvn clean install
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-fx</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -28,7 +28,7 @@ mvn clean install
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-data</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -38,7 +38,7 @@ mvn clean install
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-print</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 </dependency>
 ```
 
