@@ -16,6 +16,8 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
+import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
+import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UniversalPrintPaneTest {
+    private static final UiTexts ARABIC = UiTexts.load(UniversalPrintPane.class, "messages", UiLanguage.ARABIC);
+    private static final UiTexts ENGLISH = UiTexts.load(UniversalPrintPane.class, "messages", UiLanguage.ENGLISH);
+
     @BeforeAll
     static void startJavaFx() throws InterruptedException {
         CountDownLatch started = new CountDownLatch(1);
@@ -103,6 +108,17 @@ class UniversalPrintPaneTest {
     }
 
     @Test
+    void theTypedLabelDataSectionIsInEnglish() {
+        UniversalPrintPane pane = onFx(() -> new UniversalPrintPane(UiLanguage.ENGLISH));
+        onFx(() -> {
+            pane.setTemplate(template());
+            assertTrue(label(pane, "Label data").getParent().isVisible());
+            assertNotNull(find(pane, Label.class, node -> node.getText().startsWith("Without a CSV file")));
+            return null;
+        });
+    }
+
+    @Test
     void typedValuesSurviveADesignChangeAndHideOnceCsvIsLoaded() {
         UniversalPrintPane pane = onFx(UniversalPrintPane::new);
         onFx(() -> {
@@ -146,11 +162,19 @@ class UniversalPrintPaneTest {
     @Test
     void printConfirmationCountsCopiesAndPagesInArabic() {
         assertEquals("سيُطبع 10 ملصقات على صفحة واحدة\nالطابعة: Office",
-                UniversalPrintPane.confirmation("Office", 10, 1, 1, 0, 0));
+                UniversalPrintPane.confirmation(ARABIC, "Office", 10, 1, 1, 0, 0));
         assertEquals("سيُطبع 30 ملصقاً على 3 صفحات\n(3 نسخ، في كل نسخة 10 ملصقات)\nالطابعة: Office",
-                UniversalPrintPane.confirmation("Office", 10, 1, 3, 0, 0));
+                UniversalPrintPane.confirmation(ARABIC, "Office", 10, 1, 3, 0, 0));
         assertEquals("سيُطبع ملصقان على صفحتين\nالصفحات من 2 إلى 3\nالطابعة: Office",
-                UniversalPrintPane.confirmation("Office", 2, 2, 1, 2, 3));
+                UniversalPrintPane.confirmation(ARABIC, "Office", 2, 2, 1, 2, 3));
+    }
+
+    @Test
+    void printConfirmationInEnglish() {
+        assertEquals("1 label will print on 1 page\nPrinter: Office",
+                UniversalPrintPane.confirmation(ENGLISH, "Office", 1, 1, 1, 0, 0));
+        assertEquals("30 labels will print on 3 pages\n(3 copies, 10 labels in each)\nPages 2 to 2\nPrinter: Office",
+                UniversalPrintPane.confirmation(ENGLISH, "Office", 10, 1, 3, 2, 2));
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.mohamed.barcodelabel.fx.designer;
 
 import com.mohamed.barcodelabel.fx.designer.model.TemplateEditSession;
+import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
+import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
@@ -29,6 +31,7 @@ final class DesignerCanvas extends Pane {
     private static final double BASE_PIXELS_PER_MM = 4.0;
     private static final double SNAP_TOLERANCE_PX = 6;
     private final TemplateEditSession session;
+    private final UiTexts texts;
     private final ElementViewFactory viewFactory = new ElementViewFactory();
     private final Canvas gridCanvas = new Canvas();
     private final Map<UUID, StackPane> elementViews = new HashMap<>();
@@ -48,7 +51,12 @@ final class DesignerCanvas extends Pane {
     private double rubberBandStartY;
 
     DesignerCanvas(TemplateEditSession session) {
+        this(session, UiTexts.load(DesignerCanvas.class, "messages", UiLanguage.ARABIC));
+    }
+
+    DesignerCanvas(TemplateEditSession session, UiTexts texts) {
         this.session = session;
+        this.texts = texts;
         // The label's coordinates run left to right in millimetres, as it prints. Hosts such as
         // LabelDesignerPane are right to left for Arabic; inheriting that would mirror the label, put the
         // resize handle on the left and make dragging and the arrow keys move elements the wrong way.
@@ -192,31 +200,31 @@ final class DesignerCanvas extends Pane {
     }
 
     private ContextMenu buildElementContextMenu(UUID id) {
-        MenuItem copy = new MenuItem("نسخ");
+        MenuItem copy = new MenuItem(texts.get("designer.copy"));
         copy.setOnAction(event -> session.copySelected());
-        MenuItem cut = new MenuItem("قص");
+        MenuItem cut = new MenuItem(texts.get("designer.cut"));
         cut.setOnAction(event -> { session.copySelected(); session.deleteSelected(); });
-        MenuItem paste = new MenuItem("لصق");
+        MenuItem paste = new MenuItem(texts.get("designer.paste"));
         paste.setDisable(!session.hasClipboard());
         paste.setOnAction(event -> session.pasteClipboard());
-        MenuItem duplicate = new MenuItem("تكرار");
+        MenuItem duplicate = new MenuItem(texts.get("designer.duplicate"));
         duplicate.setOnAction(event -> session.duplicateSelected(2));
-        MenuItem delete = new MenuItem("حذف");
+        MenuItem delete = new MenuItem(texts.get("designer.delete"));
         delete.setOnAction(event -> session.deleteSelected());
-        MenuItem toFront = new MenuItem("إحضار للمقدمة");
+        MenuItem toFront = new MenuItem(texts.get("designer.bringToFront"));
         toFront.setOnAction(event -> session.bringToFront(id));
-        MenuItem forward = new MenuItem("طبقة للأمام");
+        MenuItem forward = new MenuItem(texts.get("designer.bringForward"));
         forward.setOnAction(event -> session.bringForward(id));
-        MenuItem backward = new MenuItem("طبقة للخلف");
+        MenuItem backward = new MenuItem(texts.get("designer.sendBackward"));
         backward.setOnAction(event -> session.sendBackward(id));
-        MenuItem toBack = new MenuItem("إرسال للخلفية");
+        MenuItem toBack = new MenuItem(texts.get("designer.sendToBack"));
         toBack.setOnAction(event -> session.sendToBack(id));
         return new ContextMenu(cut, copy, paste, duplicate, delete,
                 new SeparatorMenuItem(), toFront, forward, backward, toBack);
     }
 
     private ContextMenu buildCanvasContextMenu() {
-        MenuItem paste = new MenuItem("لصق");
+        MenuItem paste = new MenuItem(texts.get("designer.paste"));
         paste.setDisable(!session.hasClipboard());
         paste.setOnAction(event -> session.pasteClipboard());
         return new ContextMenu(paste);

@@ -4,6 +4,22 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **An English interface.** Every screen is in Arabic (right to left) or English (left to right), chosen from a language menu at the end of the tab bar and remembered between runs. Switching keeps the label being designed; the untouched starting label switches language too. Embedding applications pass a `UiLanguage` to the panes' constructors; without one they stay Arabic. The texts live in `messages_ar.properties`/`messages_en.properties` per module, and the tests check that both languages have every text and that the English screens show no Arabic.
+- **Print one label without a CSV file.** The print tab shows a field for each `{{field}}` of the template; the typed values make one label, and the number of copies is the number of labels. Printing stops and names any field left blank.
+- In the designer, Enter in a property field applies it, and a double click on an element jumps to its text or barcode data. The content field's caption names what it holds: text, barcode data or image path.
+- `README.ar.md`, an Arabic README, and `sample-products-quantities-en.csv`, the sample data in English. The README screenshots are in English, and `README.ar.md` has Arabic ones.
+
+### Fixed
+- English left in the Arabic UI: the undo and redo buttons ("تراجع: Move elements"), the names of new elements and of the empty template ("Rectangle", "New label"), the paper type and image fit lists (`SHEET`, `CONTAIN`), file type names and the OK/Cancel buttons of dialogs.
+- Property names in the designer, the Browse button and the print pane's page-range captions were cut short ("الع…", "…") when the panels were narrow.
+
+### بالعربية
+- **جديد:** واجهة إنجليزية بجانب العربية، تختارها من قائمة اللغة ويتذكرها البرنامج. طباعة ملصق واحد بدون ملف CSV بكتابة بياناته في تبويب الطباعة، وعدد النسخ هو عدد الملصقات. في المصمّم، Enter يطبّق الخاصية، والنقر المزدوج على العنصر ينقلك لخانة نصه أو بيانات الباركود. ملف README بالعربية.
+- **أخطاء أُصلحت:** نصوص إنجليزية كانت تظهر في الواجهة العربية، مثل "تراجع: Move elements" وأسماء العناصر الجديدة وقوائم نوع الورق ونمط الصورة وأزرار الحوارات. وأسماء الخصائص التي كانت تُقص عند ضيق اللوحة.
+
 ## [0.7.1] - 2026-11-17
 
 ### Fixed

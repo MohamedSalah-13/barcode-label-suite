@@ -87,4 +87,23 @@ final class FxSupport {
         else if (root instanceof Parent parent) children = parent.getChildrenUnmodifiable().stream();
         return Stream.concat(Stream.of(root), children.filter(java.util.Objects::nonNull).flatMap(FxSupport::all));
     }
+
+    /** Fails on any visible text with Arabic letters under {@code root}: a text that was not translated. */
+    static void assertNoArabic(Node root) {
+        all(root).forEach(node -> {
+            if (node instanceof javafx.scene.control.TabPane tabs) tabs.getTabs().forEach(tab -> assertNoArabic(tab.getText()));
+            if (node instanceof javafx.scene.control.Labeled labeled) assertNoArabic(labeled.getText());
+            if (node instanceof javafx.scene.control.TextInputControl input) assertNoArabic(input.getPromptText());
+            if (node instanceof javafx.scene.control.ComboBoxBase<?> box) assertNoArabic(box.getPromptText());
+            if (node instanceof javafx.scene.control.Control control && control.getTooltip() != null) {
+                assertNoArabic(control.getTooltip().getText());
+            }
+        });
+    }
+
+    static void assertNoArabic(String text) {
+        if (text != null && text.codePoints().anyMatch(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.ARABIC)) {
+            throw new AssertionError("Arabic text in the English UI: " + text);
+        }
+    }
 }

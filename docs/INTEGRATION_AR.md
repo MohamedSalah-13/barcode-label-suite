@@ -74,7 +74,15 @@ printPane.setRecords(List.of(
 mainPane.setCenter(printPane);
 ```
 
-الواجهات مصممة بالعربية من اليمين لليسار، أما سطح الملصق في المصمم فيبقى من اليسار لليمين حتى يطابق الطباعة. البرنامج يستخدم مظهر AtlantaFX؛ لنفس الشكل أضف قبل إنشاء النافذة:
+كل شاشة لها نسخة إنجليزية: مرّر `UiLanguage.ENGLISH` (من الحزمة `com.mohamed.barcodelabel.fx.i18n`) كآخر معامل في الـ constructor. بدونه تكون الشاشة بالعربية:
+
+```java
+BatchProductionWorkbench english = new BatchProductionWorkbench(template, UiLanguage.ENGLISH);
+VisualLabelDesigner designer = new VisualLabelDesigner(template, UiLanguage.ENGLISH);
+UniversalPrintPane printPane = new UniversalPrintPane(UiLanguage.ENGLISH);
+```
+
+الواجهة العربية من اليمين لليسار والإنجليزية من اليسار لليمين، أما سطح الملصق في المصمم فيبقى من اليسار لليمين في الحالتين حتى يطابق الطباعة. نصوص كل موديول في ملفي `messages_ar.properties` و`messages_en.properties` بجانب كلاساته، ولإضافة لغة جديدة تضيف قيمة إلى `UiLanguage` وملف `messages_<tag>.properties` لكل موديول. البرنامج يستخدم مظهر AtlantaFX؛ لنفس الشكل أضف قبل إنشاء النافذة:
 
 ```java
 Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());

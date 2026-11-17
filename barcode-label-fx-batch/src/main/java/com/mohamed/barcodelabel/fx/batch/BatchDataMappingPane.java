@@ -1,6 +1,7 @@
 package com.mohamed.barcodelabel.fx.batch;
 
 import com.mohamed.barcodelabel.batch.*;
+import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
 import com.mohamed.barcodelabel.workflow.csv.CsvImportService;
@@ -30,12 +31,12 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class BatchDataMappingPane extends BorderPane {
-    private static final String NO_QUANTITY = "— نسخة واحدة لكل صف —";
-    private static final String NOT_PREPARED = "لم يتم إعداد دفعة طباعة";
-    private static final String MAPPING_CHANGED = "تغيّرت المطابقة؛ اضغط «تحقق وجهّز الطباعة» من جديد";
     private static final int PREVIEW_ROWS = 8;
     private static final double PREVIEW_ROW_HEIGHT = 30;
     private static final double PREVIEW_HEADER_HEIGHT = 36;
+    private final BatchTexts texts;
+    /** The quantity choice meaning "no quantity column": every row prints the default number of copies. */
+    private final String noQuantity;
     private final ObjectProperty<LabelTemplate> template = new SimpleObjectProperty<>(this, "template");
     private final ObjectProperty<CsvDataset> dataset = new SimpleObjectProperty<>(this, "dataset");
     private final ReadOnlyObjectWrapper<BatchPreparationResult> result = new ReadOnlyObjectWrapper<>(this, "result");
@@ -51,32 +52,45 @@ public final class BatchDataMappingPane extends BorderPane {
     private final Spinner<Integer> maxCopiesPerRowField = new Spinner<>(1, 100_000, 999);
     private final Spinner<Integer> maxTotalLabelsField = new Spinner<>(1, 5_000_000, 100_000);
     private final ListView<String> issues = new ListView<>();
-    private final Label fileSummary = new Label("اختر ملف CSV للبدء");
-    private final Label resultSummary = new Label(NOT_PREPARED);
+    private final Label fileSummary = new Label();
+    private final Label resultSummary = new Label();
     private final ProgressIndicator busy = new ProgressIndicator();
-    private final Button prepareButton = new Button("تحقق وجهّز الطباعة", new FontIcon(Feather.CHECK_CIRCLE));
+    private final Button prepareButton = new Button(null, new FontIcon(Feather.CHECK_CIRCLE));
     private ColumnMapping loadedProfile;
     /** The name shown for the dataset; the next imported file's name until the dataset listener takes it. */
     private String pendingDatasetName;
-    private String datasetName = "البيانات";
+    private String datasetName;
     /** The dataset and template fields the mapping controls were last built for. */
     private CsvDataset mappedDataset;
     private List<String> mappedFields = List.of();
     /** True while the mapping controls are being rebuilt, so their value changes do not count as user edits. */
     private boolean rebuilding;
 
+    /** An Arabic mapping pane. */
     public BatchDataMappingPane() {
+        this(UiLanguage.ARABIC);
+    }
+
+    /** A mapping pane in this language. It takes the orientation of the pane it is placed in. */
+    public BatchDataMappingPane(UiLanguage language) {
+        texts = new BatchTexts(language);
+        noQuantity = t("batch.noQuantity");
+        datasetName = t("batch.datasetName");
+        fileSummary.setText(t("batch.chooseFile"));
+        resultSummary.setText(t("batch.notPrepared"));
+        prepareButton.setText(t("batch.prepare"));
         getStyleClass().add("batch-data-mapping-pane");
         setTop(header()); setCenter(content()); setBottom(actions());
         template.addListener((obs, oldValue, value) -> templateChanged());
         dataset.addListener((obs, oldValue, value) -> {
-            datasetName = pendingDatasetName != null ? pendingDatasetName : "البيانات";
+            datasetName = pendingDatasetName != null ? pendingDatasetName : t("batch.datasetName");
             pendingDatasetName = null;
             rebuildMappings(false);
         });
         loadStylesheet();
     }
 
+    public UiLanguage language() { return texts.language(); }
     public LabelTemplate getTemplate() { return template.get(); }
     public void setTemplate(LabelTemplate value) { template.set(value); }
     public ObjectProperty<LabelTemplate> templateProperty() { return template; }
@@ -87,10 +101,10 @@ public final class BatchDataMappingPane extends BorderPane {
     public ReadOnlyObjectProperty<BatchPreparationResult> resultProperty() { return result.getReadOnlyProperty(); }
 
     private VBox header() {
-        Label title = new Label("إعداد بيانات الطباعة الجماعية"); title.getStyleClass().add("batch-title");
-        Button importCsv = new Button("استيراد CSV", new FontIcon(Feather.UPLOAD)); importCsv.getStyleClass().add("primary-button");
-        Button saveProfile = new Button("حفظ المطابقة", new FontIcon(Feather.SAVE));
-        Button loadProfile = new Button("فتح مطابقة", new FontIcon(Feather.FOLDER));
+        Label title = new Label(t("batch.title")); title.getStyleClass().add("batch-title");
+        Button importCsv = new Button(t("batch.importCsv"), new FontIcon(Feather.UPLOAD)); importCsv.getStyleClass().add("primary-button");
+        Button saveProfile = new Button(t("batch.saveMapping"), new FontIcon(Feather.SAVE));
+        Button loadProfile = new Button(t("batch.openMapping"), new FontIcon(Feather.FOLDER));
         importCsv.setOnAction(event -> importCsv()); saveProfile.setOnAction(event -> saveProfile()); loadProfile.setOnAction(event -> loadProfile());
         busy.setPrefSize(18, 18); busy.setMaxSize(18, 18); busy.setVisible(false); busy.setManaged(false);
         HBox toolbar = new HBox(8, importCsv, saveProfile, loadProfile, busy); toolbar.setAlignment(Pos.CENTER_LEFT);
@@ -100,13 +114,13 @@ public final class BatchDataMappingPane extends BorderPane {
     private SplitPane content() {
         mappings.setHgap(12); mappings.setVgap(9); mappings.setPadding(new Insets(12));
         ScrollPane mappingScroll = new ScrollPane(mappings); mappingScroll.setFitToWidth(true);
-        preview.setPlaceholder(new Label("استورد CSV لعرض معاينة البيانات"));
+        preview.setPlaceholder(new Label(t("batch.previewPlaceholder")));
         preview.setFixedCellSize(PREVIEW_ROW_HEIGHT);
         preview.setPrefHeight(160);
-        VBox mappingSide = new VBox(8, new Label("معاينة البيانات (أول " + PREVIEW_ROWS + " صفوف)"), preview, mappingScroll);
+        VBox mappingSide = new VBox(8, new Label(t("batch.previewTitle", PREVIEW_ROWS)), preview, mappingScroll);
         mappingSide.setPadding(new Insets(12)); VBox.setVgrow(mappingScroll, Priority.ALWAYS);
-        issues.setPlaceholder(new Label("لا توجد أخطاء"));
-        VBox validation = new VBox(8, new Label("نتيجة التحقق"), resultSummary, issues);
+        issues.setPlaceholder(new Label(t("batch.noErrors")));
+        VBox validation = new VBox(8, new Label(t("batch.validationTitle")), resultSummary, issues);
         validation.setPadding(new Insets(12)); VBox.setVgrow(issues, Priority.ALWAYS);
         SplitPane split = new SplitPane(mappingSide, validation); split.setDividerPositions(0.6); return split;
     }
@@ -120,10 +134,10 @@ public final class BatchDataMappingPane extends BorderPane {
         defaultCopies.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
         maxCopiesPerRowField.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
         maxTotalLabelsField.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
-        HBox box = new HBox(10, new Label("عمود الكمية"), quantityColumn,
-                new Label("الكمية الافتراضية"), defaultCopies,
-                new Label("أقصى نسخ للصف"), maxCopiesPerRowField,
-                new Label("أقصى إجمالي ملصقات"), maxTotalLabelsField,
+        HBox box = new HBox(10, new Label(t("batch.quantityColumn")), quantityColumn,
+                new Label(t("batch.defaultCopies")), defaultCopies,
+                new Label(t("batch.maxPerRow")), maxCopiesPerRowField,
+                new Label(t("batch.maxTotal")), maxTotalLabelsField,
                 prepareButton);
         box.setPadding(new Insets(12)); box.setAlignment(Pos.CENTER_LEFT); return box;
     }
@@ -143,25 +157,25 @@ public final class BatchDataMappingPane extends BorderPane {
         rebuilding = true;
         try {
             rebuildPreview();
-            mappings.getChildren().clear(); fieldBoxes.clear(); clearResult(NOT_PREPARED);
+            mappings.getChildren().clear(); fieldBoxes.clear(); clearResult(t("batch.notPrepared"));
             mappedDataset = null; mappedFields = List.of();
             if (getTemplate() == null || getDataset() == null) {
-                mappings.add(new Label("يجب تحديد قالب واستيراد CSV أولًا"), 0, 0); prepareButton.setDisable(true); return;
+                mappings.add(new Label(t("batch.needTemplateAndCsv")), 0, 0); prepareButton.setDisable(true); return;
             }
             List<String> fields = templateFields.scan(getTemplate());
             ColumnMapping automatic = ColumnMapping.automatic(fields, getDataset().headers());
             ColumnMapping chosen = loadedProfile != null ? loadedProfile : previous != null ? previous : automatic;
-            mappings.add(new Label("حقل القالب"), 0, 0); mappings.add(new Label("عمود CSV"), 1, 0);
+            mappings.add(new Label(t("batch.fieldHeader")), 0, 0); mappings.add(new Label(t("batch.columnHeader")), 1, 0);
             for (int index = 0; index < fields.size(); index++) {
                 String field = fields.get(index); ComboBox<String> box = new ComboBox<>(FXCollections.observableArrayList(getDataset().headers()));
                 String column = chosen.fields().getOrDefault(field, automatic.fields().get(field));
-                box.setPromptText("اختر العمود"); box.setMaxWidth(Double.MAX_VALUE); box.setValue(column);
+                box.setPromptText(t("batch.chooseColumn")); box.setMaxWidth(Double.MAX_VALUE); box.setValue(column);
                 box.valueProperty().addListener((obs, oldValue, value) -> mappingEdited());
                 mappings.add(new Label("{{" + field + "}}"), 0, index + 1); mappings.add(box, 1, index + 1); GridPane.setHgrow(box, Priority.ALWAYS);
                 fieldBoxes.put(field, box);
             }
-            quantityColumn.setItems(FXCollections.observableArrayList()); quantityColumn.getItems().add(NO_QUANTITY); quantityColumn.getItems().addAll(getDataset().headers());
-            quantityColumn.setValue(chosen.quantityColumn() == null ? NO_QUANTITY : chosen.quantityColumn());
+            quantityColumn.setItems(FXCollections.observableArrayList()); quantityColumn.getItems().add(noQuantity); quantityColumn.getItems().addAll(getDataset().headers());
+            quantityColumn.setValue(chosen.quantityColumn() == null ? noQuantity : chosen.quantityColumn());
             defaultCopies.getValueFactory().setValue(chosen.defaultCopies());
             maxCopiesPerRowField.getValueFactory().setValue(chosen.maxCopiesPerRow());
             maxTotalLabelsField.getValueFactory().setValue(chosen.maxTotalLabels());
@@ -169,10 +183,10 @@ public final class BatchDataMappingPane extends BorderPane {
             mappedDataset = getDataset(); mappedFields = fields;
             long suggested = fields.stream().filter(field -> automatic.fields().containsKey(field)).count();
             if (chosen == automatic && suggested > 0) {
-                resultSummary.setText(BatchTexts.suggested((int) suggested, fields.size()));
+                resultSummary.setText(texts.suggested((int) suggested, fields.size()));
             }
             prepareButton.setDisable(fields.isEmpty());
-            fileSummary.setText(BatchTexts.fileSummary(datasetName, getDataset().rows().size(), getDataset().headers().size(), fields.size()));
+            fileSummary.setText(texts.fileSummary(datasetName, getDataset().rows().size(), getDataset().headers().size(), fields.size()));
         } finally {
             rebuilding = false;
         }
@@ -180,7 +194,7 @@ public final class BatchDataMappingPane extends BorderPane {
 
     /** Any change to the mapping makes the last result stale: it no longer describes what would print. */
     private void mappingEdited() {
-        if (!rebuilding && result.get() != null) clearResult(MAPPING_CHANGED);
+        if (!rebuilding && result.get() != null) clearResult(t("batch.mappingChanged"));
     }
 
     private void clearResult(String summary) {
@@ -206,7 +220,7 @@ public final class BatchDataMappingPane extends BorderPane {
     private ColumnMapping currentMapping() {
         var values = new LinkedHashMap<String, String>();
         fieldBoxes.forEach((field, box) -> { if (box.getValue() != null) values.put(field, box.getValue()); });
-        String quantity = NO_QUANTITY.equals(quantityColumn.getValue()) ? null : quantityColumn.getValue();
+        String quantity = noQuantity.equals(quantityColumn.getValue()) ? null : quantityColumn.getValue();
         return new ColumnMapping(values, quantity, defaultCopies.getValue(), maxCopiesPerRowField.getValue(), maxTotalLabelsField.getValue());
     }
 
@@ -214,7 +228,7 @@ public final class BatchDataMappingPane extends BorderPane {
         LabelTemplate currentTemplate = getTemplate();
         CsvDataset currentDataset = getDataset();
         ColumnMapping mapping = currentMapping();
-        runIo("تحقق وتجهيز الطباعة", () -> preparation.prepare(currentTemplate, currentDataset, mapping), prepared -> {
+        runIo(t("batch.preparing"), () -> preparation.prepare(currentTemplate, currentDataset, mapping), prepared -> {
             // The user may have changed the mapping, the data or the template while this ran in the background.
             if (getTemplate() == currentTemplate && getDataset() == currentDataset && currentMapping().equals(mapping)) {
                 applyPreparationResult(prepared, mapping);
@@ -224,38 +238,41 @@ public final class BatchDataMappingPane extends BorderPane {
 
     private void applyPreparationResult(BatchPreparationResult prepared, ColumnMapping mapping) {
         result.set(prepared); issues.setItems(FXCollections.observableArrayList(prepared.issues().stream()
-                .map(issue -> BatchTexts.describe(issue, mapping)).toList()));
+                .map(issue -> texts.describe(issue, mapping)).toList()));
         resultSummary.setText(prepared.ready()
-                ? BatchTexts.ready(prepared.sourceRows(), prepared.labelCount())
-                : "توجد أخطاء؛ لن يتم إرسال أي ملصق للطباعة");
+                ? texts.ready(prepared.sourceRows(), prepared.labelCount())
+                : t("batch.hasErrors"));
         resultSummary.getStyleClass().removeAll("result-ok", "result-error"); resultSummary.getStyleClass().add(prepared.ready() ? "result-ok" : "result-error");
     }
 
     private void importCsv() {
-        FileChooser chooser = new FileChooser(); chooser.setTitle("استيراد بيانات الدفعة"); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
+        FileChooser chooser = new FileChooser(); chooser.setTitle(t("batch.importTitle")); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
         java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        if (!fieldBoxes.isEmpty() && !confirm("استيراد ملف CSV جديد سيفقد إعداد المطابقة الحالي. هل تريد المتابعة؟")) return;
-        runIo("استيراد CSV", () -> csv.read(file.toPath()), value -> { pendingDatasetName = file.getName(); setDataset(value); });
+        if (!fieldBoxes.isEmpty() && !confirm(t("batch.replaceConfirm"))) return;
+        runIo(t("batch.importing"), () -> csv.read(file.toPath()), value -> { pendingDatasetName = file.getName(); setDataset(value); });
     }
 
     private boolean confirm(String message) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.YES, ButtonType.NO);
-        alert.setHeaderText(null);
+        ButtonType yes = new ButtonType(t("dialog.yes"), ButtonBar.ButtonData.YES);
+        ButtonType no = new ButtonType(t("dialog.no"), ButtonBar.ButtonData.NO);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, yes, no);
+        alert.setTitle(t("batch.confirmTitle")); alert.setHeaderText(null);
+        alert.getDialogPane().setNodeOrientation(texts.language().orientation());
         if (getScene() != null && getScene().getWindow() != null) alert.initOwner(getScene().getWindow());
-        return alert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES;
+        return alert.showAndWait().orElse(no) == yes;
     }
 
     private void saveProfile() {
         if (getDataset() == null || fieldBoxes.isEmpty()) return;
-        FileChooser chooser = profileChooser("حفظ مطابقة الأعمدة"); chooser.setInitialFileName("csv-mapping.properties");
+        FileChooser chooser = profileChooser(t("batch.saveMappingTitle")); chooser.setInitialFileName("csv-mapping.properties");
         java.io.File file = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
         ColumnMapping mapping = currentMapping();
-        runIo("حفظ إعداد المطابقة", () -> { profiles.save(file.toPath(), mapping); return mapping; }, value -> resultSummary.setText("تم حفظ إعداد المطابقة"));
+        runIo(t("batch.savingMapping"), () -> { profiles.save(file.toPath(), mapping); return mapping; }, value -> resultSummary.setText(t("batch.mappingSaved")));
     }
 
     private void loadProfile() {
-        FileChooser chooser = profileChooser("فتح مطابقة أعمدة"); java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        runIo("فتح إعداد المطابقة", () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(false); resultSummary.setText("تم تحميل إعداد المطابقة"); });
+        FileChooser chooser = profileChooser(t("batch.openMappingTitle")); java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
+        runIo(t("batch.openingMapping"), () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(false); resultSummary.setText(t("batch.mappingLoaded")); });
     }
 
     private <T> void runIo(String operation, IoSupplier<T> supplier, java.util.function.Consumer<T> success) {
@@ -266,7 +283,10 @@ public final class BatchDataMappingPane extends BorderPane {
 
     private void setBusy(boolean value) { busy.setVisible(value); busy.setManaged(value); prepareButton.setDisable(value || getDataset() == null); }
     private void showError(String operation, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, operation + ": " + message, ButtonType.OK);
+        Alert alert = new Alert(Alert.AlertType.ERROR, operation + ": " + message,
+                new ButtonType(t("dialog.ok"), ButtonBar.ButtonData.OK_DONE));
+        alert.setTitle(t("batch.errorTitle"));
+        alert.getDialogPane().setNodeOrientation(texts.language().orientation());
         if (getScene() != null && getScene().getWindow() != null) alert.initOwner(getScene().getWindow());
         alert.show();
     }
@@ -276,7 +296,8 @@ public final class BatchDataMappingPane extends BorderPane {
         });
     }
 
-    private static FileChooser profileChooser(String title) { FileChooser chooser = new FileChooser(); chooser.setTitle(title); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Mapping profile", "*.properties")); return chooser; }
+    private FileChooser profileChooser(String title) { FileChooser chooser = new FileChooser(); chooser.setTitle(title); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(t("batch.mappingFilter"), "*.properties")); return chooser; }
+    private String t(String key, Object... arguments) { return texts.get(key, arguments); }
     private static String rootMessage(Throwable throwable) { Throwable current = throwable; while (current.getCause() != null) current = current.getCause(); return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage(); }
     private void loadStylesheet() { var resource = BatchDataMappingPane.class.getResource("batch-data-mapping.css"); if (resource != null) getStylesheets().add(resource.toExternalForm()); }
     @FunctionalInterface private interface IoSupplier<T> { T get() throws Exception; }

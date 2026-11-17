@@ -1,33 +1,125 @@
 package com.mohamed.barcodelabel.app;
 
 import com.mohamed.barcodelabel.fx.batch.BatchProductionWorkbench;
+import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
+import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.*;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
 import com.mohamed.barcodelabel.workflow.paper.PaperPresetRegistry;
 import atlantafx.base.theme.PrimerLight;
 import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 import java.util.List;
+import java.util.function.Predicate;
 
+/**
+ * The desktop application: the production workbench in the user's language, with a language menu at the end of
+ * the tab bar. The language is remembered between runs.
+ */
 public final class BarcodeLabelSuiteApp extends Application {
+    private final LanguageSetting languageSetting;
+    /** Asks whether to switch language while CSV data is loaded, which the switch discards. */
+    private final Predicate<UiTexts> confirmSwitch;
+    private Stage stage;
+    private UiLanguage language;
+    private UiTexts texts;
+    private LabelTemplate startingTemplate;
+    private BatchProductionWorkbench workbench;
+    private ComboBox<UiLanguage> languagePicker;
+
+    public BarcodeLabelSuiteApp() {
+        this(LanguageSetting.preferences(), BarcodeLabelSuiteApp::askToSwitch);
+    }
+
+    BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch) {
+        this.languageSetting = languageSetting;
+        this.confirmSwitch = confirmSwitch;
+    }
+
     @Override public void start(Stage stage) {
+        this.stage = stage;
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
-        stage.setScene(new Scene(new BatchProductionWorkbench(template()), 1480, 940));
+        language = languageSetting.load();
+        startingTemplate = template(language);
+        stage.setScene(new Scene(root(startingTemplate), 1480, 940));
         stage.setTitle("Barcode Label Suite");
         stage.setMinWidth(1150); stage.setMinHeight(750); stage.show();
     }
 
-    /** The template the app opens with; its fields match the sample CSV in docs/USER_GUIDE_AR.md. */
-    static LabelTemplate template() {
+    UiLanguage language() { return language; }
+    BatchProductionWorkbench workbench() { return workbench; }
+    ComboBox<UiLanguage> languagePicker() { return languagePicker; }
+
+    /**
+     * Rebuilds the window in another language. The label being designed is kept; if it is still the untouched
+     * starting label, the other language's starting label replaces it, so its texts follow the language too.
+     */
+    void switchLanguage(UiLanguage next) {
+        if (next == null || next == language) return;
+        boolean hasData = workbench.batchPane().getDataset() != null || workbench.labelWorkbench().getDataset() != null;
+        if (hasData && !confirmSwitch.test(texts)) {
+            languagePicker.setValue(language);
+            return;
+        }
+        LabelTemplate current = workbench.getTemplate();
+        language = next;
+        languageSetting.save(next);
+        if (current == startingTemplate) current = startingTemplate = template(next);
+        stage.getScene().setRoot(root(current));
+    }
+
+    private Parent root(LabelTemplate template) {
+        texts = UiTexts.load(BarcodeLabelSuiteApp.class, "messages", language);
+        workbench = new BatchProductionWorkbench(template, language);
+        languagePicker = new ComboBox<>();
+        languagePicker.getItems().setAll(UiLanguage.values());
+        languagePicker.setValue(language);
+        languagePicker.setTooltip(new Tooltip(texts.get("app.language")));
+        languagePicker.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        languagePicker.valueProperty().addListener((obs, oldValue, value) -> switchLanguage(value));
+        // At the end of the tab bar, where the tabs leave room: top left in Arabic, top right in English.
+        StackPane root = new StackPane(workbench, languagePicker);
+        root.setNodeOrientation(language.orientation());
+        StackPane.setAlignment(languagePicker, Pos.TOP_RIGHT);
+        StackPane.setMargin(languagePicker, new Insets(3, 8, 0, 8));
+        return root;
+    }
+
+    private static boolean askToSwitch(UiTexts texts) {
+        ButtonType yes = new ButtonType(texts.get("dialog.yes"), ButtonBar.ButtonData.YES);
+        ButtonType no = new ButtonType(texts.get("dialog.no"), ButtonBar.ButtonData.NO);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, texts.get("app.switchConfirm"), yes, no);
+        alert.setTitle(texts.get("app.switchTitle"));
+        alert.setHeaderText(null);
+        alert.getDialogPane().setNodeOrientation(texts.language().orientation());
+        return alert.showAndWait().orElse(no) == yes;
+    }
+
+    /** The Arabic starting template; its fields match the sample CSV in the README. */
+    static LabelTemplate template() { return template(UiLanguage.ARABIC); }
+
+    /** The template the app opens with, named and worded in this language; the fields are the same in both. */
+    static LabelTemplate template(UiLanguage language) {
+        UiTexts texts = UiTexts.load(BarcodeLabelSuiteApp.class, "messages", language);
         var page = new PaperPresetRegistry().find("a4-3x7-63.5x38.1").orElseThrow().page();
-        var border = new ShapeElement(ElementFrame.create("Border", new RectMm(1, 1, 61.5, 36.1), 0), ShapeType.ROUNDED_RECTANGLE, "#CBD5E1", "transparent", 0.25);
-        var name = new TextElement(ElementFrame.create("Product", new RectMm(4, 3, 55, 7), 1), "{{product_name}}", "Arial", 11, "#111827", true, false, TextAlignment.CENTER);
-        var barcode = new BarcodeElement(ElementFrame.create("Barcode", new RectMm(4, 11, 55.5, 19), 2), "{{sku}}", Symbology.CODE_128, 0.25, 2.5, true);
-        var price = new TextElement(ElementFrame.create("Price", new RectMm(10, 31, 43.5, 5), 3), "السعر: {{price}} ج.م", "Arial", 9, "#B91C1C", true, false, TextAlignment.CENTER);
-        return LabelTemplate.create("قالب المنتجات بالكميات", page, List.of(border, name, barcode, price));
+        var border = new ShapeElement(ElementFrame.create(texts.get("element.border"), new RectMm(1, 1, 61.5, 36.1), 0), ShapeType.ROUNDED_RECTANGLE, "#CBD5E1", "transparent", 0.25);
+        var name = new TextElement(ElementFrame.create(texts.get("element.product"), new RectMm(4, 3, 55, 7), 1), "{{product_name}}", "Arial", 11, "#111827", true, false, TextAlignment.CENTER);
+        var barcode = new BarcodeElement(ElementFrame.create(texts.get("element.barcode"), new RectMm(4, 11, 55.5, 19), 2), "{{sku}}", Symbology.CODE_128, 0.25, 2.5, true);
+        var price = new TextElement(ElementFrame.create(texts.get("element.price"), new RectMm(10, 31, 43.5, 5), 3), texts.get("template.price"), "Arial", 9, "#B91C1C", true, false, TextAlignment.CENTER);
+        return LabelTemplate.create(texts.get("template.name"), page, List.of(border, name, barcode, price));
     }
 
     public static void main(String[] args) { launch(args); }

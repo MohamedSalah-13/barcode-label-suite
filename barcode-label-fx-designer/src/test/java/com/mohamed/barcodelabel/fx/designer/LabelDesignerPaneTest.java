@@ -59,7 +59,7 @@ class LabelDesignerPaneTest {
     @Test
     void defaultConstructorStartsWithAnEmptyA4SheetLabel() {
         LabelDesignerPane pane = onFx(LabelDesignerPane::new);
-        assertEquals("New label", pane.getTemplate().name());
+        assertEquals("ملصق جديد", pane.getTemplate().name());
         assertTrue(pane.getTemplate().elements().isEmpty());
         assertEquals(LABEL_WIDTH, pane.getTemplate().page().labelSize().width(), 0.001);
     }
@@ -83,7 +83,7 @@ class LabelDesignerPaneTest {
 
             assertEquals(6, pane.getTemplate().elements().size());
             assertEquals(5, last(pane).frame().zIndex(), "each new element goes on top");
-            assertEquals("1 عنصر محدد", status(pane).getText());
+            assertEquals("المحدد: عنصر واحد", status(pane).getText());
             assertEquals(last(pane).frame().name(), title(pane).getText());
         });
     }

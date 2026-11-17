@@ -184,7 +184,7 @@ class BatchDataMappingPaneTest {
             assertEquals(List.of("Name", "Retail Price", "Code"),
                     fieldBoxes(pane).stream().map(ComboBox::getValue).toList());
             assertEquals("Qty", quantityBox(pane).getValue());
-            assertEquals(BatchTexts.suggested(3, 3), resultSummary(pane).getText());
+            assertEquals(new BatchTexts(com.mohamed.barcodelabel.fx.i18n.UiLanguage.ARABIC).suggested(3, 3), resultSummary(pane).getText());
             return null;
         });
         prepareAndWait(pane);

@@ -1,4 +1,4 @@
-package com.mohamed.barcodelabel.fx.workbench;
+package com.mohamed.barcodelabel.fx.i18n;
 
 /**
  * Counted Arabic nouns for the UI: "ملصق واحد", "ملصقان", "3 ملصقات", "11 ملصقاً", "100 ملصق".
@@ -6,6 +6,8 @@ package com.mohamed.barcodelabel.fx.workbench;
  * <p>1 takes the singular with "واحد"/"واحدة", 2 the dual, 3 to 10 the plural, 11 to 99 the accusative
  * singular, and hundreds follow their last two digits. After a preposition the dual takes its genitive
  * ending, as in "على صفحتين" or "من صفين"; use {@link Noun#afterPreposition(long)} there.</p>
+ *
+ * <p>The UI counts through {@link UiTexts#count(Counted, long)}, which uses these rules in Arabic.</p>
  */
 public final class ArabicCount {
     public static final Noun LABELS = masculine("ملصق", "ملصقان", "ملصقات", "ملصقاً");
@@ -13,6 +15,7 @@ public final class ArabicCount {
     public static final Noun COLUMNS = masculine("عمود", "عمودان", "أعمدة", "عموداً");
     public static final Noun FIELDS = masculine("حقل", "حقلان", "حقول", "حقلاً");
     public static final Noun RECORDS = masculine("سجل", "سجلان", "سجلات", "سجلاً");
+    public static final Noun ELEMENTS = masculine("عنصر", "عنصران", "عناصر", "عنصراً");
     public static final Noun PAGES = feminine("صفحة", "صفحتان", "صفحات", "صفحةً");
     public static final Noun COPIES = feminine("نسخة", "نسختان", "نسخ", "نسخةً");
     public static final Noun PRINTERS = feminine("طابعة", "طابعتان", "طابعات", "طابعةً");

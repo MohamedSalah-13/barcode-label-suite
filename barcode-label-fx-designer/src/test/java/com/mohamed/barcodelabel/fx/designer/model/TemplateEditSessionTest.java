@@ -212,7 +212,7 @@ class TemplateEditSessionTest {
         var copy = session.find(session.primarySelection());
         assertEquals(new RectMm(4, 5, 20, 6), copy.frame().bounds());
         assertEquals(2, copy.frame().zIndex(), "copies go above the existing elements");
-        assertEquals("تكرار العناصر", session.undoDescription());
+        assertEquals("Duplicate elements", session.undoDescription());
     }
 
     @Test
@@ -282,34 +282,29 @@ class TemplateEditSessionTest {
 
         var id = session.template().elements().getFirst().frame().id();
         session.setRotation(id, 30);
-        assertEquals("تدوير العنصر", session.undoDescription());
+        assertEquals("Rotate element", session.undoDescription());
         session.undo();
-        assertEquals("تدوير العنصر", session.redoDescription());
+        assertEquals("Rotate element", session.redoDescription());
     }
 
     @Test
-    void everyActionIsDescribedInArabicForTheUndoButton() {
+    void eachStepRecordsTheActionThePanesNameForUndo() {
         var session = new TemplateEditSession(template());
         var id = session.template().elements().getFirst().frame().id();
         session.selectAll();
 
         session.moveSelected(1, 1);
-        assertEquals("تحريك العناصر", session.undoDescription());
+        assertEquals(EditAction.MOVE, session.undoAction());
         session.align(EditorAlignment.LEFT);
-        assertEquals("محاذاة لليسار", session.undoDescription());
-        session.align(EditorAlignment.VERTICAL_CENTER);
-        assertEquals("توسيط رأسي", session.undoDescription());
+        assertEquals(EditAction.ALIGN, session.undoAction());
         session.setContent(id, "{{sku}}");
-        assertEquals("تغيير المحتوى", session.undoDescription());
+        assertEquals(EditAction.CHANGE_CONTENT, session.undoAction());
         session.setLockedVisible(id, false, false);
-        assertEquals("تغيير القفل والظهور", session.undoDescription());
+        assertEquals(EditAction.CHANGE_STATE, session.undoAction());
         session.deleteSelected();
-        assertEquals("حذف العناصر", session.undoDescription());
-
-        for (EditorAlignment alignment : EditorAlignment.values()) {
-            String description = TemplateEditSession.alignmentDescription(alignment);
-            assertTrue(description.chars().noneMatch(c -> c < 0x80 && Character.isLetter(c)), description);
-        }
+        assertEquals(EditAction.DELETE, session.undoAction());
+        session.undo();
+        assertEquals(EditAction.DELETE, session.redoAction());
     }
 
     @Test

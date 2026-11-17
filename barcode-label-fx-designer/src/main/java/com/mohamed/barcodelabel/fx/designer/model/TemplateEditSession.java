@@ -37,12 +37,12 @@ public final class TemplateEditSession {
     public UUID primarySelection() { return selection.isEmpty() ? null : selection.getFirst(); }
     public boolean canUndo() { return !undo.isEmpty(); }
     public boolean canRedo() { return !redo.isEmpty(); }
-    /**
-     * What the last change was, in Arabic, for the undo button ("تراجع: تحريك العناصر"). The descriptions name
-     * the action as the toolbar does, since the designer shows them as they are.
-     */
     public String undoDescription() { return canUndo() ? undo.peek().description() : ""; }
     public String redoDescription() { return canRedo() ? redo.peek().description() : ""; }
+    /** What the next undo reverts, or null when there is nothing to undo. */
+    public EditAction undoAction() { return canUndo() ? undo.peek().action() : null; }
+    /** What the next redo repeats, or null when there is nothing to redo. */
+    public EditAction redoAction() { return canRedo() ? redo.peek().action() : null; }
 
     public void addListener(Runnable listener) { listeners.add(Objects.requireNonNull(listener)); }
     public void removeListener(Runnable listener) { listeners.remove(listener); }
@@ -68,7 +68,7 @@ public final class TemplateEditSession {
     }
 
     public void addElement(LabelElement element) {
-        apply("إضافة عنصر", current -> {
+        apply(EditAction.ADD, "Add " + element.frame().name(), current -> {
             var elements = new ArrayList<>(current.elements());
             elements.add(element);
             return current.withElements(elements);
@@ -81,7 +81,7 @@ public final class TemplateEditSession {
     public void deleteSelected() {
         if (selection.isEmpty()) return;
         Set<UUID> removed = Set.copyOf(selection);
-        apply("حذف العناصر", current -> current.withElements(current.elements().stream()
+        apply(EditAction.DELETE, "Delete elements", current -> current.withElements(current.elements().stream()
                 .filter(element -> !removed.contains(element.frame().id())).toList()));
         selection.clear();
         notifyListeners();
@@ -97,7 +97,7 @@ public final class TemplateEditSession {
             RectMm moved = fit(new RectMm(old.x() + offsetMm, old.y() + offsetMm, old.width(), old.height()));
             duplicates.add(ElementCopies.duplicate(element, moved, nextZ++));
         }
-        apply("تكرار العناصر", current -> {
+        apply(EditAction.DUPLICATE, "Duplicate elements", current -> {
             var elements = new ArrayList<>(current.elements());
             elements.addAll(duplicates);
             return current.withElements(elements);
@@ -125,7 +125,7 @@ public final class TemplateEditSession {
             RectMm moved = fit(new RectMm(old.x() + 5, old.y() + 5, old.width(), old.height()));
             pasted.add(ElementCopies.duplicate(element, moved, nextZ++));
         }
-        apply("لصق العناصر", current -> {
+        apply(EditAction.PASTE, "Paste elements", current -> {
             var elements = new ArrayList<>(current.elements());
             elements.addAll(pasted);
             return current.withElements(elements);
@@ -137,7 +137,7 @@ public final class TemplateEditSession {
 
     public void moveSelected(double deltaX, double deltaY) {
         if (selection.isEmpty() || (deltaX == 0 && deltaY == 0)) return;
-        updateSelected("تحريك العناصر", element -> {
+        updateSelected(EditAction.MOVE, "Move elements", element -> {
             if (element.frame().locked()) return element;
             RectMm old = element.frame().bounds();
             return ElementCopies.withBounds(element, fit(new RectMm(old.x() + deltaX, old.y() + deltaY,
@@ -146,34 +146,34 @@ public final class TemplateEditSession {
     }
 
     public void resize(UUID id, RectMm bounds) {
-        updateOne(id, "تغيير الحجم", element -> element.frame().locked()
+        updateOne(id, EditAction.RESIZE, "Resize element", element -> element.frame().locked()
                 ? element : ElementCopies.withBounds(element, fit(bounds)));
     }
 
     public void setBounds(UUID id, RectMm bounds) {
-        updateOne(id, "تغيير الموضع والحجم", element -> ElementCopies.withBounds(element, fit(bounds)));
+        updateOne(id, EditAction.CHANGE_BOUNDS, "Change bounds", element -> ElementCopies.withBounds(element, fit(bounds)));
     }
 
     public void setContent(UUID id, String content) {
-        updateOne(id, "تغيير المحتوى", element -> ElementCopies.withContent(element, content));
+        updateOne(id, EditAction.CHANGE_CONTENT, "Change content", element -> ElementCopies.withContent(element, content));
     }
 
     public void setLockedVisible(UUID id, boolean locked, boolean visible) {
-        updateOne(id, "تغيير القفل والظهور", element -> ElementCopies.withLockedVisible(element, locked, visible));
+        updateOne(id, EditAction.CHANGE_STATE, "Change element state", element -> ElementCopies.withLockedVisible(element, locked, visible));
     }
 
     public void setRotation(UUID id, double degrees) {
-        updateOne(id, "تدوير العنصر", element -> ElementCopies.withRotation(element, degrees));
+        updateOne(id, EditAction.ROTATE, "Rotate element", element -> ElementCopies.withRotation(element, degrees));
     }
 
     public void setTextStyle(UUID id, String fontFamily, double fontSizePoints, String color,
             boolean bold, boolean italic, TextAlignment alignment) {
-        updateOne(id, "تغيير تنسيق النص", element ->
+        updateOne(id, EditAction.CHANGE_TEXT_STYLE, "Change text style", element ->
                 ElementCopies.withTextStyle(element, fontFamily, fontSizePoints, color, bold, italic, alignment));
     }
 
     public void setImage(UUID id, String source, ImageFit fit) {
-        updateOne(id, "تغيير الصورة", element -> ElementCopies.withImage(element, source, fit));
+        updateOne(id, EditAction.CHANGE_IMAGE, "Change image", element -> ElementCopies.withImage(element, source, fit));
     }
 
     public void bringToFront(UUID id) {
@@ -181,7 +181,7 @@ public final class TemplateEditSession {
         if (element == null) return;
         int maxZ = template.elements().stream().mapToInt(e -> e.frame().zIndex()).max().orElse(0);
         if (element.frame().zIndex() >= maxZ) return;
-        updateOne(id, "إحضار للمقدمة", e -> ElementCopies.withZIndex(e, maxZ + 1));
+        updateOne(id, EditAction.BRING_TO_FRONT, "Bring to front", e -> ElementCopies.withZIndex(e, maxZ + 1));
     }
 
     public void sendToBack(UUID id) {
@@ -189,7 +189,7 @@ public final class TemplateEditSession {
         if (element == null) return;
         int minZ = template.elements().stream().mapToInt(e -> e.frame().zIndex()).min().orElse(0);
         if (element.frame().zIndex() <= minZ) return;
-        updateOne(id, "إرسال للخلفية", e -> ElementCopies.withZIndex(e, minZ - 1));
+        updateOne(id, EditAction.SEND_TO_BACK, "Send to back", e -> ElementCopies.withZIndex(e, minZ - 1));
     }
 
     public void bringForward(UUID id) {
@@ -201,7 +201,7 @@ public final class TemplateEditSession {
                 .min((a, b) -> Integer.compare(a.frame().zIndex(), b.frame().zIndex()))
                 .orElse(null);
         if (next == null) return;
-        swapZIndex(id, z, next.frame().id(), next.frame().zIndex(), "طبقة للأمام");
+        swapZIndex(id, z, next.frame().id(), next.frame().zIndex(), EditAction.BRING_FORWARD, "Bring forward");
     }
 
     public void sendBackward(UUID id) {
@@ -213,11 +213,11 @@ public final class TemplateEditSession {
                 .max((a, b) -> Integer.compare(a.frame().zIndex(), b.frame().zIndex()))
                 .orElse(null);
         if (previous == null) return;
-        swapZIndex(id, z, previous.frame().id(), previous.frame().zIndex(), "طبقة للخلف");
+        swapZIndex(id, z, previous.frame().id(), previous.frame().zIndex(), EditAction.SEND_BACKWARD, "Send backward");
     }
 
-    private void swapZIndex(UUID id, int zIndex, UUID otherId, int otherZIndex, String description) {
-        apply(description, current -> current.withElements(current.elements().stream()
+    private void swapZIndex(UUID id, int zIndex, UUID otherId, int otherZIndex, EditAction action, String description) {
+        apply(action, description, current -> current.withElements(current.elements().stream()
                 .map(element -> {
                     if (element.frame().id().equals(id)) return ElementCopies.withZIndex(element, otherZIndex);
                     if (element.frame().id().equals(otherId)) return ElementCopies.withZIndex(element, zIndex);
@@ -237,7 +237,7 @@ public final class TemplateEditSession {
         double minY = alignToLabel ? 0 : selected.stream().mapToDouble(e -> e.frame().bounds().y()).min().orElse(0);
         double maxY = alignToLabel ? labelSize.height()
                 : selected.stream().mapToDouble(e -> e.frame().bounds().y() + e.frame().bounds().height()).max().orElse(0);
-        updateSelected(alignmentDescription(alignment), element -> {
+        updateSelected(EditAction.ALIGN, "Align " + alignment, element -> {
             RectMm b = element.frame().bounds();
             double x = switch (alignment) {
                 case LEFT -> minX;
@@ -273,26 +273,26 @@ public final class TemplateEditSession {
         notifyListeners();
     }
 
-    private void updateSelected(String description, UnaryOperator<LabelElement> update) {
+    private void updateSelected(EditAction action, String description, UnaryOperator<LabelElement> update) {
         Set<UUID> ids = Set.copyOf(selection);
-        apply(description, current -> current.withElements(current.elements().stream()
+        apply(action, description, current -> current.withElements(current.elements().stream()
                 .map(element -> ids.contains(element.frame().id()) ? update.apply(element) : element).toList()));
     }
 
-    private void updateOne(UUID id, String description, UnaryOperator<LabelElement> update) {
+    private void updateOne(UUID id, EditAction action, String description, UnaryOperator<LabelElement> update) {
         if (id == null) return;
-        apply(description, current -> current.withElements(current.elements().stream()
+        apply(action, description, current -> current.withElements(current.elements().stream()
                 .map(element -> element.frame().id().equals(id) ? update.apply(element) : element).toList()));
     }
 
-    private void apply(String description, UnaryOperator<LabelTemplate> operation) {
+    private void apply(EditAction action, String description, UnaryOperator<LabelTemplate> operation) {
         LabelTemplate before = template;
         LabelTemplate after = Objects.requireNonNull(operation.apply(before));
         // Compare elements, not templates: withElements always stamps a new updatedAt, so whole templates
         // never compare equal and an edit that changes nothing would still notify and add an undo step.
         if (before.elements().equals(after.elements())) return;
         template = after;
-        undo.push(new HistoryEntry(description, before, after));
+        undo.push(new HistoryEntry(action, description, before, after));
         redo.clear();
         notifyListeners();
     }
@@ -313,17 +313,6 @@ public final class TemplateEditSession {
 
     private void notifyListeners() { listeners.forEach(Runnable::run); }
 
-    private record HistoryEntry(String description, LabelTemplate before, LabelTemplate after) {}
-
-    /** The alignment named like its toolbar button. */
-    static String alignmentDescription(EditorAlignment alignment) {
-        return switch (alignment) {
-            case LEFT -> "محاذاة لليسار";
-            case HORIZONTAL_CENTER -> "توسيط أفقي";
-            case RIGHT -> "محاذاة لليمين";
-            case TOP -> "محاذاة للأعلى";
-            case VERTICAL_CENTER -> "توسيط رأسي";
-            case BOTTOM -> "محاذاة للأسفل";
-        };
-    }
+    private record HistoryEntry(EditAction action, String description, LabelTemplate before, LabelTemplate after) {}
 }
+
