@@ -144,6 +144,29 @@ class BarcodeLabelSuiteAppTest {
     }
 
     @Test
+    void theWindowHasTheAppIconInEverySize() throws Exception {
+        BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC), texts -> true);
+        onFx(() -> {
+            Stage stage = (Stage) app.workbench().getScene().getWindow();
+            assertEquals(List.of(16.0, 24.0, 32.0, 48.0, 64.0, 128.0, 256.0),
+                    stage.getIcons().stream().map(javafx.scene.image.Image::getWidth).toList());
+            assertTrue(stage.getIcons().stream().noneMatch(javafx.scene.image.Image::isError));
+            return null;
+        });
+        closeWindows();
+    }
+
+    @Test
+    void theInstallerIconHoldsTheSameSizes() throws Exception {
+        // jpackage takes this file (package.ps1 --icon); a Windows icon starts with 0, type 1 and its image count.
+        java.nio.ByteBuffer ico = java.nio.ByteBuffer.wrap(java.nio.file.Files.readAllBytes(
+                java.nio.file.Path.of("src/main/package/BarcodeLabelSuite.ico"))).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        assertEquals(0, ico.getShort());
+        assertEquals(1, ico.getShort());
+        assertEquals(7, ico.getShort());
+    }
+
+    @Test
     void theLabelBeingDesignedOpensAgainOnTheNextRun() throws Exception {
         LastDesign lastDesign = LastDesign.inMemory();
         BarcodeLabelSuiteApp first = started(new MemorySetting(UiLanguage.ARABIC), texts -> true, lastDesign);
