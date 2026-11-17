@@ -10,7 +10,7 @@
 
 على Windows استخدم `mvnw.cmd`. اختبارات الواجهة تحتاج شاشة؛ على Linux بدون شاشة شغّل الأمر عبر `xvfb-run -a`، أو أضف `-DskipTests`.
 
-الإصدار الحالي هو `0.6.1-SNAPSHOT`، وكل الموديولات تحمل نفس الإصدار.
+الإصدار الحالي هو `0.6.1`، وكل الموديولات تحمل نفس الإصدار.
 
 ## 2. اختر الموديول المناسب
 
@@ -28,7 +28,7 @@
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-fx-batch</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.6.1</version>
 </dependency>
 ```
 

@@ -6,7 +6,7 @@ A reusable, modular Java 21 / JavaFX library for designing and printing barcode 
 
 ## Current release
 
-The current version is `0.6.1-SNAPSHOT`. It provides:
+The current version is `0.6.1`. It provides:
 
 - An immutable label-template model using millimetres.
 - Sheet, single-label and roll page definitions.

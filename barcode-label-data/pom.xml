@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.mohamed.barcodelabel</groupId>
         <artifactId>barcode-label-suite</artifactId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.6.1</version>
     </parent>
     <artifactId>barcode-label-data</artifactId>
     <dependencies>
