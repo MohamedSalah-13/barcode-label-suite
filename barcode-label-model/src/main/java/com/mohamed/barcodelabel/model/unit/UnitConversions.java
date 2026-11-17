@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.model.unit;
 
+import static com.mohamed.barcodelabel.model.internal.Checks.requirePositive;
+
 public final class UnitConversions {
     public static final double MILLIMETRES_PER_INCH = 25.4;
     public static final double POINTS_PER_INCH = 72.0;
@@ -16,19 +18,13 @@ public final class UnitConversions {
     }
 
     public static double mmToPixels(double millimetres, double dpi) {
-        requirePositiveDpi(dpi);
+        requirePositive(dpi, "dpi");
         return millimetres * dpi / MILLIMETRES_PER_INCH;
     }
 
     public static double pixelsToMm(double pixels, double dpi) {
-        requirePositiveDpi(dpi);
+        requirePositive(dpi, "dpi");
         return pixels * MILLIMETRES_PER_INCH / dpi;
-    }
-
-    private static void requirePositiveDpi(double dpi) {
-        if (!Double.isFinite(dpi) || dpi <= 0) {
-            throw new IllegalArgumentException("dpi must be a finite positive number");
-        }
     }
 }
 

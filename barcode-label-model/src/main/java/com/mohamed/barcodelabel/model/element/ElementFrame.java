@@ -5,6 +5,8 @@ import com.mohamed.barcodelabel.model.geometry.RectMm;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.mohamed.barcodelabel.model.internal.Checks.requireFinite;
+
 public record ElementFrame(
         UUID id,
         String name,
@@ -21,9 +23,7 @@ public record ElementFrame(
         if (name.isBlank()) {
             throw new IllegalArgumentException("name must not be blank");
         }
-        if (!Double.isFinite(rotationDegrees)) {
-            throw new IllegalArgumentException("rotationDegrees must be finite");
-        }
+        requireFinite(rotationDegrees, "rotationDegrees");
     }
 
     public static ElementFrame create(String name, RectMm bounds, int zIndex) {
