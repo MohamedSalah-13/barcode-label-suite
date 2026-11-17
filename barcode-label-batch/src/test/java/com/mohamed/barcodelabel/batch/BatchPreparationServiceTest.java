@@ -61,6 +61,53 @@ class BatchPreparationServiceTest {
         assertEquals("sku", mapping.fields().get("SKU"));
     }
 
+    @Test void configurationIssuesSayWhatIsWrongAndWithWhichColumn() {
+        CsvDataset data = dataset(List.of(row("Blue pen", "A1", "12.5", "1")));
+        ColumnMapping mapping = new ColumnMapping(Map.of("product_name", "Name", "sku", "Barcode"), "Count", 1, 20, 100);
+        List<BatchValidationIssue> issues = service.prepare(template(), data, mapping).issues();
+
+        assertEquals(List.of(BatchIssueKind.UNMAPPED_FIELD, BatchIssueKind.MISSING_COLUMN, BatchIssueKind.MISSING_QUANTITY_COLUMN),
+                issues.stream().map(BatchValidationIssue::kind).toList());
+        assertEquals("price", issues.get(0).field());
+        assertEquals("", issues.get(0).value());
+        assertEquals("Barcode", issues.get(1).value());
+        assertEquals("Count", issues.get(2).value());
+        assertTrue(issues.stream().allMatch(issue -> issue.kind().configuration()));
+    }
+
+    @Test void rowIssuesCarryTheRowAndTheRawQuantity() {
+        CsvDataset data = dataset(List.of(row("Blue pen", "A1", "12.5", "50"), row("Notebook", "B2", "30", "two")));
+        ColumnMapping mapping = new ColumnMapping(Map.of(
+                "product_name", "Name", "sku", "Code", "price", "Retail Price"), "Qty", 1, 10, 100);
+        List<BatchValidationIssue> issues = service.prepare(template(), data, mapping).issues();
+
+        assertEquals(BatchIssueKind.QUANTITY_OUT_OF_RANGE, issues.get(0).kind());
+        assertEquals(2, issues.get(0).sourceRow());
+        assertEquals("50", issues.get(0).value());
+        assertEquals(BatchIssueKind.INVALID_QUANTITY, issues.get(1).kind());
+        assertEquals(3, issues.get(1).sourceRow());
+        assertEquals("two", issues.get(1).value());
+        assertFalse(issues.get(0).kind().configuration());
+    }
+
+    @Test void exceedingTheTotalLimitReportsTheLimit() {
+        CsvDataset data = dataset(List.of(row("Blue pen", "A1", "12.5", "6"), row("Notebook", "B2", "30", "6")));
+        ColumnMapping mapping = new ColumnMapping(Map.of(
+                "product_name", "Name", "sku", "Code", "price", "Retail Price"), "Qty", 1, 10, 10);
+        BatchValidationIssue issue = service.prepare(template(), data, mapping).issues().getFirst();
+
+        assertEquals(BatchIssueKind.TOTAL_LIMIT_EXCEEDED, issue.kind());
+        assertEquals("10", issue.value());
+        assertEquals(3, issue.sourceRow());
+    }
+
+    @Test void theMessageOnlyConstructorKeepsWorking() {
+        var issue = new BatchValidationIssue(ValidationSeverity.WARNING, 4, "sku", "custom");
+        assertEquals(BatchIssueKind.OTHER, issue.kind());
+        assertEquals("", issue.value());
+        assertEquals("custom", issue.message());
+    }
+
     private static CsvDataset dataset(List<Map<String, String>> rows) {
         return new CsvDataset(List.of("Name", "Code", "Retail Price", "Qty"), rows, ',');
     }
