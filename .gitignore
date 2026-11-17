@@ -5,3 +5,4 @@ target/
 *.log
 dist/
 
+release-notes.md

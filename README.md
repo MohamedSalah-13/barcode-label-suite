@@ -6,7 +6,7 @@ A reusable, modular Java 21 / JavaFX library for designing and printing barcode 
 
 ## Current release
 
-The current version is `0.6.1`. It provides:
+The current version is `0.7.0`. It provides:
 
 - An immutable label-template model using millimetres.
 - Sheet, single-label and roll page definitions.
@@ -15,9 +15,15 @@ The current version is `0.6.1`. It provides:
 - `{{field}}` data binding.
 - A reusable JavaFX label designer and high-quality preview.
 - Java2D barcode rendering and printing for sheets, rolls and single labels.
-- CSV import, field mapping, quantity expansion and batch validation.
+- CSV import, automatic column suggestions (English and Arabic names), quantity expansion and batch validation.
 - Page-range printing, cancellation and typed print failures.
 - A batch-production desktop workbench.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for what changed in each version.
+
+## Download
+
+Each release on the [Releases page](https://github.com/MohamedSalah-13/barcode-label-suite/releases) has a Windows build, `BarcodeLabelSuite-<version>-windows.zip`. Unzip it and run `BarcodeLabelSuite\BarcodeLabelSuite.exe`; it includes its own Java runtime.
 
 ## Requirements
 
@@ -71,6 +77,14 @@ Create a self-contained application image (including a private Java runtime) wit
 The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful `mvnw clean install` in the current checkout.
 
 An Arabic user guide is in [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md), and Arabic instructions for embedding the modules in another JavaFX app are in [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
+
+## Releasing
+
+1. Set the version in the root `pom.xml` (every module inherits it) and add a section for it to `CHANGELOG.md`.
+2. Merge that to `master`.
+3. Tag the merge commit `v<version>` and push the tag.
+
+The [release workflow](.github/workflows/release.yml) then checks the tag matches `pom.xml` and that `CHANGELOG.md` has notes for it, builds and tests every module, packages the Windows application and publishes it as a GitHub release with those notes.
 
 ## Main modules
 

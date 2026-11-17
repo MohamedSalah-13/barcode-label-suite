@@ -8,7 +8,7 @@ A Java 21 / JavaFX library and desktop app for designing and printing barcode la
 
 ## Build & run
 
-The root `pom.xml` is a single Maven reactor covering every module, in dependency order, with one shared version (`0.6.1`). Internal dependencies use `${project.version}`; third-party and plugin versions live in the root `dependencyManagement`/`pluginManagement`.
+The root `pom.xml` is a single Maven reactor covering every module, in dependency order, with one shared version (`0.7.0`). Internal dependencies use `${project.version}`; third-party and plugin versions live in the root `dependencyManagement`/`pluginManagement`.
 
 ```powershell
 .\mvnw.cmd clean install                          # build and test everything
@@ -16,6 +16,8 @@ The root `pom.xml` is a single Maven reactor covering every module, in dependenc
 .\mvnw.cmd -pl barcode-label-app javafx:run       # start the app after an install
 .\package.ps1                                     # Windows app image via jpackage
 ```
+
+Releases: bump the version in the root `pom.xml`, add its `CHANGELOG.md` section, merge, then push a `v<version>` tag; `.github/workflows/release.yml` builds, packages and publishes it. `scripts/project-version.sh` and `scripts/release-notes.sh` (used by that workflow) read the version and the changelog section.
 
 The JavaFX UI tests (`barcode-label-fx-designer`, `barcode-label-fx-workbench`, `barcode-label-fx-batch`) start the JavaFX toolkit and need a display; on headless Linux run Maven under `xvfb-run -a`.
 
