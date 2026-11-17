@@ -36,6 +36,8 @@ JaCoCo enforces a 25% line-coverage baseline on every module with tests.
 
 **Data flow for the batch/CSV workflow (the actively-developed path):** `CsvImportService`/`CsvDataset` (workflow) parse a CSV → `ColumnMapping` maps CSV columns to template `{{field}}`s (batch) → `BatchPreparationService` validates rows against the mapping and produces `BatchPreparationResult`/`BatchValidationIssue` → `UniversalPagePlanner` (workflow) lays out `PlannedPage`/`PlannedPlacement` against a `PaperPreset` → `barcode-label-print-java2d` renders/prints. The FX layer (`BatchProductionWorkbench`, `BatchDataMappingPane` in `barcode-label-fx-batch`) drives this end to end.
 
+**UI orientation**: the FX panes are `RIGHT_TO_LEFT` for Arabic, but `DesignerCanvas` forces `LEFT_TO_RIGHT` so the label surface uses the label's own millimetre coordinates, matching print. Keep it that way: an inherited RTL orientation mirrors element positions and reverses dragging, arrow keys and the resize handle (`DesignerOrientationTest`).
+
 **Rendering/printing contracts vs. implementations**: `barcode-label-render`/`barcode-label-print` define renderer/printer interfaces and value types (label-independent); `barcode-label-render-java2d` (ZXing + Barcode4J rasterizers) and `barcode-label-print-java2d` (`Graphics2D`-based sheet rendering/printing, `PrinterCatalog`) are the concrete Java2D implementations the UI modules build against.
 
 **Persistence**: `barcode-label-data`'s `TemplateJsonService` (de)serializes `LabelTemplate` to/from JSON (Jackson) with `schemaVersion`; `TemplateFieldResolver` resolves `{{field}}` placeholders against a data map under a `MissingFieldPolicy` (e.g. `FAIL`).

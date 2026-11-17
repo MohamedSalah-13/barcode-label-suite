@@ -4,6 +4,7 @@ import com.mohamed.barcodelabel.fx.designer.model.TemplateEditSession;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.LabelElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ContextMenu;
@@ -48,6 +49,10 @@ final class DesignerCanvas extends Pane {
 
     DesignerCanvas(TemplateEditSession session) {
         this.session = session;
+        // The label's coordinates run left to right in millimetres, as it prints. Hosts such as
+        // LabelDesignerPane are right to left for Arabic; inheriting that would mirror the label, put the
+        // resize handle on the left and make dragging and the arrow keys move elements the wrong way.
+        setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         getStyleClass().add("designer-canvas");
         setFocusTraversable(true);
         getChildren().add(gridCanvas);
