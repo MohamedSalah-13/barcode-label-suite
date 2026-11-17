@@ -1,6 +1,6 @@
 # تشغيل البرنامج
 
-الإصدار الحالي هو `0.7.1`. كل الموديولات تُبنى من ملف `pom.xml` الرئيسي بأمر واحد.
+الإصدار الحالي هو `0.8.0`. كل الموديولات تُبنى من ملف `pom.xml` الرئيسي بأمر واحد.
 
 لبناء المشروع وتشغيل الاختبارات ثم فتح البرنامج:
 
@@ -50,6 +50,6 @@ cd <مسار المشروع>\barcode-label-suite
 <dependency>
     <groupId>com.mohamed.barcodelabel</groupId>
     <artifactId>barcode-label-fx-batch</artifactId>
-    <version>0.7.1</version>
+    <version>0.8.0</version>
 </dependency>
 ```
