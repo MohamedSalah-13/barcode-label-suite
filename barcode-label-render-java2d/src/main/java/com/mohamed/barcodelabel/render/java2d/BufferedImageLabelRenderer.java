@@ -23,7 +23,9 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.RenderingHints;
+import java.awt.font.TextAttribute;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
@@ -36,6 +38,9 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.text.AttributedString;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -123,12 +128,7 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
 
     private void drawText(Graphics2D graphics, TextElement element, double x, double y,
                           double width, double height, double dpi) {
-        AttributedString attributed = new AttributedString(element.textTemplate());
-        attributed.addAttribute(FAMILY, element.fontFamily());
-        attributed.addAttribute(SIZE, (float) (element.fontSizePoints() * dpi / 72.0));
-        if (element.bold()) attributed.addAttribute(WEIGHT, WEIGHT_BOLD);
-        if (element.italic()) attributed.addAttribute(POSTURE, POSTURE_OBLIQUE);
-
+        AttributedString attributed = styledText(element, dpi);
         TextLayout layout = new TextLayout(attributed.getIterator(), graphics.getFontRenderContext());
         float drawX = switch (element.alignment()) {
             case LEFT -> (float) x;
@@ -138,6 +138,63 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
         float drawY = (float) (y + Math.max(layout.getAscent(), (height + layout.getAscent() - layout.getDescent()) / 2));
         graphics.setColor(parseColor(element.color()));
         layout.draw(graphics, drawX, drawY);
+    }
+
+    /**
+     * The element's text in its font, except for runs that font has no glyphs for: those get a fallback font that
+     * does, so they print as text rather than as missing-glyph boxes. The designer (JavaFX) substitutes fonts the same
+     * way, and Java2D does it for a font that isn't installed (it becomes the logical {@code Dialog} font), but not for
+     * an installed physical font such as "Liberation Sans" asked to draw Arabic.
+     */
+    static AttributedString styledText(TextElement element, double dpi) {
+        String text = element.textTemplate();
+        Map<TextAttribute, Object> attributes = new HashMap<>();
+        attributes.put(FAMILY, element.fontFamily());
+        attributes.put(SIZE, (float) (element.fontSizePoints() * dpi / 72.0));
+        if (element.bold()) attributes.put(WEIGHT, WEIGHT_BOLD);
+        if (element.italic()) attributes.put(POSTURE, POSTURE_OBLIQUE);
+
+        AttributedString attributed = new AttributedString(text, attributes);
+        Font font = new Font(attributes);
+        char[] chars = text.toCharArray();
+        int start = font.canDisplayUpTo(chars, 0, chars.length);
+        while (start >= 0) {
+            int end = start;
+            while (end < chars.length && !font.canDisplay(text.codePointAt(end))) {
+                end += Character.charCount(text.codePointAt(end));
+            }
+            attributed.addAttribute(TextAttribute.FONT, fallbackFont(attributes, text.substring(start, end)), start, end);
+            start = end < chars.length ? font.canDisplayUpTo(chars, end, chars.length) : -1;
+        }
+        return attributed;
+    }
+
+    /**
+     * The first of the logical sans-serif fonts, then the installed families, that can display all of {@code run},
+     * in the element's size, weight and posture. {@code Dialog} if none can: it draws what it has.
+     */
+    private static Font fallbackFont(Map<TextAttribute, Object> attributes, String run) {
+        Font dialog = withFamily(attributes, Font.DIALOG);
+        if (dialog.canDisplayUpTo(run) < 0) return dialog;
+        Font sansSerif = withFamily(attributes, Font.SANS_SERIF);
+        if (sansSerif.canDisplayUpTo(run) < 0) return sansSerif;
+        for (String family : InstalledFamilies.NAMES) {
+            Font candidate = withFamily(attributes, family);
+            if (candidate.canDisplayUpTo(run) < 0) return candidate;
+        }
+        return dialog;
+    }
+
+    private static Font withFamily(Map<TextAttribute, Object> attributes, String family) {
+        Map<TextAttribute, Object> copy = new HashMap<>(attributes);
+        copy.put(FAMILY, family);
+        return new Font(copy);
+    }
+
+    /** Looked up once, on first need: listing the installed fonts is slow. */
+    private static final class InstalledFamilies {
+        static final List<String> NAMES = List.of(
+                GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames(Locale.ROOT));
     }
 
     private void drawBarcode(Graphics2D graphics, BarcodeElement element, double x, double y,

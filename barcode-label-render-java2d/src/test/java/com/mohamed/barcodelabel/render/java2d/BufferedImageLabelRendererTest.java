@@ -23,14 +23,23 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
+import java.text.AttributedCharacterIterator;
+import java.text.CharacterIterator;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Renders at 100 dpi on a 50.8 x 25.4 mm label, so 1 mm is 100 / 25.4 px and the image is 200 x 100 px. */
 class BufferedImageLabelRendererTest {
@@ -209,6 +218,47 @@ class BufferedImageLabelRendererTest {
         assertEquals(0xFFFFA500, image.getRGB(50, 50));
     }
 
+    @Test
+    void textAFontHasNoGlyphsForIsDrawnInAFallbackFont() throws RenderException {
+        String arabic = "سعر المنتج 25";
+        String latinOnly = latinOnlyFamily(arabic);
+        assumeTrue(latinOnly != null, "no installed font that has Latin but not Arabic glyphs");
+        assumeTrue(new Font(Font.DIALOG, Font.PLAIN, 12).canDisplayUpTo(arabic) < 0,
+                "no installed font with Arabic glyphs to fall back to");
+
+        TextElement element = new TextElement(frame(new RectMm(0, 0, 50.8, 12.7), 0), arabic, latinOnly, 20,
+                "#000000", false, false, TextAlignment.RIGHT);
+        AttributedCharacterIterator runs = BufferedImageLabelRenderer.styledText(element, DPI).getIterator();
+        for (char c = runs.first(); c != CharacterIterator.DONE; c = runs.setIndex(runs.getRunLimit())) {
+            String run = arabic.substring(runs.getRunStart(), runs.getRunLimit());
+            Font font = runs.getAttribute(TextAttribute.FONT) instanceof Font fallback
+                    ? fallback : new Font(runs.getAttributes());
+            assertEquals(-1, font.canDisplayUpTo(run), "\"" + run + "\" is drawn in " + font + ", which lacks a glyph");
+        }
+        runs.setIndex(arabic.indexOf("25"));
+        assertNull(runs.getAttribute(TextAttribute.FONT), "the digits keep the chosen font");
+
+        // A word the chosen font has no glyphs for draws exactly as in the fallback font, which has them all.
+        String word = "المنتج";
+        assertEquals(0, new Font(latinOnly, Font.PLAIN, 12).canDisplayUpTo(word));
+        BufferedImage printed = render(List.of(new TextElement(frame(new RectMm(0, 0, 50.8, 12.7), 0), word,
+                latinOnly, 20, "#000000", false, false, TextAlignment.LEFT)));
+        BufferedImage inDialog = render(List.of(new TextElement(frame(new RectMm(0, 0, 50.8, 12.7), 0), word,
+                Font.DIALOG, 20, "#000000", false, false, TextAlignment.LEFT)));
+        assertTrue(dark(printed, 0, 0, 200, 50) > 0, "the word is drawn");
+        assertTrue(samePixels(printed, inDialog), "the word is drawn in the fallback font");
+    }
+
+    @Test
+    void textTheFontCanDisplayKeepsThatFont() {
+        TextElement element = new TextElement(frame(new RectMm(0, 0, 50.8, 12.7), 0), "Label 25", Font.SERIF, 20,
+                "#000000", true, false, TextAlignment.LEFT);
+        AttributedCharacterIterator runs = BufferedImageLabelRenderer.styledText(element, DPI).getIterator();
+        assertNull(runs.getAttribute(TextAttribute.FONT));
+        assertEquals(runs.getEndIndex(), runs.getRunLimit(), "one run");
+        assertEquals(TextAttribute.WEIGHT_BOLD, runs.getAttribute(TextAttribute.WEIGHT));
+    }
+
     private BufferedImage render(List<LabelElement> elements) throws RenderException {
         return renderer.render(new RenderRequest(template(elements), Map.of(), DPI));
     }
@@ -243,5 +293,28 @@ class BufferedImageLabelRendererTest {
             }
         }
         return false;
+    }
+
+    /** An installed family that has Latin glyphs but not all of {@code text}'s: Liberation Sans if there is one. */
+    private static String latinOnlyFamily(String text) {
+        List<String> families = new java.util.ArrayList<>(List.of(
+                GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames(Locale.ROOT)));
+        families.sort(Comparator.comparing((String family) -> !family.equals("Liberation Sans")));
+        for (String family : families) {
+            Font font = new Font(family, Font.PLAIN, 12);
+            if (font.getFamily(Locale.ROOT).equals(family) && font.canDisplayUpTo("Label 25") < 0
+                    && font.canDisplayUpTo(text) >= 0) {
+                return family;
+            }
+        }
+        return null;
+    }
+
+    private static boolean samePixels(BufferedImage a, BufferedImage b) {
+        if (a.getWidth() != b.getWidth() || a.getHeight() != b.getHeight()) return false;
+        for (int x = 0; x < a.getWidth(); x++) for (int y = 0; y < a.getHeight(); y++) {
+            if (a.getRGB(x, y) != b.getRGB(x, y)) return false;
+        }
+        return true;
     }
 }
