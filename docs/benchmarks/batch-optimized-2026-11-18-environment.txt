@@ -1,0 +1,29 @@
+java version "21.0.1" 2023-10-17 LTS
+Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+3883f775247b8d543bdd740972c85484b1582f4b
+ M barcode-label-batch/src/main/java/com/mohamed/barcodelabel/batch/BatchPreparationResult.java
+ M barcode-label-batch/src/main/java/com/mohamed/barcodelabel/batch/BatchPreparationService.java
+ M barcode-label-batch/src/test/java/com/mohamed/barcodelabel/batch/BatchPreparationResultTest.java
+ M barcode-label-batch/src/test/java/com/mohamed/barcodelabel/batch/BatchPreparationServiceTest.java
+ M barcode-label-fx-batch/src/main/java/com/mohamed/barcodelabel/fx/batch/BatchProductionWorkbench.java
+ M barcode-label-fx-batch/src/test/java/com/mohamed/barcodelabel/fx/batch/BatchProductionWorkbenchTest.java
+ M barcode-label-fx-workbench/src/main/java/com/mohamed/barcodelabel/fx/workbench/UniversalPrintPane.java
+ M barcode-label-workflow/src/main/java/com/mohamed/barcodelabel/workflow/csv/CsvDataset.java
+ M docs/DEVELOPMENT_PLAN_AR.md
+ M docs/INTEGRATION_AR.md
+?? barcode-label-workflow/src/main/java/com/mohamed/barcodelabel/workflow/data/
+?? barcode-label-workflow/src/test/java/com/mohamed/barcodelabel/workflow/csv/CsvDatasetTest.java
+?? barcode-label-workflow/src/test/java/com/mohamed/barcodelabel/workflow/data/
+?? docs/BATCH_PERFORMANCE_BASELINE_AR.md
+?? docs/benchmarks/
+?? scripts/benchmarks/
+
+Name                                    NumberOfCores NumberOfLogicalProcessors
+----                                    ------------- -------------------------
+Intel(R) Core(TM) i5-3470 CPU @ 3.20GHz             4                         4
+
+
+TotalPhysicalMemory
+-------------------
+         8487256064

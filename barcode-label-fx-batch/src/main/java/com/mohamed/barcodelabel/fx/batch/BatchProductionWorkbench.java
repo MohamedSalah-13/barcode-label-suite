@@ -5,11 +5,12 @@ import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import com.mohamed.barcodelabel.fx.workbench.BarcodeLabelWorkbench;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
+import com.mohamed.barcodelabel.workflow.data.RepeatedList;
+import com.mohamed.barcodelabel.batch.BatchPreparationResult;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public final class BatchProductionWorkbench extends BorderPane {
         batchPane.datasetProperty().addListener((obs, old, current) -> updatePrintGate());
         batchPane.resultProperty().addListener((obs, oldValue, value) -> {
             if (value != null && value.ready()) {
-                preparedData = asDataset(value.printRecords());
+                preparedData = asDataset(value);
                 labelWorkbench.setDataset(preparedData);
             } else if (preparedData != null && labelWorkbench.getDataset() == preparedData) {
                 // The batch is no longer valid (new file, changed mapping or errors), so its labels must not be
@@ -85,14 +86,23 @@ public final class BatchProductionWorkbench extends BorderPane {
     public LabelTemplate getTemplate() { return labelWorkbench.getTemplate(); }
 
     static CsvDataset asDataset(List<Map<String, ?>> records) {
-        LinkedHashSet<String> headerSet = new LinkedHashSet<>(); records.forEach(record -> headerSet.addAll(record.keySet()));
-        List<String> headers = List.copyOf(headerSet); List<Map<String, String>> rows = new ArrayList<>(records.size());
-        for (Map<String, ?> record : records) {
+        return asDataset(records, List.of());
+    }
+
+    static CsvDataset asDataset(BatchPreparationResult result) {
+        return asDataset(result.printRecords(), result.printSourceRows());
+    }
+
+    private static CsvDataset asDataset(List<Map<String, ?>> records, List<Integer> sourceRows) {
+        List<Map<String, ?>> logical = records instanceof RepeatedList<Map<String, ?>> repeated ? repeated.values() : records;
+        LinkedHashSet<String> headerSet = new LinkedHashSet<>(); logical.forEach(record -> headerSet.addAll(record.keySet()));
+        List<String> headers = List.copyOf(headerSet);
+        List<Map<String, String>> rows = RepeatedList.mapCopy(records, record -> {
             var row = new java.util.LinkedHashMap<String, String>();
             headers.forEach(header -> { Object raw = record.get(header); row.put(header, raw == null ? "" : String.valueOf(raw)); });
-            rows.add(row);
-        }
-        return new CsvDataset(headers, rows, ',');
+            return row;
+        });
+        return new CsvDataset(headers, rows, ',', sourceRows);
     }
 
     private static Tab tab(String title, javafx.scene.Node content) { Tab tab = new Tab(title, content); tab.setClosable(false); return tab; }

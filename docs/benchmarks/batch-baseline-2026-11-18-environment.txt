@@ -1,0 +1,13 @@
+java version "21.0.1" 2023-10-17 LTS
+Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+3883f775247b8d543bdd740972c85484b1582f4b
+
+Name                                    NumberOfCores NumberOfLogicalProcessors
+----                                    ------------- -------------------------
+Intel(R) Core(TM) i5-3470 CPU @ 3.20GHz             4                         4
+
+
+TotalPhysicalMemory
+-------------------
+         8487256064

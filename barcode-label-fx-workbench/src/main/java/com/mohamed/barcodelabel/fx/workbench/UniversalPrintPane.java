@@ -20,6 +20,7 @@ import com.mohamed.barcodelabel.render.RenderRequest;
 import com.mohamed.barcodelabel.render.java2d.BufferedImageLabelRenderer;
 import com.mohamed.barcodelabel.workflow.print.PlannedPage;
 import com.mohamed.barcodelabel.workflow.print.UniversalPagePlanner;
+import com.mohamed.barcodelabel.workflow.data.RepeatedList;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -161,7 +162,7 @@ public final class UniversalPrintPane extends BorderPane {
     void setRecords(List<Map<String, ?>> value, List<Integer> csvRows) {
         boolean rowsChanged = !sourceRows.equals(csvRows);
         sourceRows = csvRows;
-        List<Map<String, ?>> next = value == null ? List.of() : List.copyOf(value);
+        List<Map<String, ?>> next = value == null ? List.of() : RepeatedList.copyOf(value);
         if (rowsChanged && next.equals(getRecords())) checkBarcodes();
         if (!next.equals(getRecords())) records.set(next);
     }
