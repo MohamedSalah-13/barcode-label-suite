@@ -66,6 +66,41 @@ public final class BatchDataMappingPane extends BorderPane {
     private List<String> mappedFields = List.of();
     /** True while the mapping controls are being rebuilt, so their value changes do not count as user edits. */
     private boolean rebuilding;
+    private String summaryKey = "batch.notPrepared";
+    private boolean suggestedMapping;
+    private final javafx.beans.property.ReadOnlyBooleanWrapper working = new javafx.beans.property.ReadOnlyBooleanWrapper();
+
+    /** Language-independent state of the loaded CSV and its validation, for an in-process UI rebuild. */
+    public record Session(CsvDataset dataset, String datasetName, ColumnMapping mapping,
+                          ColumnMapping loadedProfile, BatchPreparationResult result,
+                          String summaryKey, boolean suggestedMapping) {}
+
+    public Session snapshotSession() {
+        return new Session(getDataset(), datasetName, currentMapping(), loadedProfile, getResult(), summaryKey, suggestedMapping);
+    }
+
+    public void restoreSession(Session session) {
+        pendingDatasetName = session.datasetName();
+        setDataset(session.dataset());
+        rebuilding = true;
+        try {
+            ColumnMapping mapping = session.mapping();
+            fieldBoxes.forEach((field, box) -> box.setValue(mapping.fields().get(field)));
+            quantityColumn.setValue(mapping.quantityColumn() == null ? noQuantity : mapping.quantityColumn());
+            defaultCopies.getValueFactory().setValue(mapping.defaultCopies());
+            maxCopiesPerRowField.getValueFactory().setValue(mapping.maxCopiesPerRow());
+            maxTotalLabelsField.getValueFactory().setValue(mapping.maxTotalLabels());
+            loadedProfile = session.loadedProfile();
+            clearResult(session.summaryKey());
+            suggestedMapping = session.suggestedMapping();
+            if (suggestedMapping && getDataset() != null) showSuggestedMapping();
+            if (session.result() != null) applyPreparationResult(session.result(), mapping);
+        } finally {
+            rebuilding = false;
+        }
+    }
+
+    public javafx.beans.property.ReadOnlyBooleanProperty workingProperty() { return working.getReadOnlyProperty(); }
 
     /** An Arabic mapping pane. */
     public BatchDataMappingPane() {
@@ -76,7 +111,6 @@ public final class BatchDataMappingPane extends BorderPane {
     public BatchDataMappingPane(UiLanguage language) {
         texts = new BatchTexts(language);
         noQuantity = t("batch.noQuantity");
-        datasetName = t("batch.datasetName");
         fileSummary.setText(t("batch.chooseFile"));
         resultSummary.setText(t("batch.notPrepared"));
         prepareButton.setText(t("batch.prepare"));
@@ -84,7 +118,7 @@ public final class BatchDataMappingPane extends BorderPane {
         setTop(header()); setCenter(content()); setBottom(actions());
         template.addListener((obs, oldValue, value) -> templateChanged(oldValue));
         dataset.addListener((obs, oldValue, value) -> {
-            datasetName = pendingDatasetName != null ? pendingDatasetName : t("batch.datasetName");
+            datasetName = pendingDatasetName;
             pendingDatasetName = null;
             rebuildMappings(false);
         });
@@ -151,7 +185,7 @@ public final class BatchDataMappingPane extends BorderPane {
         if (getTemplate() != null && getDataset() != null && getDataset() == mappedDataset
                 && templateFields.scan(getTemplate()).equals(mappedFields)) {
             if (previous == null || !barcodes(previous).equals(barcodes(getTemplate()))) {
-                clearResult(t("batch.notPrepared"));
+                clearResult("batch.notPrepared");
             }
             return;
         }
@@ -168,7 +202,7 @@ public final class BatchDataMappingPane extends BorderPane {
         rebuilding = true;
         try {
             rebuildPreview();
-            mappings.getChildren().clear(); fieldBoxes.clear(); clearResult(t("batch.notPrepared"));
+            mappings.getChildren().clear(); fieldBoxes.clear(); clearResult("batch.notPrepared");
             mappedDataset = null; mappedFields = List.of();
             if (getTemplate() == null || getDataset() == null) {
                 mappings.add(new Label(t("batch.needTemplateAndCsv")), 0, 0); prepareButton.setDisable(true); return;
@@ -194,10 +228,12 @@ public final class BatchDataMappingPane extends BorderPane {
             mappedDataset = getDataset(); mappedFields = fields;
             long suggested = fields.stream().filter(field -> automatic.fields().containsKey(field)).count();
             if (chosen == automatic && suggested > 0) {
-                resultSummary.setText(texts.suggested((int) suggested, fields.size()));
+                suggestedMapping = true;
+                showSuggestedMapping();
             }
             prepareButton.setDisable(false);
-            fileSummary.setText(texts.fileSummary(datasetName, getDataset().rows().size(), getDataset().headers().size(), fields.size()));
+            fileSummary.setText(texts.fileSummary(datasetName == null ? t("batch.datasetName") : datasetName,
+                    getDataset().rows().size(), getDataset().headers().size(), fields.size()));
         } finally {
             rebuilding = false;
         }
@@ -205,12 +241,20 @@ public final class BatchDataMappingPane extends BorderPane {
 
     /** Any change to the mapping makes the last result stale: it no longer describes what would print. */
     private void mappingEdited() {
-        if (!rebuilding && result.get() != null) clearResult(t("batch.mappingChanged"));
+        if (!rebuilding) clearResult("batch.mappingChanged");
     }
 
-    private void clearResult(String summary) {
+    private void showSuggestedMapping() {
+        var fields = templateFields.scan(getTemplate());
+        int suggested = ColumnMapping.automatic(fields, getDataset().headers()).fields().size();
+        resultSummary.setText(texts.suggested(suggested, fields.size()));
+    }
+
+    private void clearResult(String key) {
+        summaryKey = key;
+        suggestedMapping = false;
         result.set(null); issues.getItems().clear();
-        resultSummary.setText(summary); resultSummary.getStyleClass().removeAll("result-ok", "result-error");
+        resultSummary.setText(t(key)); resultSummary.getStyleClass().removeAll("result-ok", "result-error");
     }
 
     private void rebuildPreview() {
@@ -260,7 +304,12 @@ public final class BatchDataMappingPane extends BorderPane {
         FileChooser chooser = new FileChooser(); chooser.setTitle(t("batch.importTitle")); chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV", "*.csv", "*.tsv", "*.txt"));
         java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
         if (!fieldBoxes.isEmpty() && !confirm(t("batch.replaceConfirm"))) return;
-        runIo(t("batch.importing"), () -> csv.read(file.toPath()), value -> { pendingDatasetName = file.getName(); setDataset(value); });
+        importCsv(file.toPath());
+    }
+
+    /** Reads a CSV in the background and keeps its filename for the session summary. */
+    public void importCsv(Path file) {
+        runIo(t("batch.importing"), () -> csv.read(file), value -> { pendingDatasetName = file.getFileName().toString(); setDataset(value); });
     }
 
     private boolean confirm(String message) {
@@ -278,12 +327,14 @@ public final class BatchDataMappingPane extends BorderPane {
         FileChooser chooser = profileChooser(t("batch.saveMappingTitle")); chooser.setInitialFileName("csv-mapping.properties");
         java.io.File file = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
         ColumnMapping mapping = currentMapping();
-        runIo(t("batch.savingMapping"), () -> { profiles.save(file.toPath(), mapping); return mapping; }, value -> resultSummary.setText(t("batch.mappingSaved")));
+        runIo(t("batch.savingMapping"), () -> { profiles.save(file.toPath(), mapping); return mapping; }, value -> {
+            summaryKey = "batch.mappingSaved"; suggestedMapping = false; resultSummary.setText(t(summaryKey));
+        });
     }
 
     private void loadProfile() {
         FileChooser chooser = profileChooser(t("batch.openMappingTitle")); java.io.File file = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow()); if (file == null) return;
-        runIo(t("batch.openingMapping"), () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(false); resultSummary.setText(t("batch.mappingLoaded")); });
+        runIo(t("batch.openingMapping"), () -> profiles.load(file.toPath()), value -> { loadedProfile = value; rebuildMappings(false); clearResult("batch.mappingLoaded"); });
     }
 
     private <T> void runIo(String operation, IoSupplier<T> supplier, java.util.function.Consumer<T> success) {
@@ -292,7 +343,7 @@ public final class BatchDataMappingPane extends BorderPane {
         future.whenComplete((value, error) -> Platform.runLater(() -> { setBusy(false); if (error == null) success.accept(value); else showError(operation, rootMessage(error)); }));
     }
 
-    private void setBusy(boolean value) { busy.setVisible(value); busy.setManaged(value); prepareButton.setDisable(value || getDataset() == null); }
+    private void setBusy(boolean value) { working.set(value); busy.setVisible(value); busy.setManaged(value); prepareButton.setDisable(value || getDataset() == null); }
     private void showError(String operation, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, operation + ": " + message,
                 new ButtonType(t("dialog.ok"), ButtonBar.ButtonData.OK_DONE));

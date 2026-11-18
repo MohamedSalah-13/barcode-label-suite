@@ -62,6 +62,26 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private final Button saveButton = iconButton(Feather.SAVE);
     private final Button saveAsButton = iconButton(Feather.COPY);
     private final Button importButton = iconButton(Feather.UPLOAD);
+    private final javafx.beans.property.ReadOnlyBooleanWrapper working = new javafx.beans.property.ReadOnlyBooleanWrapper();
+
+    /** The data and navigation state of this workspace, independent of its UI language. */
+    public record Session(CsvDataset dataset, Path templateFile, int selectedTab, PaperPreset selectedPaper,
+                          UniversalPrintPane.Session print) {}
+
+    public Session snapshotSession() {
+        return new Session(getDataset(), getCurrentTemplateFile(), tabs.getSelectionModel().getSelectedIndex(),
+                presetBox.getValue(), printPane.snapshotSession());
+    }
+
+    public void restoreSession(Session session) {
+        setDataset(session.dataset());
+        currentTemplateFile.set(session.templateFile());
+        presetBox.setValue(session.selectedPaper());
+        tabs.getSelectionModel().select(session.selectedTab());
+        printPane.restoreSession(session.print());
+    }
+
+    public javafx.beans.property.ReadOnlyBooleanProperty workingProperty() { return working.getReadOnlyProperty(); }
 
     private static Button iconButton(Feather icon) {
         return new Button(null, new FontIcon(icon));
@@ -283,6 +303,7 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     }
 
     private void setBusy(boolean value, String message) {
+        working.set(value);
         busy.setVisible(value); busy.setManaged(value); openButton.setDisable(value); saveButton.setDisable(value); saveAsButton.setDisable(value); importButton.setDisable(value);
         if (message != null) status.setText(message);
     }

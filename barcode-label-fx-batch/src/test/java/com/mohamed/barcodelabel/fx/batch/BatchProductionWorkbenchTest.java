@@ -112,6 +112,18 @@ class BatchProductionWorkbenchTest {
             assertEquals(2, workbench.batchPane().getResult().labelCount());
             assertEquals(2, workbench.labelWorkbench().getDataset().rows().size());
             assertEquals("B2", workbench.labelWorkbench().getDataset().rows().get(1).get("sku"));
+            var session = workbench.snapshotSession();
+            var restored = new BatchProductionWorkbench(workbench.getTemplate(),
+                    com.mohamed.barcodelabel.fx.i18n.UiLanguage.ENGLISH);
+            restored.restoreSession(session);
+            assertEquals(session.batch().mapping(), restored.snapshotSession().batch().mapping());
+            assertEquals(session.batch().result(), restored.batchPane().getResult());
+            assertTrue(restored.snapshotSession().printingPreparedBatch());
+            assertTrue(texts(restored).contains("Ready: 2 labels will print from 2 rows"));
+            // Changing the fields after restoration must invalidate the batch and remove its print data.
+            restored.labelWorkbench().setTemplate(template().withElements(List.of()));
+            assertEquals(null, restored.batchPane().getResult());
+            assertEquals(null, restored.labelWorkbench().getDataset());
             return null;
         });
     }

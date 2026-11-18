@@ -3,6 +3,7 @@ package com.mohamed.barcodelabel.app;
 import com.mohamed.barcodelabel.batch.TemplateFields;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.fx.i18n.UiTexts;
+import com.mohamed.barcodelabel.fx.batch.BatchDataMappingPane;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
@@ -12,6 +13,10 @@ import com.mohamed.barcodelabel.render.java2d.BufferedImageLabelRenderer;
 import javafx.application.Platform;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.layout.StackPane;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.Test;
@@ -27,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class BarcodeLabelSuiteAppTest {
     /** The first row of sample-products-quantities.csv, mapped as docs/USER_GUIDE_AR.md describes. */
@@ -78,7 +85,7 @@ class BarcodeLabelSuiteAppTest {
     @Test
     void theAppOpensInTheSavedLanguageInATitledWindow() throws Exception {
         MemorySetting setting = new MemorySetting(UiLanguage.ENGLISH);
-        BarcodeLabelSuiteApp app = started(setting, texts -> true);
+        BarcodeLabelSuiteApp app = started(setting);
         onFx(() -> {
             Stage stage = (Stage) app.workbench().getScene().getWindow();
             assertEquals("Barcode Label Suite", stage.getTitle());
@@ -98,7 +105,7 @@ class BarcodeLabelSuiteAppTest {
     @Test
     void choosingALanguageRebuildsTheWindowAndRemembersIt() throws Exception {
         MemorySetting setting = new MemorySetting(UiLanguage.ARABIC);
-        BarcodeLabelSuiteApp app = started(setting, texts -> true);
+        BarcodeLabelSuiteApp app = started(setting);
         onFx(() -> {
             assertEquals("قالب المنتجات بالكميات", app.workbench().getTemplate().name());
             app.languagePicker().setValue(UiLanguage.ENGLISH);
@@ -121,31 +128,164 @@ class BarcodeLabelSuiteAppTest {
     }
 
     @Test
-    void switchingWithImportedDataAsksFirstAndCanBeDeclined() throws Exception {
-        MemorySetting setting = new MemorySetting(UiLanguage.ARABIC);
-        List<UiLanguage> asked = new java.util.ArrayList<>();
-        boolean[] answer = {false};
-        BarcodeLabelSuiteApp app = started(setting, texts -> { asked.add(texts.language()); return answer[0]; });
-        onFx(() -> {
-            app.workbench().batchPane().setDataset(new CsvDataset(List.of("Name"), List.of(Map.of("Name", "Pen")), ','));
-            app.languagePicker().setValue(UiLanguage.ENGLISH);
-            assertEquals(List.of(UiLanguage.ARABIC), asked, "asked in the current language");
-            assertEquals(UiLanguage.ARABIC, app.language());
-            assertEquals(UiLanguage.ARABIC, app.languagePicker().getValue(), "the menu goes back");
-            assertEquals(null, setting.saved);
+    void switchingLanguagesKeepsTheSampleMappingQuantitiesAndSecondPage() throws Exception {
+        BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC));
+        try {
+            onFx(() -> {
+                app.workbench().batchPane().importCsv(java.nio.file.Path.of("../sample-products-quantities.csv"));
+                assertTrue(app.languagePicker().isDisabled(), "wait for the file callback before rebuilding");
+                app.switchLanguage(UiLanguage.ENGLISH);
+                assertEquals(UiLanguage.ARABIC, app.language());
+                return null;
+            });
+            awaitFx(() -> app.workbench().batchPane().getDataset() != null && !app.languagePicker().isDisabled());
+            onFx(() -> {
+                var batch = app.workbench().batchPane();
+                fieldBox(batch, 0).setValue("Code"); // A deliberate manual override of the suggested Name column.
+                var spinners = nodes(batch, Spinner.class);
+                setSpinner(spinners.get(0), 3);
+                setSpinner(spinners.get(1), 40);
+                setSpinner(spinners.get(2), 500);
+                button(batch, "تحقق وجهّز الطباعة").fire();
+                assertTrue(app.languagePicker().isDisabled());
+                return null;
+            });
+            awaitFx(() -> app.workbench().batchPane().getResult() != null && !app.languagePicker().isDisabled());
+            var session = onFx(() -> {
+                var label = app.workbench().labelWorkbench();
+                ((TabPane) label.getCenter()).getSelectionModel().select(2);
+                var print = label.printPane();
+                var spinners = nodes(print, Spinner.class);
+                setSpinner(spinners.get(0), 2);
+                setSpinner(spinners.get(1), 20); // Ten labels on a partially used sheet need two pages.
+                nodes(print, CheckBox.class).getFirst().setSelected(false);
+                setSpinner(spinners.get(2), 2);
+                setSpinner(spinners.get(3), 2);
+                button(print, "التالي").fire();
+                assertTrue(hasText(print, "صفحة 2 من 2"));
+                assertEquals(10, app.workbench().batchPane().getResult().labelCount());
+                return app.workbench().snapshotSession();
+            });
+            for (UiLanguage language : List.of(UiLanguage.ENGLISH, UiLanguage.ARABIC)) {
+                onFx(() -> {
+                    app.languagePicker().setValue(language);
+                    var current = app.workbench().snapshotSession();
+                    assertSame(session.batch().dataset(), current.batch().dataset());
+                    assertEquals("sample-products-quantities.csv", current.batch().datasetName());
+                    assertEquals(session.batch().mapping(), current.batch().mapping());
+                    assertSame(session.batch().result(), current.batch().result());
+                    assertSame(session.label().dataset(), current.label().dataset());
+                    assertTrue(current.printingPreparedBatch());
+                    assertEquals(2, current.label().selectedTab());
+                    assertEquals(session.selectedTab(), current.selectedTab());
+                    assertEquals(1, current.label().print().pageIndex());
+                    assertEquals(20, current.label().print().startSlot());
+                    assertEquals(2, current.label().print().copies());
+                    assertFalse(current.label().print().allPages());
+                    assertEquals(2, current.label().print().fromPage());
+                    assertEquals(2, current.label().print().toPage());
+                    assertTrue(hasText(app.workbench().labelWorkbench().printPane(),
+                            language == UiLanguage.ENGLISH ? "Page 2 of 2" : "صفحة 2 من 2"));
+                    assertTrue(hasText(app.workbench().batchPane(), language == UiLanguage.ENGLISH
+                            ? "Ready: 10 labels will print from 4 rows" : "جاهز: سيُطبع 10 ملصقات من 4 صفوف"));
+                    // Entering the print tab again must not reset the restored page or range.
+                    var tabs = (TabPane) app.workbench().labelWorkbench().getCenter();
+                    tabs.getSelectionModel().select(0);
+                    tabs.getSelectionModel().select(2);
+                    assertEquals(1, app.workbench().snapshotSession().label().print().pageIndex());
+                    return null;
+                });
+            }
+            onFx(() -> {
+                var batch = app.workbench().batchPane();
+                quantityBox(batch).getSelectionModel().selectFirst();
+                fieldBox(batch, 0).setValue(null); // An unmapped field must stay unmapped, not auto-filled.
+                assertNull(batch.getResult());
+                assertNull(app.workbench().labelWorkbench().getDataset(), "prepared-data ownership survived the switch");
+                ((TabPane) app.workbench().getCenter()).getSelectionModel().select(1);
+                app.switchLanguage(UiLanguage.ENGLISH);
+                assertNull(app.workbench().batchPane().getResult());
+                assertNull(fieldBox(app.workbench().batchPane(), 0).getValue());
+                assertNull(app.workbench().snapshotSession().batch().mapping().quantityColumn());
+                assertEquals(3, app.workbench().snapshotSession().batch().mapping().defaultCopies());
+                assertEquals(1, app.workbench().snapshotSession().selectedTab());
+                assertTrue(hasText(app.workbench().batchPane(), "The mapping changed; click “Validate and prepare printing” again"));
+                assertTrue(button(app.workbench().labelWorkbench().printPane(), "Print").isDisabled());
+                return null;
+            });
+        } finally { closeWindows(); }
+    }
 
-            answer[0] = true;
-            app.languagePicker().setValue(UiLanguage.ENGLISH);
-            assertEquals(UiLanguage.ENGLISH, app.language());
-            assertEquals(UiLanguage.ENGLISH, setting.saved);
-            return null;
-        });
-        closeWindows();
+    @Test
+    void anInvalidBatchKeepsItsTranslatedErrorsAndPrintBlockAcrossLanguages() throws Exception {
+        BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC));
+        try {
+            onFx(() -> {
+                app.workbench().batchPane().setDataset(new CsvDataset(List.of("product_name", "sku", "price"),
+                        List.of(Map.of("product_name", "Pen", "sku", "", "price", "12")), ','));
+                button(app.workbench().batchPane(), "تحقق وجهّز الطباعة").fire();
+                return null;
+            });
+            awaitFx(() -> app.workbench().batchPane().getResult() != null);
+            var result = onFx(() -> app.workbench().batchPane().getResult());
+            assertFalse(result.ready());
+            for (UiLanguage language : List.of(UiLanguage.ENGLISH, UiLanguage.ARABIC)) {
+                onFx(() -> {
+                    app.switchLanguage(language);
+                    assertSame(result, app.workbench().batchPane().getResult());
+                    assertNull(app.workbench().labelWorkbench().getDataset());
+                    ListView<?> issues = nodes(app.workbench().batchPane(), ListView.class).getFirst();
+                    String message = issues.getItems().getFirst().toString();
+                    assertTrue(message.contains("sku"));
+                    assertEquals(language == UiLanguage.ARABIC, containsArabic(message));
+                    var print = app.workbench().labelWorkbench().printPane();
+                    assertTrue(button(print, language == UiLanguage.ENGLISH ? "Print" : "طباعة").isDisabled());
+                    assertEquals(language == UiLanguage.ARABIC,
+                            containsArabic(((ListView<?>) print.getTop()).getItems().getFirst().toString()));
+                    return null;
+                });
+            }
+        } finally { closeWindows(); }
+    }
+
+    @Test
+    void directlyImportedDataIsKeptSeparatelyAndRecheckedInTheNewLanguage() throws Exception {
+        BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC));
+        CsvDataset direct = new CsvDataset(List.of("product_name", "sku", "price"),
+                List.of(Map.of("product_name", "Pen", "sku", "", "price", "12")), ',');
+        try {
+            onFx(() -> { app.workbench().labelWorkbench().setDataset(direct); return null; });
+            for (UiLanguage language : List.of(UiLanguage.ENGLISH, UiLanguage.ARABIC)) {
+                onFx(() -> { app.switchLanguage(language); return null; });
+                awaitFx(() -> {
+                    var top = app.workbench().labelWorkbench().printPane().getTop();
+                    return top instanceof ListView<?> list && list.getItems().stream().anyMatch(item -> item.toString().contains("sku"));
+                });
+                onFx(() -> {
+                    assertSame(direct, app.workbench().labelWorkbench().getDataset());
+                    assertNull(app.workbench().batchPane().getDataset());
+                    assertFalse(app.workbench().snapshotSession().printingPreparedBatch());
+                    var print = app.workbench().labelWorkbench().printPane();
+                    assertTrue(button(print, language == UiLanguage.ENGLISH ? "Print" : "طباعة").isDisabled());
+                    assertEquals(language == UiLanguage.ARABIC,
+                            containsArabic(((ListView<?>) print.getTop()).getItems().getFirst().toString()));
+                    return null;
+                });
+            }
+            onFx(() -> {
+                app.workbench().batchPane().setDataset(new CsvDataset(List.of("Name"), List.of(Map.of("Name", "Pending")), ','));
+                app.switchLanguage(UiLanguage.ENGLISH);
+                fieldBox(app.workbench().batchPane(), 0).setValue(null);
+                assertSame(direct, app.workbench().labelWorkbench().getDataset(), "editing a mapping must not clear direct data");
+                assertNull(app.workbench().batchPane().getResult());
+                return null;
+            });
+        } finally { closeWindows(); }
     }
 
     @Test
     void theWindowHasTheAppIconInEverySize() throws Exception {
-        BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC), texts -> true);
+        BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC));
         onFx(() -> {
             Stage stage = (Stage) app.workbench().getScene().getWindow();
             assertEquals(List.of(16.0, 24.0, 32.0, 48.0, 64.0, 128.0, 256.0),
@@ -169,7 +309,7 @@ class BarcodeLabelSuiteAppTest {
     @Test
     void theLabelBeingDesignedOpensAgainOnTheNextRun() throws Exception {
         LastDesign lastDesign = LastDesign.inMemory();
-        BarcodeLabelSuiteApp first = started(new MemorySetting(UiLanguage.ARABIC), texts -> true, lastDesign);
+        BarcodeLabelSuiteApp first = started(new MemorySetting(UiLanguage.ARABIC), lastDesign);
         onFx(() -> { first.stop(); return null; });
         assertTrue(lastDesign.load().isEmpty(), "the untouched starting label is not kept");
         LabelTemplate edited = BarcodeLabelSuiteApp.template().withElements(List.of());
@@ -177,7 +317,7 @@ class BarcodeLabelSuiteAppTest {
         assertEquals(edited, lastDesign.load().orElseThrow());
         closeWindows();
 
-        BarcodeLabelSuiteApp second = started(new MemorySetting(UiLanguage.ENGLISH), texts -> true, lastDesign);
+        BarcodeLabelSuiteApp second = started(new MemorySetting(UiLanguage.ENGLISH), lastDesign);
         onFx(() -> {
             assertEquals(edited, second.workbench().getTemplate());
             second.languagePicker().setValue(UiLanguage.ARABIC);
@@ -218,11 +358,11 @@ class BarcodeLabelSuiteAppTest {
         assertTrue(LastDesign.userFile() != null);
     }
 
-    private static BarcodeLabelSuiteApp started(LanguageSetting setting, java.util.function.Predicate<UiTexts> confirm) throws Exception {
-        return started(setting, confirm, LastDesign.inMemory());
+    private static BarcodeLabelSuiteApp started(LanguageSetting setting) throws Exception {
+        return started(setting, LastDesign.inMemory());
     }
 
-    private static BarcodeLabelSuiteApp started(LanguageSetting setting, java.util.function.Predicate<UiTexts> confirm,
+    private static BarcodeLabelSuiteApp started(LanguageSetting setting,
                                                 LastDesign lastDesign) throws Exception {
         CountDownLatch started = new CountDownLatch(1);
         try {
@@ -232,7 +372,7 @@ class BarcodeLabelSuiteAppTest {
         }
         assertTrue(started.await(10, TimeUnit.SECONDS), "JavaFX toolkit did not start");
         Platform.setImplicitExit(false);
-        BarcodeLabelSuiteApp app = new BarcodeLabelSuiteApp(setting, confirm,
+        BarcodeLabelSuiteApp app = new BarcodeLabelSuiteApp(setting,
                 com.mohamed.barcodelabel.fx.workbench.CustomPaperStore.inMemory(), lastDesign);
         onFx(() -> { app.start(new Stage()); return null; });
         return app;
@@ -259,6 +399,54 @@ class BarcodeLabelSuiteAppTest {
 
     private static void closeWindows() throws Exception {
         onFx(() -> { List.copyOf(Window.getWindows()).forEach(Window::hide); return null; });
+    }
+
+    private static void awaitFx(java.util.function.BooleanSupplier condition) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+        while (System.nanoTime() < deadline) {
+            if (onFx(condition::getAsBoolean)) return;
+            Thread.sleep(25);
+        }
+        throw new AssertionError("Timed out waiting for session state");
+    }
+
+    private static boolean containsArabic(String text) {
+        return text.codePoints().anyMatch(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.ARABIC);
+    }
+
+    private static <T extends Node> List<T> nodes(Node root, Class<T> type) {
+        var found = new java.util.ArrayList<T>();
+        if (type.isInstance(root)) found.add(type.cast(root));
+        List<? extends Node> children = root instanceof TabPane tabs ? tabs.getTabs().stream().map(Tab::getContent).toList()
+                : root instanceof SplitPane split ? split.getItems()
+                : root instanceof ScrollPane scroll ? (scroll.getContent() == null ? List.of() : List.of(scroll.getContent()))
+                : root instanceof Parent parent ? parent.getChildrenUnmodifiable() : List.of();
+        children.forEach(child -> found.addAll(nodes(child, type)));
+        return found;
+    }
+
+    private static Button button(Node root, String text) {
+        return nodes(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst().orElseThrow();
+    }
+
+    private static boolean hasText(Node root, String text) {
+        return nodes(root, Label.class).stream().anyMatch(label -> text.equals(label.getText()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ComboBox<String> fieldBox(BatchDataMappingPane pane, int index) {
+        GridPane grid = nodes(pane, GridPane.class).getFirst();
+        return (ComboBox<String>) nodes(grid, ComboBox.class).get(index);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ComboBox<String> quantityBox(BatchDataMappingPane pane) {
+        return (ComboBox<String>) nodes(pane.getBottom(), ComboBox.class).getFirst();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void setSpinner(Spinner<?> spinner, int value) {
+        ((Spinner<Integer>) spinner).getValueFactory().setValue(value);
     }
 
     /** Keeps the language in memory, so tests do not touch the user's preferences. */

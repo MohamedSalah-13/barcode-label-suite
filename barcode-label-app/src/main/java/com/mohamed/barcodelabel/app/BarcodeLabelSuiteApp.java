@@ -14,9 +14,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -25,7 +22,6 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.prefs.Preferences;
 
 /**
@@ -38,8 +34,6 @@ public final class BarcodeLabelSuiteApp extends Application {
     private final CustomPaperStore paperSizes;
     /** The label being designed when the app last closed, opened again on start. */
     private final LastDesign lastDesign;
-    /** Asks whether to switch language while CSV data is loaded, which the switch discards. */
-    private final Predicate<UiTexts> confirmSwitch;
     private Stage stage;
     private UiLanguage language;
     private UiTexts texts;
@@ -48,19 +42,14 @@ public final class BarcodeLabelSuiteApp extends Application {
     private ComboBox<UiLanguage> languagePicker;
 
     public BarcodeLabelSuiteApp() {
-        this(LanguageSetting.preferences(), BarcodeLabelSuiteApp::askToSwitch,
+        this(LanguageSetting.preferences(),
                 CustomPaperStore.preferences(Preferences.userNodeForPackage(BarcodeLabelSuiteApp.class).node("paperSizes")),
                 LastDesign.userFile());
     }
 
-    BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch) {
-        this(languageSetting, confirmSwitch, CustomPaperStore.inMemory(), LastDesign.inMemory());
-    }
-
-    BarcodeLabelSuiteApp(LanguageSetting languageSetting, Predicate<UiTexts> confirmSwitch, CustomPaperStore paperSizes,
+    BarcodeLabelSuiteApp(LanguageSetting languageSetting, CustomPaperStore paperSizes,
                          LastDesign lastDesign) {
         this.languageSetting = languageSetting;
-        this.confirmSwitch = confirmSwitch;
         this.paperSizes = paperSizes;
         this.lastDesign = lastDesign;
     }
@@ -110,16 +99,17 @@ public final class BarcodeLabelSuiteApp extends Application {
      */
     void switchLanguage(UiLanguage next) {
         if (next == null || next == language) return;
-        boolean hasData = workbench.batchPane().getDataset() != null || workbench.labelWorkbench().getDataset() != null;
-        if (hasData && !confirmSwitch.test(texts)) {
+        if (languagePicker.isDisabled()) {
             languagePicker.setValue(language);
             return;
         }
+        var session = workbench.snapshotSession();
         LabelTemplate current = workbench.getTemplate();
         language = next;
         languageSetting.save(next);
         if (current == startingTemplate) current = startingTemplate = template(next);
         stage.getScene().setRoot(root(current));
+        workbench.restoreSession(session);
     }
 
     private Parent root(LabelTemplate template) {
@@ -127,8 +117,9 @@ public final class BarcodeLabelSuiteApp extends Application {
         workbench = new BatchProductionWorkbench(template, language);
         workbench.labelWorkbench().setCustomPaperStore(paperSizes);
         languagePicker = new ComboBox<>();
-        // Switching language rebuilds the print pane and would lose the running job's controls.
-        languagePicker.disableProperty().bind(workbench.labelWorkbench().printPane().printingProperty());
+        // Finish file operations and batch preparation before replacing their UI callbacks.
+        languagePicker.disableProperty().bind(workbench.labelWorkbench().printPane().printingProperty()
+                .or(workbench.labelWorkbench().workingProperty()).or(workbench.batchPane().workingProperty()));
         languagePicker.getItems().setAll(UiLanguage.values());
         languagePicker.setValue(language);
         languagePicker.setTooltip(new Tooltip(texts.get("app.language")));
@@ -140,16 +131,6 @@ public final class BarcodeLabelSuiteApp extends Application {
         StackPane.setAlignment(languagePicker, Pos.TOP_RIGHT);
         StackPane.setMargin(languagePicker, new Insets(3, 8, 0, 8));
         return root;
-    }
-
-    private static boolean askToSwitch(UiTexts texts) {
-        ButtonType yes = new ButtonType(texts.get("dialog.yes"), ButtonBar.ButtonData.YES);
-        ButtonType no = new ButtonType(texts.get("dialog.no"), ButtonBar.ButtonData.NO);
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, texts.get("app.switchConfirm"), yes, no);
-        alert.setTitle(texts.get("app.switchTitle"));
-        alert.setHeaderText(null);
-        alert.getDialogPane().setNodeOrientation(texts.language().orientation());
-        return alert.showAndWait().orElse(no) == yes;
     }
 
     /** The Arabic starting template; its fields match the sample CSV in the README. */
