@@ -55,6 +55,26 @@ public final class BatchProductionWorkbench extends BorderPane {
 
     public UiLanguage language() { return batchPane.language(); }
 
+    /** Keeps the origin of the print data as well as the two workspaces' state. */
+    public record Session(BatchDataMappingPane.Session batch, BarcodeLabelWorkbench.Session label,
+                          boolean printingPreparedBatch, int selectedTab) {}
+
+    public Session snapshotSession() {
+        return new Session(batchPane.snapshotSession(), labelWorkbench.snapshotSession(),
+                preparedData != null && labelWorkbench.getDataset() == preparedData,
+                tabs.getSelectionModel().getSelectedIndex());
+    }
+
+    public void restoreSession(Session session) {
+        batchPane.restoreSession(session.batch());
+        labelWorkbench.restoreSession(session.label());
+        // The result listener may have built a fresh dataset; retain the restored dataset's ownership so a
+        // later mapping edit clears prepared labels, but leaves a directly imported CSV alone.
+        preparedData = session.printingPreparedBatch() ? labelWorkbench.getDataset() : null;
+        tabs.getSelectionModel().select(session.selectedTab());
+        updatePrintGate();
+    }
+
     private void updatePrintGate() {
         var result = batchPane.getResult();
         labelWorkbench.printPane().setBatchValidationRequired(batchPane.getDataset() != null

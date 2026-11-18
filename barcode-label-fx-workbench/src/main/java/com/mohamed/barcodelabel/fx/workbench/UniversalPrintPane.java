@@ -91,6 +91,32 @@ public final class UniversalPrintPane extends BorderPane {
     private List<PlannedPage> pages = List.of();
     private List<Map<String, ?>> previewRecords = List.of();
 
+    /** Print choices and preview position; messages and previews are recreated in the new UI language. */
+    public record Session(String printer, int copies, int startSlot, boolean allPages, int fromPage,
+                          int toPage, int pageIndex, Map<String, String> manualValues) {
+        public Session { manualValues = Map.copyOf(manualValues); }
+    }
+
+    public Session snapshotSession() {
+        Map<String, String> typed = new LinkedHashMap<>();
+        manualValues.forEach((name, field) -> typed.put(name, field.getText()));
+        return new Session(printers.getValue(), copies.getValue(), startSlot.getValue(), allPages.isSelected(),
+                fromPage.getValue(), toPage.getValue(), pageIndex, typed);
+    }
+
+    /** Restore after the template and records, which determine the available slots and pages. */
+    public void restoreSession(Session session) {
+        printers.setValue(session.printer());
+        copies.getValueFactory().setValue(session.copies());
+        manualValues.forEach((name, field) -> field.setText(session.manualValues().getOrDefault(name, "")));
+        startSlot.getValueFactory().setValue(session.startSlot());
+        allPages.setSelected(session.allPages());
+        fromPage.getValueFactory().setValue(session.fromPage());
+        toPage.getValueFactory().setValue(session.toPage());
+        pageIndex = Math.max(0, Math.min(session.pageIndex(), pages.size() - 1));
+        renderPreview();
+    }
+
     /** An Arabic print pane. */
     public UniversalPrintPane() {
         this(UiLanguage.ARABIC);
@@ -137,7 +163,7 @@ public final class UniversalPrintPane extends BorderPane {
         sourceRows = csvRows;
         List<Map<String, ?>> next = value == null ? List.of() : List.copyOf(value);
         if (rowsChanged && next.equals(getRecords())) checkBarcodes();
-        records.set(next);
+        if (!next.equals(getRecords())) records.set(next);
     }
     public ObjectProperty<List<Map<String, ?>>> recordsProperty() { return records; }
 
@@ -332,8 +358,10 @@ public final class UniversalPrintPane extends BorderPane {
         Thread.ofVirtual().name("universal-printer-discovery").start(() -> {
             List<String> names = printerCatalog.discover().stream().map(descriptor -> descriptor.name()).toList();
             Platform.runLater(() -> {
+                String selected = printers.getValue();
                 printers.setItems(FXCollections.observableArrayList(names));
-                if (!names.isEmpty()) printers.getSelectionModel().selectFirst();
+                if (selected != null && names.contains(selected)) printers.setValue(selected);
+                else if (!names.isEmpty()) printers.getSelectionModel().selectFirst();
                 updatePrintAvailability();
                 if (getTemplate() == null) status.setText(names.isEmpty() ? t("print.noPrinters")
                         : t("print.printersFound", texts.countAfterPreposition(Counted.PRINTERS, names.size())));
