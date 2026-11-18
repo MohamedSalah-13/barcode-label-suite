@@ -2,6 +2,7 @@ package com.mohamed.barcodelabel.batch;
 
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
+import com.mohamed.barcodelabel.workflow.data.RepeatedList;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -20,6 +21,8 @@ public final class BatchPreparationService {
         if (hasErrors(issues)) return new BatchPreparationResult(dataset.rows().size(), List.of(), issues);
 
         List<Map<String, ?>> records = new ArrayList<>();
+        List<Integer> copies = new ArrayList<>();
+        List<Integer> sourceRows = new ArrayList<>();
         var barcodes = new BarcodePreflight(template, mapping.fields());
         long totalLabels = 0;
         for (int index = 0; index < dataset.rows().size(); index++) {
@@ -37,11 +40,13 @@ public final class BatchPreparationService {
             }
             totalLabels += quantity;
             if (!issues.isEmpty()) continue;
-            var record = Map.copyOf(resolved);
-            for (int copy = 0; copy < quantity; copy++) records.add(record);
+            records.add(resolved);
+            copies.add(quantity);
+            sourceRows.add(sourceRow);
         }
-        if (hasErrors(issues)) records = List.of();
-        return new BatchPreparationResult(dataset.rows().size(), records, issues);
+        if (hasErrors(issues)) return new BatchPreparationResult(dataset.rows().size(), List.of(), issues);
+        return new BatchPreparationResult(dataset.rows().size(), RepeatedList.of(records, copies), issues,
+                RepeatedList.of(sourceRows, copies));
     }
 
     private List<BatchValidationIssue> validateConfiguration(LabelTemplate template, CsvDataset dataset, ColumnMapping mapping) {

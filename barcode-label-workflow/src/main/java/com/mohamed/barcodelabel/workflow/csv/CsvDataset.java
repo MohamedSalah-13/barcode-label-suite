@@ -1,6 +1,6 @@
 package com.mohamed.barcodelabel.workflow.csv;
 
-import java.util.ArrayList;
+import com.mohamed.barcodelabel.workflow.data.RepeatedList;
 import java.util.List;
 import java.util.Map;
 
@@ -11,8 +11,8 @@ public record CsvDataset(List<String> headers, List<Map<String, String>> rows, c
 
     public CsvDataset {
         headers = List.copyOf(headers);
-        rows = rows.stream().map(Map::copyOf).toList();
-        sourceRows = List.copyOf(sourceRows);
+        rows = RepeatedList.mapCopy(rows, Map::copyOf);
+        sourceRows = RepeatedList.copyOf(sourceRows);
         if (!sourceRows.isEmpty() && sourceRows.size() != rows.size()) {
             throw new IllegalArgumentException("Each data record must have a source row");
         }
@@ -22,8 +22,6 @@ public record CsvDataset(List<String> headers, List<Map<String, String>> rows, c
     public int sourceRow(int index) { return sourceRows.isEmpty() ? index + 2 : sourceRows.get(index); }
 
     public List<Map<String, ?>> printRecords() {
-        List<Map<String, ?>> result = new ArrayList<>(rows.size());
-        result.addAll(rows);
-        return List.copyOf(result);
+        return RepeatedList.mapCopy(rows, row -> row);
     }
 }

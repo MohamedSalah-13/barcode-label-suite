@@ -1,0 +1,37 @@
+{
+  "prepare": {
+    "totalSampleWeightBytes": 640680856,
+    "groups": {
+      "BarcodePreflight": {
+        "samples": 78,
+        "sampleWeightBytes": 30021264,
+        "percent": 4.69
+      },
+      "other preparation": {
+        "samples": 39,
+        "sampleWeightBytes": 26899448,
+        "percent": 4.2
+      },
+      "BatchPreparationResult": {
+        "samples": 282,
+        "sampleWeightBytes": 583760144,
+        "percent": 91.12
+      }
+    }
+  },
+  "asDataset": {
+    "totalSampleWeightBytes": 888655272,
+    "groups": {
+      "asDataset mutable rows and headers": {
+        "samples": 471,
+        "sampleWeightBytes": 410730544,
+        "percent": 46.22
+      },
+      "CsvDataset immutable copies": {
+        "samples": 289,
+        "sampleWeightBytes": 477924728,
+        "percent": 53.78
+      }
+    }
+  }
+}

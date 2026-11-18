@@ -22,6 +22,28 @@ import static org.junit.jupiter.api.Assertions.*;
 class BatchPreparationServiceTest {
     private final BatchPreparationService service = new BatchPreparationService();
 
+    @Test void largeQuantitiesKeepOneMapPerSourceRowAndPreserveOriginalCsvRowNumbers() {
+        var data = new CsvDataset(List.of("Name", "Code", "Retail Price", "Qty"),
+                List.of(row("Pen", "A1", "12", "100000"), row("Book", "B2", "30", "200000")), ',', List.of(2, 7));
+        var mapping = new ColumnMapping(Map.of("product_name", "Name", "sku", "Code", "price", "Retail Price"),
+                "Qty", 1, 200000, 300000);
+        var result = service.prepare(template(), data, mapping);
+        assertTrue(result.ready());
+        assertEquals(300000, result.labelCount());
+        assertEquals(2, result.sourceRows());
+        assertSame(result.printRecords().get(0), result.printRecords().get(99999));
+        assertSame(result.printRecords().get(100000), result.printRecords().getLast());
+        assertEquals("B2", result.printRecords().get(100000).get("sku"));
+        assertEquals(2, result.printSourceRows().get(99999));
+        assertEquals(7, result.printSourceRows().get(100000));
+        assertEquals(7, result.printSourceRows().getLast());
+        var rejected = service.prepare(template(), data, new ColumnMapping(mapping.fields(), "Qty", 1, 200000, 299999));
+        assertFalse(rejected.ready());
+        assertTrue(rejected.printRecords().isEmpty());
+        assertTrue(rejected.printSourceRows().isEmpty());
+        assertEquals(7, rejected.issues().getFirst().sourceRow());
+    }
+
     @Test void scansUniqueFieldsInVisualOrder() {
         assertEquals(List.of("product_name", "price", "sku"), new TemplateFields().scan(template()));
     }

@@ -34,6 +34,45 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BatchProductionWorkbenchTest {
+    @Test
+    void compressedBatchesKeepOrderAcrossPartialSheetsAndPageRanges() {
+        var data = new CsvDataset(List.of("Name", "Code", "Retail Price", "Qty"), List.of(
+                Map.of("Name", "Pen", "Code", "A1", "Retail Price", "12", "Qty", "3"),
+                Map.of("Name", "Book", "Code", "B2", "Retail Price", "30", "Qty", "23"),
+                Map.of("Name", "Ruler", "Code", "C3", "Retail Price", "5", "Qty", "2")), ',', List.of(2, 5, 9));
+        var mapping = new com.mohamed.barcodelabel.batch.ColumnMapping(
+                Map.of("product_name", "Name", "sku", "Code", "price", "Retail Price"), "Qty", 1, 30, 100);
+        var result = new com.mohamed.barcodelabel.batch.BatchPreparationService().prepare(template(), data, mapping);
+        assertTrue(result.ready());
+        var converted = BatchProductionWorkbench.asDataset(result);
+        assertEquals(28, converted.rows().size());
+        assertEquals(3, ((com.mohamed.barcodelabel.workflow.data.RepeatedList<?>) converted.rows()).values().size());
+        org.junit.jupiter.api.Assertions.assertSame(converted.rows().get(3), converted.rows().get(25));
+        assertEquals(2, converted.sourceRow(2));
+        assertEquals(5, converted.sourceRow(3));
+        assertEquals(9, converted.sourceRow(26));
+        var request = new com.mohamed.barcodelabel.print.LabelPrintRequest(template(), converted.printRecords(),
+                "Test printer", 1, 19, 2, 3);
+        var pages = new com.mohamed.barcodelabel.workflow.print.UniversalPagePlanner()
+                .plan(request.template().page(), request.records().size(), request.startSlotIndex());
+        assertEquals(List.of(2, 21, 5), pages.stream().map(page -> page.placements().size()).toList());
+        assertEquals(19, pages.getFirst().placements().getFirst().slotIndex());
+        var printed = pages.subList(request.firstPage() - 1, request.lastPage()).stream()
+                .flatMap(page -> page.placements().stream())
+                .map(placement -> request.records().get(placement.recordIndex()).get("sku")).toList();
+        assertEquals(26, printed.size());
+        assertEquals("A1", printed.getFirst());
+        assertEquals(23, printed.stream().filter("B2"::equals).count());
+        assertEquals(List.of("C3", "C3"), printed.subList(24, 26));
+        // A later barcode-only template edit must still diagnose the original CSV rows.
+        var invalidBarcode = new BarcodeElement(ElementFrame.create("EAN", new RectMm(1, 1, 60, 24), 0),
+                "{{sku}}", Symbology.EAN_13, 0.25, 2, false);
+        var check = new com.mohamed.barcodelabel.batch.BarcodePreflight(template().withElements(List.of(invalidBarcode)), Map.of());
+        var issues = new java.util.ArrayList<com.mohamed.barcodelabel.batch.BatchValidationIssue>();
+        check.checkRow(converted.rows().get(25), converted.sourceRow(25), issues);
+        assertEquals(5, issues.getFirst().sourceRow());
+    }
+
     @BeforeAll
     static void startJavaFx() throws InterruptedException {
         CountDownLatch started = new CountDownLatch(1);
