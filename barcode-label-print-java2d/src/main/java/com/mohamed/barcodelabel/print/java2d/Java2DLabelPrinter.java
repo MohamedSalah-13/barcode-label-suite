@@ -25,6 +25,7 @@ public final class Java2DLabelPrinter implements LabelPrinter {
     private final double renderDpi;
     private final Supplier<PrinterJob> jobs;
     private volatile PrinterJob currentJob;
+    private CompletableFuture<PrintResult> activePrint;
 
     public Java2DLabelPrinter() {
         this(new PrinterCatalog(), 300);
@@ -45,17 +46,15 @@ public final class Java2DLabelPrinter implements LabelPrinter {
     }
 
     @Override
-    public CompletionStage<PrintResult> print(LabelPrintRequest request) {
+    public synchronized CompletionStage<PrintResult> print(LabelPrintRequest request) {
         Objects.requireNonNull(request, "request");
-        CompletableFuture<PrintResult> future = new CompletableFuture<>();
-        Thread.ofVirtual().name("barcode-label-print").start(() -> {
-            try {
-                future.complete(printBlocking(request));
-            } catch (Throwable throwable) {
-                future.completeExceptionally(throwable);
-            }
-        });
-        return future;
+        if (activePrint != null && !activePrint.isDone()) {
+            return CompletableFuture.failedFuture(new IllegalStateException("A print job is already in progress"));
+        }
+        activePrint = CompletableFuture.supplyAsync(() -> printBlocking(request),
+                Thread.ofVirtual().name("barcode-label-print")::start);
+        // Only the worker can finish the active job, even if a caller cancels its own future.
+        return activePrint.minimalCompletionStage();
     }
 
     @Override

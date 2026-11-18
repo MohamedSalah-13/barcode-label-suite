@@ -127,6 +127,8 @@ public final class BarcodeLabelSuiteApp extends Application {
         workbench = new BatchProductionWorkbench(template, language);
         workbench.labelWorkbench().setCustomPaperStore(paperSizes);
         languagePicker = new ComboBox<>();
+        // Switching language rebuilds the print pane and would lose the running job's controls.
+        languagePicker.disableProperty().bind(workbench.labelWorkbench().printPane().printingProperty());
         languagePicker.getItems().setAll(UiLanguage.values());
         languagePicker.setValue(language);
         languagePicker.setTooltip(new Tooltip(texts.get("app.language")));

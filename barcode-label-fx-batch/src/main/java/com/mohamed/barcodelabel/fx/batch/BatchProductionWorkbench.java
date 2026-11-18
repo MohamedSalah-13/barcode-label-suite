@@ -35,7 +35,9 @@ public final class BatchProductionWorkbench extends BorderPane {
         setNodeOrientation(language.orientation());
         Tab production = tab(texts.get("production.designTab"), labelWorkbench);
         Tab batch = tab(texts.get("production.batchTab"), batchPane);
-        batch.setOnSelectionChanged(event -> { if (batch.isSelected()) batchPane.setTemplate(labelWorkbench.getTemplate()); });
+        batchPane.setTemplate(template);
+        labelWorkbench.templateProperty().addListener((obs, old, current) -> batchPane.setTemplate(current));
+        batchPane.datasetProperty().addListener((obs, old, current) -> updatePrintGate());
         batchPane.resultProperty().addListener((obs, oldValue, value) -> {
             if (value != null && value.ready()) {
                 preparedData = asDataset(value.printRecords());
@@ -46,11 +48,18 @@ public final class BatchProductionWorkbench extends BorderPane {
                 labelWorkbench.setDataset(null);
                 preparedData = null;
             }
+            updatePrintGate();
         });
         tabs.getTabs().setAll(production, batch); setCenter(tabs);
     }
 
     public UiLanguage language() { return batchPane.language(); }
+
+    private void updatePrintGate() {
+        var result = batchPane.getResult();
+        labelWorkbench.printPane().setBatchValidationRequired(batchPane.getDataset() != null
+                && (result == null || !result.ready() || result.labelCount() == 0));
+    }
     public BarcodeLabelWorkbench labelWorkbench() { return labelWorkbench; }
     public BatchDataMappingPane batchPane() { return batchPane; }
     public LabelTemplate getTemplate() { return labelWorkbench.getTemplate(); }

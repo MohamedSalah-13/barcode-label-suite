@@ -13,12 +13,14 @@ public record LabelPrintRequest(
         int copies,
         int startSlotIndex,
         int firstPage,
-        int lastPage
+        int lastPage,
+        PrintOffset offset
 ) {
     public LabelPrintRequest {
         Objects.requireNonNull(template, "template");
         Objects.requireNonNull(records, "records");
         Objects.requireNonNull(printerName, "printerName");
+        Objects.requireNonNull(offset, "offset");
         records = List.copyOf(records);
         if (copies <= 0) {
             throw new IllegalArgumentException("copies must be positive");
@@ -35,6 +37,15 @@ public record LabelPrintRequest(
         if (firstPage > 0 && lastPage > 0 && firstPage > lastPage) {
             throw new IllegalArgumentException("firstPage must not exceed lastPage");
         }
+    }
+
+    public LabelPrintRequest(LabelTemplate template, List<Map<String, ?>> records, String printerName,
+            int copies, int startSlotIndex, int firstPage, int lastPage) {
+        this(template, records, printerName, copies, startSlotIndex, firstPage, lastPage, PrintOffset.ZERO);
+    }
+
+    public LabelPrintRequest withOffset(PrintOffset offset) {
+        return new LabelPrintRequest(template, records, printerName, copies, startSlotIndex, firstPage, lastPage, offset);
     }
 
     /** Prints every planned page, starting from {@code startSlotIndex}. */

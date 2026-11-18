@@ -108,10 +108,10 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
 
         Graphics2D graphics = (Graphics2D) parent.create();
         try {
-            graphics.clip(new Rectangle2D.Double(x, y, width, height));
             if (element.frame().rotationDegrees() != 0) {
                 graphics.rotate(Math.toRadians(element.frame().rotationDegrees()), x + width / 2, y + height / 2);
             }
+            graphics.clip(new Rectangle2D.Double(x, y, width, height));
             switch (element) {
                 case TextElement text -> drawText(graphics, text, x, y, width, height, dpi);
                 case BarcodeElement barcode -> drawBarcode(graphics, barcode, x, y, width, height, dpi);
@@ -145,9 +145,7 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
 
     private void drawBarcode(Graphics2D graphics, BarcodeElement element, double x, double y,
                              double width, double height, double dpi) throws RenderException {
-        int availableWidth = Math.max(1, (int) Math.floor(width));
-        int availableHeight = Math.max(1, (int) Math.floor(height));
-        BufferedImage barcode = barcodeRasterizer.rasterize(element, availableWidth, availableHeight, dpi);
+        BufferedImage barcode = barcodeRasterizer.rasterize(element, dpi);
         int drawX = (int) Math.round(x + (width - barcode.getWidth()) / 2);
         int drawY = (int) Math.round(y + (height - barcode.getHeight()) / 2);
         Object oldInterpolation = graphics.getRenderingHint(RenderingHints.KEY_INTERPOLATION);

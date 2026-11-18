@@ -18,14 +18,17 @@ public final class CsvImportService {
         if (!content.isEmpty() && content.charAt(0) == '\uFEFF') content = content.substring(1);
         char delimiter = detectDelimiter(content);
         List<List<String>> records = parse(content, delimiter);
-        records.removeIf(CsvImportService::isBlankRecord);
-        if (records.isEmpty()) throw new IllegalArgumentException("CSV file is empty");
+        int headerIndex = 0;
+        while (headerIndex < records.size() && records.get(headerIndex).isEmpty()) headerIndex++;
+        if (headerIndex == records.size()) throw new IllegalArgumentException("CSV file is empty");
 
-        List<String> headers = records.getFirst().stream().map(String::trim).toList();
+        List<String> headers = records.get(headerIndex).stream().map(String::trim).toList();
         validateHeaders(headers);
         List<java.util.Map<String, String>> rows = new ArrayList<>();
-        for (int rowIndex = 1; rowIndex < records.size(); rowIndex++) {
+        List<Integer> sourceRows = new ArrayList<>();
+        for (int rowIndex = headerIndex + 1; rowIndex < records.size(); rowIndex++) {
             List<String> values = records.get(rowIndex);
+            if (values.isEmpty()) continue;
             if (values.size() > headers.size()) {
                 throw new IllegalArgumentException("CSV row " + (rowIndex + 1) + " has more fields than the header");
             }
@@ -34,8 +37,9 @@ public final class CsvImportService {
                 row.put(headers.get(column), column < values.size() ? values.get(column) : "");
             }
             rows.add(row);
+            sourceRows.add(rowIndex + 1);
         }
-        return new CsvDataset(headers, rows, delimiter);
+        return new CsvDataset(headers, rows, delimiter, sourceRows);
     }
 
     private static void validateHeaders(List<String> headers) {
@@ -61,7 +65,9 @@ public final class CsvImportService {
     private static int countInFirstRecord(String content, char target) {
         boolean quoted = false;
         int count = 0;
-        for (int i = 0; i < content.length(); i++) {
+        int start = 0;
+        while (start < content.length() && (content.charAt(start) == '\r' || content.charAt(start) == '\n')) start++;
+        for (int i = start; i < content.length(); i++) {
             char c = content.charAt(i);
             if (c == '"') {
                 if (quoted && i + 1 < content.length() && content.charAt(i + 1) == '"') i++;
@@ -77,6 +83,7 @@ public final class CsvImportService {
         List<String> row = new ArrayList<>();
         StringBuilder field = new StringBuilder();
         boolean quoted = false;
+        int recordStart = 0;
         for (int i = 0; i < content.length(); i++) {
             char c = content.charAt(i);
             if (quoted) {
@@ -89,14 +96,15 @@ public final class CsvImportService {
             } else if (c == delimiter) {
                 row.add(field.toString()); field.setLength(0);
             } else if (c == '\r' || c == '\n') {
+                if (i > recordStart) row.add(field.toString());
                 if (c == '\r' && i + 1 < content.length() && content.charAt(i + 1) == '\n') i++;
-                row.add(field.toString()); field.setLength(0); records.add(row); row = new ArrayList<>();
+                field.setLength(0); records.add(row); row = new ArrayList<>();
+                recordStart = i + 1;
             } else field.append(c);
         }
         if (quoted) throw new IllegalArgumentException("CSV contains an unclosed quoted field");
-        if (!field.isEmpty() || !row.isEmpty()) { row.add(field.toString()); records.add(row); }
+        if (recordStart < content.length()) { row.add(field.toString()); records.add(row); }
         return records;
     }
 
-    private static boolean isBlankRecord(List<String> record) { return record.stream().allMatch(String::isBlank); }
 }
