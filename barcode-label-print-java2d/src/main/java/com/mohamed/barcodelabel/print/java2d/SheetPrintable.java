@@ -49,6 +49,8 @@ final class SheetPrintable implements Printable {
         if (pageIndex < 0 || pageIndex >= pages.size()) return NO_SUCH_PAGE;
         Graphics2D g2 = (Graphics2D) graphics.create();
         try {
+            g2.translate(UnitConversions.mmToPoints(request.offset().horizontalMm()),
+                    UnitConversions.mmToPoints(request.offset().verticalMm()));
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
             for (var placement : pages.get(pageIndex).placements()) {
                 var label = renderer.render(new RenderRequest(request.template(),

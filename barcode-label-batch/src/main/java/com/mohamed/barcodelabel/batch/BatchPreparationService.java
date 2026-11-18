@@ -20,21 +20,25 @@ public final class BatchPreparationService {
         if (hasErrors(issues)) return new BatchPreparationResult(dataset.rows().size(), List.of(), issues);
 
         List<Map<String, ?>> records = new ArrayList<>();
+        var barcodes = new BarcodePreflight(template, mapping.fields());
+        long totalLabels = 0;
         for (int index = 0; index < dataset.rows().size(); index++) {
             Map<String, String> source = dataset.rows().get(index);
-            int sourceRow = index + 2;
+            int sourceRow = dataset.sourceRow(index);
+            var resolved = new LinkedHashMap<String, String>(source);
+            mapping.fields().forEach((field, column) -> resolved.put(field, source.getOrDefault(column, "")));
+            barcodes.checkRow(resolved, sourceRow, issues);
             int quantity = quantity(source, mapping, sourceRow, issues);
             if (quantity <= 0) continue;
-            if ((long) records.size() + quantity > mapping.maxTotalLabels()) {
+            if (totalLabels <= mapping.maxTotalLabels() && totalLabels + quantity > mapping.maxTotalLabels()) {
                 issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.TOTAL_LIMIT_EXCEEDED,
                         sourceRow, "quantity", String.valueOf(mapping.maxTotalLabels()),
                         "Total labels exceed the safety limit of " + mapping.maxTotalLabels()));
-                break;
             }
-            var resolved = new LinkedHashMap<String, Object>();
-            resolved.putAll(source);
-            mapping.fields().forEach((field, column) -> resolved.put(field, source.getOrDefault(column, "")));
-            for (int copy = 0; copy < quantity; copy++) records.add(Map.copyOf(resolved));
+            totalLabels += quantity;
+            if (!issues.isEmpty()) continue;
+            var record = Map.copyOf(resolved);
+            for (int copy = 0; copy < quantity; copy++) records.add(record);
         }
         if (hasErrors(issues)) records = List.of();
         return new BatchPreparationResult(dataset.rows().size(), records, issues);
@@ -58,7 +62,7 @@ public final class BatchPreparationService {
 
     private static int quantity(Map<String, String> row, ColumnMapping mapping, int sourceRow, List<BatchValidationIssue> issues) {
         String raw = mapping.quantityColumn() == null ? "" : row.getOrDefault(mapping.quantityColumn(), "").trim();
-        if (raw.isEmpty()) return mapping.defaultCopies();
+        if (raw.isEmpty()) raw = Integer.toString(mapping.defaultCopies());
         try {
             int value = Integer.parseInt(raw);
             if (value <= 0 || value > mapping.maxCopiesPerRow()) {

@@ -1,16 +1,22 @@
 package com.mohamed.barcodelabel.fx.workbench;
 
 import com.mohamed.barcodelabel.model.LabelTemplate;
+import com.mohamed.barcodelabel.model.element.BarcodeElement;
+import com.mohamed.barcodelabel.model.element.Symbology;
 import com.mohamed.barcodelabel.model.element.ElementFrame;
 import com.mohamed.barcodelabel.model.element.TextAlignment;
 import com.mohamed.barcodelabel.model.element.TextElement;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
+import com.mohamed.barcodelabel.print.LabelPrintRequest;
+import com.mohamed.barcodelabel.print.PrintResult;
 import com.mohamed.barcodelabel.workflow.paper.PaperPresetRegistry;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -24,13 +30,16 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -155,6 +164,86 @@ class UniversalPrintPaneTest {
             factory.setValue(21);
             assertEquals(20, pane.startSlotIndex());
             assertEquals("صفحة 1 من 2", label(pane, "صفحة 1 من 2").getText());
+            return null;
+        });
+    }
+
+    @Test
+    void directCsvChecksRowsBeyondThePreviewAndReleasesPrintingAfterCorrection() {
+        var pane = onFx(() -> new UniversalPrintPane(UiLanguage.ENGLISH, request -> {
+            throw new AssertionError("An invalid batch reached the printer");
+        }));
+        var records = new java.util.ArrayList<Map<String, ?>>();
+        for (int i = 0; i < 21; i++) records.add(Map.of("Code", "A1"));
+        records.add(Map.of("Code", " "));
+        onFx(() -> {
+            var barcode = new BarcodeElement(
+                    ElementFrame.create("SKU", new RectMm(1, 1, 55, 20), 0), "{{Code}}",
+                    Symbology.CODE_128, 0.25, 2, true);
+            pane.setTemplate(template().withElements(List.of(barcode)));
+            pane.setRecords(records);
+            return null;
+        });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() instanceof ListView<?> list
+                && list.getItems().contains("Row 23: Column Code — the CODE_128 barcode value is blank")));
+        onFx(() -> {
+            @SuppressWarnings("unchecked")
+            ComboBox<String> printers = find(pane, ComboBox.class, box -> true);
+            printers.getItems().setAll("Test printer");
+            printers.setValue("Test printer");
+            assertTrue(button(pane, ENGLISH.get("print.print")).isDisabled());
+            pane.submitPrint(new LabelPrintRequest(pane.getTemplate(), records, "Test printer", 1, 0));
+            records.set(21, Map.of("Code", "B2"));
+            pane.setRecords(records);
+            return null;
+        });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() == null));
+        onFx(() -> {
+            @SuppressWarnings("unchecked")
+            ComboBox<String> printers = find(pane, ComboBox.class, box -> true);
+            printers.getItems().setAll("Test printer");
+            printers.setValue("Test printer");
+            find(pane, Spinner.class, spinner -> spinner.getTooltip() != null).increment();
+            assertFalse(button(pane, ENGLISH.get("print.print")).isDisabled());
+            return null;
+        });
+    }
+
+    @Test
+    void changingTheStartSlotCannotEnableAnotherPrintWhileAJobIsActive() {
+        var pending = new CompletableFuture<PrintResult>();
+        var submissions = new AtomicInteger();
+        var pane = onFx(() -> new UniversalPrintPane(UiLanguage.ARABIC, request -> {
+            submissions.incrementAndGet();
+            return pending;
+        }));
+        onFx(() -> {
+            // Supply a printer in memory, so this test also exercises a machine with no installed printers.
+            @SuppressWarnings("unchecked")
+            ComboBox<String> printers = find(pane, ComboBox.class, box -> true);
+            printers.getItems().setAll("Test printer");
+            printers.setValue("Test printer");
+            pane.setTemplate(template());
+            var records = List.<Map<String, ?>>of(Map.of("name", "Pen"));
+            pane.setRecords(records);
+            var request = new LabelPrintRequest(pane.getTemplate(), records, printers.getValue(), 1, 0);
+            var print = button(pane, ARABIC.get("print.print"));
+            assertFalse(print.isDisabled());
+            pane.submitPrint(request);
+            startSlot(pane).increment();
+            assertEquals(1, pane.startSlotIndex());
+            assertTrue(print.isDisabled());
+            assertFalse(button(pane, ARABIC.get("print.cancel")).isDisabled());
+            pane.submitPrint(request);
+            assertEquals(1, submissions.get());
+            pane.setTemplate(null);
+            pending.complete(new PrintResult(1, 1));
+            return null;
+        });
+        onFx(() -> {
+            assertFalse(pane.printingProperty().get());
+            assertTrue(button(pane, ARABIC.get("print.cancel")).isDisabled());
+            assertTrue(button(pane, ARABIC.get("print.print")).isDisabled(), "the template was cleared during printing");
             return null;
         });
     }

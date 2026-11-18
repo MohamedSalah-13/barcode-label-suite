@@ -3,6 +3,7 @@ package com.mohamed.barcodelabel.fx.batch;
 import com.mohamed.barcodelabel.batch.*;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.model.LabelTemplate;
+import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
 import com.mohamed.barcodelabel.workflow.csv.CsvImportService;
 import javafx.application.Platform;
@@ -81,7 +82,7 @@ public final class BatchDataMappingPane extends BorderPane {
         prepareButton.setText(t("batch.prepare"));
         getStyleClass().add("batch-data-mapping-pane");
         setTop(header()); setCenter(content()); setBottom(actions());
-        template.addListener((obs, oldValue, value) -> templateChanged());
+        template.addListener((obs, oldValue, value) -> templateChanged(oldValue));
         dataset.addListener((obs, oldValue, value) -> {
             datasetName = pendingDatasetName != null ? pendingDatasetName : t("batch.datasetName");
             pendingDatasetName = null;
@@ -146,10 +147,20 @@ public final class BatchDataMappingPane extends BorderPane {
      * A new template keeps the current mapping and result when it uses the same fields (a style edit, say);
      * otherwise the controls are rebuilt for its fields, keeping the columns already chosen for the others.
      */
-    private void templateChanged() {
+    private void templateChanged(LabelTemplate previous) {
         if (getTemplate() != null && getDataset() != null && getDataset() == mappedDataset
-                && templateFields.scan(getTemplate()).equals(mappedFields)) return;
+                && templateFields.scan(getTemplate()).equals(mappedFields)) {
+            if (previous == null || !barcodes(previous).equals(barcodes(getTemplate()))) {
+                clearResult(t("batch.notPrepared"));
+            }
+            return;
+        }
         rebuildMappings(getDataset() != null && getDataset() == mappedDataset);
+    }
+
+    private static List<BarcodeElement> barcodes(LabelTemplate template) {
+        return template.elements().stream().filter(BarcodeElement.class::isInstance)
+                .map(BarcodeElement.class::cast).filter(b -> b.frame().visible()).toList();
     }
 
     private void rebuildMappings(boolean keepChoices) {
@@ -185,7 +196,7 @@ public final class BatchDataMappingPane extends BorderPane {
             if (chosen == automatic && suggested > 0) {
                 resultSummary.setText(texts.suggested((int) suggested, fields.size()));
             }
-            prepareButton.setDisable(fields.isEmpty());
+            prepareButton.setDisable(false);
             fileSummary.setText(texts.fileSummary(datasetName, getDataset().rows().size(), getDataset().headers().size(), fields.size()));
         } finally {
             rebuilding = false;

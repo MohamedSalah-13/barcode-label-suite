@@ -27,4 +27,10 @@ public final class TemplateFields {
         var matcher = PLACEHOLDER.matcher(source);
         while (matcher.find()) target.add(matcher.group(1));
     }
+
+    static List<String> fieldsIn(String expression) {
+        var fields = new LinkedHashSet<String>();
+        add(expression, fields);
+        return List.copyOf(fields);
+    }
 }

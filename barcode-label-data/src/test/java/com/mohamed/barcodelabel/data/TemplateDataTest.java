@@ -45,6 +45,12 @@ class TemplateDataTest {
     }
 
     @Test
+    void anExistingNestedPathTakesPrecedenceOverALiteralDottedKey() {
+        var data = Map.of("product", Map.of("sku", "nested"), "product.sku", "flat");
+        assertEquals("nested", new TemplateFieldResolver().resolveText("{{product.sku}}", data, MissingFieldPolicy.FAIL));
+    }
+
+    @Test
     void failsWhenRequiredFieldIsMissing() {
         var resolver = new TemplateFieldResolver();
         assertThrows(IllegalArgumentException.class,

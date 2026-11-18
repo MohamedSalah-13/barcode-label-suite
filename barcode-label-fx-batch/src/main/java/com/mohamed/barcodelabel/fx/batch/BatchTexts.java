@@ -6,13 +6,16 @@ import com.mohamed.barcodelabel.batch.ValidationSeverity;
 import com.mohamed.barcodelabel.fx.i18n.Counted;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.fx.i18n.UiTexts;
+import com.mohamed.barcodelabel.fx.workbench.BarcodeIssueTexts;
 
 /** The batch screens' wording in one language: summaries and validation issues. */
 final class BatchTexts {
     private final UiTexts texts;
+    private final BarcodeIssueTexts barcodeTexts;
 
     BatchTexts(UiLanguage language) {
         texts = UiTexts.load(BatchTexts.class, "messages", language);
+        barcodeTexts = new BarcodeIssueTexts(language);
     }
 
     UiLanguage language() { return texts.language(); }
@@ -41,6 +44,7 @@ final class BatchTexts {
             case MISSING_QUANTITY_COLUMN -> get("issue.MISSING_QUANTITY_COLUMN", issue.value());
             case QUANTITY_OUT_OF_RANGE -> get("issue.QUANTITY_OUT_OF_RANGE", issue.value(), mapping.maxCopiesPerRow());
             case INVALID_QUANTITY -> get("issue.INVALID_QUANTITY", issue.value());
+            case EMPTY_BARCODE, INVALID_BARCODE -> barcodeTexts.describe(issue);
             case TOTAL_LIMIT_EXCEEDED -> get("issue.TOTAL_LIMIT_EXCEEDED", issue.value());
             case OTHER -> issue.message();
         };

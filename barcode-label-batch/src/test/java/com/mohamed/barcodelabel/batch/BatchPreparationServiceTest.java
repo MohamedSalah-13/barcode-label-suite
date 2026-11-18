@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.batch;
 
+import com.mohamed.barcodelabel.data.MissingFieldPolicy;
+import com.mohamed.barcodelabel.data.TemplateFieldResolver;
 import com.mohamed.barcodelabel.model.LabelTemplate;
 import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.model.element.ElementFrame;
@@ -53,6 +55,69 @@ class BatchPreparationServiceTest {
         BatchPreparationResult result = service.prepare(template(), data, mapping);
         assertFalse(result.ready());
         assertTrue(result.printRecords().isEmpty());
+    }
+
+    @Test void defaultCopiesRespectTheRowLimitWithAndWithoutAQuantityColumn() {
+        var data = dataset(List.of(row("Pen", "A1", "12", " ")));
+        var fields = Map.of("product_name", "Name", "sku", "Code", "price", "Retail Price");
+        for (String column : new String[] {"Qty", null}) {
+            var rejected = service.prepare(template(), data, new ColumnMapping(fields, column, 10, 2, 100));
+            assertFalse(rejected.ready());
+            assertTrue(rejected.printRecords().isEmpty());
+            var issue = rejected.issues().getFirst();
+            assertEquals(BatchIssueKind.QUANTITY_OUT_OF_RANGE, issue.kind());
+            assertEquals(2, issue.sourceRow());
+            assertEquals("10", issue.value());
+            var accepted = service.prepare(template(), data, new ColumnMapping(fields, column, 2, 2, 100));
+            assertEquals(2, accepted.labelCount());
+        }
+    }
+
+    @Test void mappedDottedFieldsResolveInThePreparedBarcode() {
+        var barcode = new BarcodeElement(ElementFrame.create("barcode", new RectMm(1, 9, 50, 20), 0),
+                "{{product.sku}}", Symbology.CODE_128, 0.25, 2, true);
+        var template = template().withElements(List.of(barcode));
+        var mapping = new ColumnMapping(Map.of("product.sku", "Code"), null, 1, 2, 100);
+        var result = service.prepare(template, dataset(List.of(row("Pen", "A1", "12", ""))), mapping);
+        assertTrue(result.ready());
+        var resolved = new TemplateFieldResolver().resolve(template, result.printRecords().getFirst(), MissingFieldPolicy.FAIL);
+        assertEquals("A1", ((BarcodeElement) resolved.elements().getFirst()).dataTemplate());
+    }
+
+    @Test void rejectsTheWholeBatchAndReportsEachBadSourceRowAndMappedColumnOnce() {
+        var barcode = new BarcodeElement(ElementFrame.create("EAN", new RectMm(1, 1, 60, 24), 0),
+                "{{product.sku}}", Symbology.EAN_13, 0.25, 2, false);
+        var template = template().withElements(List.of(barcode));
+        var mapping = new ColumnMapping(Map.of("product.sku", "Product code"), null, 3, 10, 100);
+        var rows = List.of(Map.of("Product code", "4006381333931"), Map.of("Product code", " "),
+                Map.of("Product code", "ABC"), Map.of("Product code", "4006381333932"), Map.of("Product code", "ABC"));
+        var data = new CsvDataset(List.of("Product code"), rows, ',', List.of(2, 4, 5, 6, 7));
+        var result = service.prepare(template, data, mapping);
+        assertFalse(result.ready());
+        assertTrue(result.printRecords().isEmpty());
+        assertEquals(List.of(4, 5, 6, 7), result.issues().stream().map(BatchValidationIssue::sourceRow).toList());
+        assertEquals(List.of(BatchIssueKind.EMPTY_BARCODE, BatchIssueKind.INVALID_BARCODE, BatchIssueKind.INVALID_BARCODE,
+                BatchIssueKind.INVALID_BARCODE), result.issues().stream().map(BatchValidationIssue::kind).toList());
+        result.issues().forEach(issue -> {
+            assertEquals("Product code", issue.field());
+            assertFalse(issue.message().isBlank());
+        });
+        var fixed = service.prepare(template, new CsvDataset(data.headers(), List.of(rows.getFirst()), ','), mapping);
+        assertTrue(fixed.ready(), fixed.issues().toString());
+        assertEquals(3, fixed.labelCount());
+    }
+
+    @Test void reportsTheEmptyColumnOfACompositeValueAndSkipsHiddenBarcodes() {
+        var frame = ElementFrame.create("QR", new RectMm(1, 1, 22, 22), 0);
+        var qr = new BarcodeElement(frame, "item/{{sku}}/{{lot}}", Symbology.QR_CODE, 0.25, 2, false);
+        var hidden = new ElementFrame(java.util.UUID.randomUUID(), "Unused", frame.bounds(), 0, 1, false, false);
+        var template = template().withElements(List.of(qr, new BarcodeElement(hidden, "", Symbology.EAN_13, 0.25, 2, false)));
+        var data = new CsvDataset(List.of("SKU", "Lot"), List.of(Map.of("SKU", "42", "Lot", " ")), ',');
+        var mapping = new ColumnMapping(Map.of("sku", "SKU", "lot", "Lot"), null, 1, 10, 100);
+        var issues = service.prepare(template, data, mapping).issues();
+        assertEquals(1, issues.size());
+        assertEquals("Lot", issues.getFirst().field());
+        assertEquals(BatchIssueKind.EMPTY_BARCODE, issues.getFirst().kind());
     }
 
     @Test void automaticMappingIgnoresSpacesUnderscoresAndCase() {

@@ -266,7 +266,8 @@ public final class BarcodeLabelWorkbench extends BorderPane {
 
     private void syncPrintPane() {
         printPane.setTemplate(designer.getTemplate());
-        printPane.setRecords(getDataset() == null ? List.of() : getDataset().printRecords());
+        CsvDataset data = getDataset();
+        printPane.setRecords(data == null ? List.of() : data.printRecords(), data == null ? List.of() : data.sourceRows());
     }
 
     private <T> void runIo(String message, IoSupplier<T> action, Consumer<T> success) {

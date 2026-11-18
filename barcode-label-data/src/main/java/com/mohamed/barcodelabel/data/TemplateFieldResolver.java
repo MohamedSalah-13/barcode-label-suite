@@ -55,10 +55,11 @@ public final class TemplateFieldResolver {
 
     private static Object lookup(Map<String, ?> record, String path) {
         Object current = record;
-        for (String part : path.split("\\.")) {
+        for (String part : path.split("\\.", -1)) {
             current = readPart(current, part);
             if (current == null) {
-                return null;
+                // CSV mappings and manual entry store the whole placeholder name as a flat key.
+                return readPart(record, path);
             }
         }
         return current;

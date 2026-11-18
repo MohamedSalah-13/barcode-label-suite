@@ -178,6 +178,19 @@ class BufferedImageLabelRendererTest {
     }
 
     @Test
+    void rotatingAWideRectanglePreservesBothEndsOutsideItsOriginalFrame() throws RenderException {
+        // At 100 dpi the frame spans x=60..140 and y=40..60, centred on (100, 50).
+        var frame = new ElementFrame(java.util.UUID.randomUUID(), "bar", new RectMm(15.24, 10.16, 20.32, 5.08),
+                90, 0, true, false);
+        var bar = new ShapeElement(frame, ShapeType.RECTANGLE, "black", "black", 0.1);
+        BufferedImage image = render(List.of(bar));
+        assertEquals(Color.BLACK.getRGB(), image.getRGB(100, 12));
+        assertEquals(Color.BLACK.getRGB(), image.getRGB(100, 88));
+        assertEquals(WHITE, image.getRGB(62, 50));
+        assertEquals(WHITE, image.getRGB(100, 92));
+    }
+
+    @Test
     void imagesAreScaledByTheirFit(@TempDir Path directory) throws Exception {
         // A 20 x 10 px red image in a square 100 x 100 px frame.
         BufferedImage source = new BufferedImage(20, 10, BufferedImage.TYPE_INT_RGB);

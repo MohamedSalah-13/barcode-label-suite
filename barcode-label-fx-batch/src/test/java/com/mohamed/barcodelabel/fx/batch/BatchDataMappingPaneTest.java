@@ -224,6 +224,45 @@ class BatchDataMappingPaneTest {
     }
 
     @Test
+    void invalidBarcodeBlocksPrintingUntilCorrectedAndAChangedSymbologyRequiresRechecking() {
+        var workbench = onFx(() -> new BatchProductionWorkbench(template(barcode("{{sku}}"))));
+        var pane = workbench.batchPane();
+        var print = workbench.labelWorkbench().printPane();
+        onFx(() -> {
+            pane.setDataset(new CsvDataset(List.of("Code"), List.of(Map.of("Code", " "), Map.of("Code", "ABC")), ','));
+            return null;
+        });
+        prepareAndWait(pane);
+        onFx(() -> {
+            assertEquals(List.of("خطأ — صف 2: عمود Code — قيمة الباركود CODE_128 فارغة"), issueLines(pane));
+            assertNull(workbench.labelWorkbench().getDataset());
+            assertTrue(findButton(print, "طباعة").isDisabled());
+            assertNotNull(print.getTop(), "the workspace explains why printing is blocked");
+            pane.setDataset(new CsvDataset(List.of("Code"), List.of(Map.of("Code", "ABC")), ','));
+            return null;
+        });
+        prepareAndWait(pane);
+        await(Duration.ofSeconds(10), () -> onFx(() -> print.getTop() == null));
+        onFx(() -> {
+            assertTrue(pane.getResult().ready());
+            assertEquals("ABC", print.getRecords().getFirst().get("sku"));
+            var old = barcode("{{sku}}");
+            var numeric = new BarcodeElement(old.frame(), old.dataTemplate(), Symbology.EAN_13, 0.25, 2, true);
+            workbench.labelWorkbench().setTemplate(template(numeric));
+            assertNull(pane.getResult());
+            assertTrue(findButton(print, "طباعة").isDisabled());
+            return null;
+        });
+        prepareAndWait(pane);
+        onFx(() -> {
+            assertFalse(pane.getResult().ready());
+            assertTrue(issueLines(pane).getFirst().contains("صف 2: عمود Code"));
+            assertTrue(issueLines(pane).getFirst().contains("EAN_13"));
+            return null;
+        });
+    }
+
+    @Test
     void aBatchThatIsNoLongerValidIsTakenOutOfThePrintWorkspace() {
         LabelTemplate template = template(textWith("{{product_name}} {{price}}"));
         BatchProductionWorkbench workbench = onFx(() -> new BatchProductionWorkbench(template));

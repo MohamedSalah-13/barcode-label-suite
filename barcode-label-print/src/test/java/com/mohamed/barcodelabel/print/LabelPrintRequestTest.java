@@ -23,6 +23,16 @@ class LabelPrintRequestTest {
         var request = new LabelPrintRequest(template(), records(), "Printer", 1, 0);
         assertEquals(0, request.firstPage());
         assertEquals(0, request.lastPage());
+        assertEquals(PrintOffset.ZERO, request.offset());
+    }
+
+    @Test void signedOffsetsPreserveTheJobAndRejectNonFiniteValues() {
+        var request = new LabelPrintRequest(template(), records(), "Printer", 3, 2, 1, 4);
+        var shifted = request.withOffset(new PrintOffset(-0.75, 2.5));
+        assertEquals(request, shifted.withOffset(PrintOffset.ZERO));
+        assertEquals(-0.75, shifted.offset().horizontalMm());
+        assertThrows(IllegalArgumentException.class, () -> new PrintOffset(Double.NaN, 0));
+        assertThrows(IllegalArgumentException.class, () -> new PrintOffset(0, Double.POSITIVE_INFINITY));
     }
 
     @Test

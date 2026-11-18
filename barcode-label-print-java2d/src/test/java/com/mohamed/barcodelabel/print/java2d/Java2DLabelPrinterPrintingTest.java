@@ -10,6 +10,7 @@ import com.mohamed.barcodelabel.model.geometry.RectMm;
 import com.mohamed.barcodelabel.model.page.PageDefinition;
 import com.mohamed.barcodelabel.model.page.SheetLayout;
 import com.mohamed.barcodelabel.print.LabelPrintRequest;
+import com.mohamed.barcodelabel.print.PrintOffset;
 import com.mohamed.barcodelabel.print.PrintResult;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +49,39 @@ class Java2DLabelPrinterPrintingTest {
             .lookupStreamPrintServiceFactories(DocFlavor.SERVICE_FORMATTED.PAGEABLE, "application/postscript")[0]
             .getPrintService(postScript);
     private final PrinterCatalog catalog = new PrinterCatalog(() -> new PrintService[] {fileService}, () -> fileService);
+
+    @Test
+    void aPhysicalOffsetMovesInkByTheSameDistanceOnEveryPrintedPage() throws Exception {
+        var request = new LabelPrintRequest(template(), records(2), "Test", 1, 20);
+        var original = new SheetPrintable(request, 300);
+        var shifted = new SheetPrintable(request.withOffset(new PrintOffset(3.175, -6.35)), 300);
+        assertEquals(2, shifted.pageCount());
+        for (int page = 0; page < 2; page++) {
+            var expected = inkBounds(original, page);
+            expected.translate(9, -18); // at 72 printer points per inch
+            assertEquals(expected, inkBounds(shifted, page));
+        }
+    }
+
+    private static java.awt.Rectangle inkBounds(SheetPrintable printable, int page) throws PrinterException {
+        var image = new BufferedImage(620, 850, BufferedImage.TYPE_INT_RGB);
+        var graphics = image.createGraphics();
+        try {
+            graphics.setColor(java.awt.Color.WHITE);
+            graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
+            assertEquals(Printable.PAGE_EXISTS, printable.print(graphics, new PageFormat(), page));
+        } finally {
+            graphics.dispose();
+        }
+        var ink = new java.awt.Rectangle(0, 0, -1, -1);
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if ((image.getRGB(x, y) & 255) < 128) ink.add(x, y);
+            }
+        }
+        assertTrue(ink.width > 0 && ink.height > 0);
+        return ink;
+    }
 
     @Test
     void printsEveryPlannedPage() throws Exception {
@@ -118,6 +152,26 @@ class Java2DLabelPrinterPrintingTest {
         assertEquals(List.of(new PrinterDescriptor("office laser", true), new PrinterDescriptor("Brother QL", false),
                 new PrinterDescriptor("Zebra ZD420", false)), printers);
         assertEquals(List.of(), new PrinterCatalog(() -> new PrintService[0], () -> null).discover());
+    }
+
+    @Test
+    void anOverlappingRequestIsRejectedAndANewJobCanStartAfterCancellation() throws Exception {
+        var job = new ScriptedJob(1, null);
+        var printer = new Java2DLabelPrinter(catalog, 150, () -> job);
+        var first = printer.print(new LabelPrintRequest(template(), records(25), fileService.getName(), 1, 0))
+                .toCompletableFuture();
+        var next = new LabelPrintRequest(template(), records(1), fileService.getName(), 1, 0);
+        try {
+            assertTrue(job.waiting.await(30, TimeUnit.SECONDS));
+            var second = printer.print(next).toCompletableFuture();
+            var rejected = assertThrows(ExecutionException.class, () -> second.get(5, TimeUnit.SECONDS));
+            assertInstanceOf(IllegalStateException.class, rejected.getCause());
+        } finally {
+            printer.cancelCurrent();
+        }
+        var cancelled = assertThrows(ExecutionException.class, () -> first.get(30, TimeUnit.SECONDS));
+        assertInstanceOf(PrintCancelledException.class, cancelled.getCause());
+        assertEquals(new PrintResult(1, 1), printer.print(next).toCompletableFuture().get(30, TimeUnit.SECONDS));
     }
 
     @Test

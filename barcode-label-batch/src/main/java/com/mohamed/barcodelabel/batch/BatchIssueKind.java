@@ -14,6 +14,10 @@ public enum BatchIssueKind {
     INVALID_QUANTITY(false),
     /** Adding a row would exceed maxTotalLabels; {@code value} is the limit. */
     TOTAL_LIMIT_EXCEEDED(false),
+    /** The mapped CSV column is blank, or the barcode has an empty constant. */
+    EMPTY_BARCODE(false),
+    /** The printer's encoder rejected the resolved barcode. */
+    INVALID_BARCODE(false),
     /** Anything else; only {@code message} describes it. */
     OTHER(false);
 
