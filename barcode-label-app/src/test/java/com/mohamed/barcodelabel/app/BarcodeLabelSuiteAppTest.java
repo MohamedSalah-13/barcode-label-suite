@@ -16,10 +16,14 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.Test;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -132,15 +136,32 @@ class BarcodeLabelSuiteAppTest {
         MemorySetting setting = new MemorySetting(UiLanguage.ARABIC);
         BarcodeLabelSuiteApp app = started(setting);
         onFx(() -> {
-            assertEquals("التحقق من التحديثات", app.checkUpdatesButton().getText());
+            assertEquals("التحقق من التحديثات", app.checkUpdatesButton().getAccessibleText());
+            assertEquals(ContentDisplay.GRAPHIC_ONLY, app.checkUpdatesButton().getContentDisplay());
+            assertInstanceOf(FontIcon.class, app.checkUpdatesButton().getGraphic());
             assertSame(app.languagePicker().getParent(), app.checkUpdatesButton().getParent());
+            assertEquals("لغة الواجهة", app.languagePicker().getTooltip().getText());
+            assertEquals(Feather.GLOBE,
+                    assertInstanceOf(FontIcon.class, app.languagePicker().getButtonCell().getGraphic()).getIconCode());
+            assertNull(app.languagePicker().getButtonCell().getText());
+            app.languagePicker().applyCss();
+            assertEquals(0.0, app.languagePicker().lookup(".arrow").getOpacity());
+            var globe = app.languagePicker().getButtonCell().getGraphic();
+            for (var type : List.of(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
+                globe.fireEvent(new MouseEvent(type, 8, 8, 0, 0, MouseButton.PRIMARY, 1,
+                        false, false, false, false, type == MouseEvent.MOUSE_PRESSED,
+                        false, false, false, false, true, null));
+            }
+            assertTrue(app.languagePicker().isShowing());
+            app.languagePicker().hide();
             // The tests run without the jpackage launcher, so the copy has no installed version.
-            assertEquals("نسخة تطوير: التحديث يعمل في النسخة المثبتة فقط.",
+            assertEquals("التحقق من التحديثات\nنسخة تطوير: التحديث يعمل في النسخة المثبتة فقط.",
                     app.checkUpdatesButton().getTooltip().getText());
 
             app.languagePicker().setValue(UiLanguage.ENGLISH);
-            assertEquals("Check for updates", app.checkUpdatesButton().getText());
-            assertEquals("A development copy: only an installed copy is updated.",
+            assertEquals("Interface language", app.languagePicker().getTooltip().getText());
+            assertEquals("Check for updates", app.checkUpdatesButton().getAccessibleText());
+            assertEquals("Check for updates\nA development copy: only an installed copy is updated.",
                     app.checkUpdatesButton().getTooltip().getText());
             return null;
         });

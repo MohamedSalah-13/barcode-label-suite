@@ -1,0 +1,9 @@
+.language-picker > .arrow-button,
+.language-picker > .arrow-button > .arrow {
+    -fx-padding: 0;
+}
+
+.language-picker > .arrow-button > .arrow {
+    -fx-shape: null;
+    -fx-opacity: 0;
+}

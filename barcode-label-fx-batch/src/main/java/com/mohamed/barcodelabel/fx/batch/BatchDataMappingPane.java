@@ -16,6 +16,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
@@ -59,7 +60,7 @@ public final class BatchDataMappingPane extends BorderPane {
     private final Label fileSummary = new Label();
     private final Label resultSummary = new Label();
     private final ProgressIndicator busy = new ProgressIndicator();
-    private final Button prepareButton = new Button(null, new FontIcon(Feather.CHECK_CIRCLE));
+    private final Button prepareButton;
     private ColumnMapping loadedProfile;
     /** The name shown for the dataset; the next imported file's name until the dataset listener takes it. */
     private String pendingDatasetName;
@@ -122,7 +123,7 @@ public final class BatchDataMappingPane extends BorderPane {
         noQuantity = t("batch.noQuantity");
         fileSummary.setText(t("batch.chooseFile"));
         resultSummary.setText(t("batch.notPrepared"));
-        prepareButton.setText(t("batch.prepare"));
+        prepareButton = iconButton(Feather.CHECK_CIRCLE, "batch.prepare");
         getStyleClass().add("batch-data-mapping-pane");
         setTop(header()); setCenter(content()); setBottom(actions());
         template.addListener((obs, oldValue, value) -> templateChanged(oldValue));
@@ -146,13 +147,28 @@ public final class BatchDataMappingPane extends BorderPane {
 
     private VBox header() {
         Label title = new Label(t("batch.title")); title.getStyleClass().add("batch-title");
-        Button importCsv = new Button(t("batch.importCsv"), new FontIcon(Feather.UPLOAD)); importCsv.getStyleClass().add("primary-button");
-        Button saveProfile = new Button(t("batch.saveMapping"), new FontIcon(Feather.SAVE));
-        Button loadProfile = new Button(t("batch.openMapping"), new FontIcon(Feather.FOLDER));
+        Button importCsv = iconButton(Feather.UPLOAD, "batch.importCsv");
+        importCsv.getStyleClass().add("primary-button");
+        Button saveProfile = iconButton(Feather.SAVE, "batch.saveMapping");
+        Button loadProfile = iconButton(Feather.FOLDER, "batch.openMapping");
         importCsv.setOnAction(event -> importCsv()); saveProfile.setOnAction(event -> saveProfile()); loadProfile.setOnAction(event -> loadProfile());
         busy.setPrefSize(18, 18); busy.setMaxSize(18, 18); busy.setVisible(false); busy.setManaged(false);
         HBox toolbar = new HBox(8, importCsv, saveProfile, loadProfile, busy); toolbar.setAlignment(Pos.CENTER_LEFT);
         VBox box = new VBox(7, title, fileSummary, toolbar); box.setPadding(new Insets(14)); return box;
+    }
+
+    private Button iconButton(Feather glyph, String key) {
+        String label = t(key);
+        FontIcon icon = new FontIcon(glyph);
+        icon.setIconSize(18);
+        icon.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        Button button = new Button(label, icon);
+        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        button.setMinSize(36, 34);
+        button.setPrefSize(36, 34);
+        button.setTooltip(new Tooltip(label));
+        button.setAccessibleText(label);
+        return button;
     }
 
     private SplitPane content() {

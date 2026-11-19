@@ -28,7 +28,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.feather.Feather;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -57,13 +56,13 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private final ProgressIndicator busy = new ProgressIndicator();
     private final TabPane tabs = new TabPane();
     private final ComboBox<PaperPreset> presetBox = new ComboBox<>();
-    private final Button deletePaper = new Button();
+    private final Button deletePaper;
     private CustomPaperStore customPapers = CustomPaperStore.inMemory();
     private List<PaperPreset> savedPapers = List.of();
-    private final Button openButton = iconButton(Feather.FOLDER);
-    private final Button saveButton = iconButton(Feather.SAVE);
-    private final Button saveAsButton = iconButton(Feather.COPY);
-    private final Button importButton = iconButton(Feather.UPLOAD);
+    private final Button openButton;
+    private final Button saveButton;
+    private final Button saveAsButton;
+    private final Button importButton;
     private final javafx.beans.property.ReadOnlyBooleanWrapper working = new javafx.beans.property.ReadOnlyBooleanWrapper();
 
     /** The data and navigation state of this workspace, independent of its UI language. */
@@ -85,8 +84,8 @@ public final class BarcodeLabelWorkbench extends BorderPane {
 
     public javafx.beans.property.ReadOnlyBooleanProperty workingProperty() { return working.getReadOnlyProperty(); }
 
-    private static Button iconButton(Feather icon) {
-        return new Button(null, new FontIcon(icon));
+    private Button iconButton(Feather glyph, String key) {
+        return IconButtons.create(glyph, t(key));
     }
 
     /** An Arabic workbench. */
@@ -104,8 +103,11 @@ public final class BarcodeLabelWorkbench extends BorderPane {
         designer = new VisualLabelDesigner(initialTemplate, language);
         printPane = new UniversalPrintPane(language, cache);
         setNodeOrientation(language.orientation());
-        openButton.setText(t("workbench.open")); saveButton.setText(t("workbench.save"));
-        saveAsButton.setText(t("workbench.saveAs")); importButton.setText(t("workbench.importCsv"));
+        openButton = iconButton(Feather.FOLDER, "workbench.open");
+        saveButton = iconButton(Feather.SAVE, "workbench.save");
+        saveAsButton = iconButton(Feather.COPY, "workbench.saveAs");
+        importButton = iconButton(Feather.UPLOAD, "workbench.importCsv");
+        deletePaper = iconButton(Feather.TRASH_2, "workbench.deletePaper");
         dataSummary.setText(t("workbench.noData")); status.setText(t("workbench.ready"));
         getStyleClass().add("barcode-label-workbench");
         setTop(toolbar()); setCenter(contentTabs()); setBottom(statusBar());
@@ -145,14 +147,15 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private HBox toolbar() {
         refreshPresets(null);
         presetBox.valueProperty().addListener((obs, oldValue, value) -> deletePaper.setDisable(!CustomPaperDialog.isCustom(value)));
-        deletePaper.setText(t("workbench.deletePaper")); deletePaper.setDisable(true);
+        deletePaper.setDisable(true);
         deletePaper.setOnAction(event -> deletePaper());
         presetBox.setConverter(new StringConverter<>() {
             @Override public String toString(PaperPreset preset) { return preset == null ? "" : presetName(preset); }
             @Override public PaperPreset fromString(String text) { return null; }
         });
         presetBox.setPromptText(t("workbench.paperPrompt")); presetBox.setPrefWidth(290);
-        Button applyPreset = new Button(t("workbench.applyPaper")); Button customPaper = new Button(t("workbench.customPaper"));
+        Button applyPreset = iconButton(Feather.CHECK_SQUARE, "workbench.applyPaper");
+        Button customPaper = iconButton(Feather.SLIDERS, "workbench.customPaper");
         openButton.setOnAction(event -> chooseOpen()); saveButton.setOnAction(event -> save(false)); saveAsButton.setOnAction(event -> save(true));
         importButton.setOnAction(event -> chooseCsv()); applyPreset.setOnAction(event -> applyPreset()); customPaper.setOnAction(event -> customPaper());
         HBox bar = new HBox(8, openButton, saveButton, saveAsButton, new Separator(), presetBox, applyPreset, customPaper,

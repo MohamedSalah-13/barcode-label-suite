@@ -16,17 +16,22 @@ import com.hamza.updater.ReleaseSource;
 import com.hamza.updater.fx.UpdatePrompt;
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -142,24 +147,52 @@ public final class BarcodeLabelSuiteApp extends Application {
         workbench = new BatchProductionWorkbench(template, language, barcodeCache);
         workbench.labelWorkbench().setCustomPaperStore(paperSizes);
         languagePicker = new ComboBox<>();
+        languagePicker.getStyleClass().add("language-picker");
         // Finish file operations and batch preparation before replacing their UI callbacks.
         languagePicker.disableProperty().bind(workbench.labelWorkbench().printPane().printingProperty()
                 .or(workbench.labelWorkbench().workingProperty()).or(workbench.batchPane().workingProperty()));
         languagePicker.getItems().setAll(UiLanguage.values());
         languagePicker.setValue(language);
-        languagePicker.setTooltip(new Tooltip(texts.get("app.language")));
+        String languageLabel = texts.get("app.language");
+        FontIcon languageIcon = new FontIcon(Feather.GLOBE);
+        languageIcon.setIconSize(18);
+        languageIcon.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        // The button cell is separate from the popup cells, which keep the native language names.
+        ListCell<UiLanguage> languageButtonCell = new ListCell<>() {
+            @Override protected void updateItem(UiLanguage item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(null);
+                setGraphic(languageIcon);
+            }
+        };
+        languageButtonCell.setAlignment(Pos.CENTER);
+        languageButtonCell.setPadding(Insets.EMPTY);
+        languagePicker.setButtonCell(languageButtonCell);
+        languagePicker.setAccessibleText(languageLabel);
+        languagePicker.setTooltip(new Tooltip(languageLabel));
+        languagePicker.setPrefSize(36, 34);
         languagePicker.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         languagePicker.valueProperty().addListener((obs, oldValue, value) -> switchLanguage(value));
-        checkUpdates = new Button(texts.get("app.updates.check"));
-        checkUpdates.setTooltip(new Tooltip(updater.currentVersion()
+        String checkLabel = texts.get("app.updates.check");
+        FontIcon updateIcon = new FontIcon(Feather.REFRESH_CW);
+        updateIcon.setIconSize(18);
+        updateIcon.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        checkUpdates = new Button(checkLabel, updateIcon);
+        checkUpdates.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        checkUpdates.setMinSize(36, 34);
+        checkUpdates.setPrefSize(36, 34);
+        checkUpdates.setAccessibleText(checkLabel);
+        String versionInfo = updater.currentVersion()
                 .map(version -> texts.get("app.updates.version", version))
-                .orElse(texts.get("app.updates.dev"))));
+                .orElse(texts.get("app.updates.dev"));
+        checkUpdates.setTooltip(new Tooltip(checkLabel + "\n" + versionInfo));
         checkUpdates.setOnAction(event -> updates.checkNow());
         // At the end of the tab bar, where the tabs leave room: top left in Arabic, top right in English.
         HBox tools = new HBox(6, checkUpdates, languagePicker);
         tools.setAlignment(Pos.CENTER);
         tools.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         StackPane root = new StackPane(workbench, tools);
+        root.getStylesheets().add(BarcodeLabelSuiteApp.class.getResource("language-picker.css").toExternalForm());
         root.setNodeOrientation(language.orientation());
         StackPane.setAlignment(tools, Pos.TOP_RIGHT);
         StackPane.setMargin(tools, new Insets(3, 8, 0, 8));

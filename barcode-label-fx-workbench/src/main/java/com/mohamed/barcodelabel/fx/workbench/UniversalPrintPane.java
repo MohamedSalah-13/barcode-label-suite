@@ -32,6 +32,7 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
@@ -42,6 +43,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.kordamp.ikonli.feather.Feather;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -71,10 +73,10 @@ public final class UniversalPrintPane extends BorderPane {
     private final ImageView preview = new ImageView();
     private final Label status = new Label();
     private final Label pageStatus = new Label();
-    private final Button previous = new Button();
-    private final Button next = new Button();
-    private final Button print = new Button();
-    private final Button cancelPrint = new Button();
+    private final Button previous;
+    private final Button next;
+    private final Button print;
+    private final Button cancelPrint;
     private final CheckBox allPages = new CheckBox();
     private final Spinner<Integer> fromPage = new Spinner<>(1, 1, 1);
     private final Spinner<Integer> toPage = new Spinner<>(1, 1, 1);
@@ -154,8 +156,16 @@ public final class UniversalPrintPane extends BorderPane {
         this.calibrations = calibrations;
         texts = UiTexts.load(UniversalPrintPane.class, "messages", language);
         barcodeTexts = new BarcodeIssueTexts(language);
-        status.setText(t("print.ready")); previous.setText(t("print.previous")); next.setText(t("print.next"));
-        print.setText(t("print.print")); cancelPrint.setText(t("print.cancel")); allPages.setText(t("print.allPages"));
+        previous = IconButtons.create(Feather.CHEVRON_LEFT, t("print.previous"));
+        next = IconButtons.create(Feather.CHEVRON_RIGHT, t("print.next"));
+        print = IconButtons.create(Feather.PRINTER, t("print.print"));
+        cancelPrint = IconButtons.create(Feather.X_CIRCLE, t("print.cancel"));
+        var arrowRotation = effectiveNodeOrientationProperty()
+                .map(orientation -> orientation == NodeOrientation.RIGHT_TO_LEFT ? 180.0 : 0.0);
+        previous.getGraphic().rotateProperty().bind(arrowRotation);
+        next.getGraphic().rotateProperty().bind(arrowRotation);
+        status.setText(t("print.ready"));
+        allPages.setText(t("print.allPages"));
         getStyleClass().add("universal-print-pane");
         preview.setPreserveRatio(true); preview.setSmooth(true); preview.setFitHeight(670);
         ScrollPane scroll = new ScrollPane(preview); scroll.setFitToWidth(true); scroll.setPannable(true);
@@ -241,7 +251,7 @@ public final class UniversalPrintPane extends BorderPane {
 
     private VBox settings() {
         printers.setPromptText(t("print.printerPrompt")); printers.setMaxWidth(Double.MAX_VALUE);
-        Button calibrate = new Button(t("calibration.title"));
+        Button calibrate = IconButtons.create(Feather.SLIDERS, t("calibration.title"));
         calibrate.setMaxWidth(Double.MAX_VALUE);
         calibrate.disableProperty().bind(printing.or(printers.valueProperty().isNull()).or(template.isNull()));
         calibrate.setOnAction(event -> calibrationDialog().showAndWait());

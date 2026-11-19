@@ -30,6 +30,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
@@ -51,7 +52,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
+import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -328,6 +331,25 @@ public final class LabelDesignerPane extends BorderPane {
         Button forward = button(t("designer.bringForward"), () -> session.bringForward(session.primarySelection()));
         Button backward = button(t("designer.sendBackward"), () -> session.sendBackward(session.primarySelection()));
         Button toBack = button(t("designer.sendToBack"), () -> session.sendToBack(session.primarySelection()));
+        setButtonIcon(open, Feather.FOLDER);
+        setButtonIcon(saveAs, Feather.SAVE);
+        setButtonIcon(undoButton, Feather.ROTATE_CCW);
+        setButtonIcon(redoButton, Feather.ROTATE_CW);
+        setButtonIcon(cut, Feather.SCISSORS);
+        setButtonIcon(copy, Feather.COPY);
+        setButtonIcon(paste, Feather.CLIPBOARD);
+        setButtonIcon(duplicate, Feather.PLUS_SQUARE);
+        setButtonIcon(delete, Feather.TRASH_2);
+        setButtonIcon(left, Feather.ALIGN_LEFT);
+        setButtonIcon(center, Feather.ALIGN_CENTER);
+        setButtonIcon(right, Feather.ALIGN_RIGHT);
+        setButtonIcon(top, Feather.ALIGN_LEFT).setRotate(90);
+        setButtonIcon(middle, Feather.ALIGN_CENTER).setRotate(90);
+        setButtonIcon(bottom, Feather.ALIGN_RIGHT).setRotate(90);
+        setButtonIcon(toFront, Feather.CHEVRONS_UP);
+        setButtonIcon(forward, Feather.CHEVRON_UP);
+        setButtonIcon(backward, Feather.CHEVRON_DOWN);
+        setButtonIcon(toBack, Feather.CHEVRONS_DOWN);
         return new ToolBar(open, saveAs, new Separator(), undoButton, redoButton,
                 new Separator(), cut, copy, paste, duplicate, delete,
                 new Separator(), left, center, right, top, middle, bottom,
@@ -342,6 +364,11 @@ public final class LabelDesignerPane extends BorderPane {
         Button qr = button(t("designer.addQr"), () -> addBarcode(Symbology.QR_CODE));
         Button rectangle = button(t("designer.addRectangle"), this::addRectangle);
         Button image = button(t("designer.addImage"), this::addImage);
+        setButtonIcon(text, Feather.TYPE);
+        setButtonIcon(barcode, FontAwesomeSolid.BARCODE);
+        setButtonIcon(qr, FontAwesomeSolid.QRCODE);
+        setButtonIcon(rectangle, Feather.SQUARE);
+        setButtonIcon(image, Feather.IMAGE);
         for (Button button : List.of(text, barcode, qr, rectangle, image)) button.setMaxWidth(Double.MAX_VALUE);
         VBox toolbox = new VBox(8, title, text, barcode, qr, rectangle, image, new Separator(),
                 hint(t("designer.hintMultiSelect")),
@@ -595,6 +622,21 @@ public final class LabelDesignerPane extends BorderPane {
         Button button = new Button(text);
         button.setOnAction(event -> action.run());
         return button;
+    }
+
+    private static FontIcon setButtonIcon(Button button, Ikon glyph) {
+        FontIcon icon = new FontIcon(glyph);
+        icon.setIconSize(18);
+        icon.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
+        button.setGraphic(icon);
+        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        button.setMinSize(36, 34);
+        button.setPrefSize(36, 34);
+        Tooltip tooltip = new Tooltip();
+        tooltip.textProperty().bind(button.textProperty());
+        button.setTooltip(tooltip);
+        button.accessibleTextProperty().bind(button.textProperty());
+        return icon;
     }
 
     private static TextField numberField() {
