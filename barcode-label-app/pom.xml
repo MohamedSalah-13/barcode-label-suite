@@ -4,9 +4,15 @@
     <modelVersion>4.0.0</modelVersion>
     <parent><groupId>com.mohamed.barcodelabel</groupId><artifactId>barcode-label-suite</artifactId><version>0.8.0</version></parent>
     <artifactId>barcode-label-app</artifactId>
+    <repositories>
+        <!-- Serves desktop-updater straight from its GitHub tags; only the app needs it. -->
+        <repository><id>jitpack.io</id><url>https://jitpack.io</url></repository>
+    </repositories>
     <dependencies>
         <dependency><groupId>${project.groupId}</groupId><artifactId>barcode-label-fx-batch</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></dependency>
+        <!-- Offers new releases of the installed app and installs them (BarcodeLabelSuiteApp.start). -->
+        <dependency><groupId>com.github.MohamedSalah-13</groupId><artifactId>desktop-updater</artifactId></dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     </dependencies>
     <build>

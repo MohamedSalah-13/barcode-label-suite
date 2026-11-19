@@ -4,6 +4,12 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **The installed app updates itself.** Each release now carries a Windows installer, `BarcodeLabelSuite-<version>-setup.exe`, beside the zip. An installed copy looks for a newer release shortly after it starts and every six hours, offers it in the interface language, and on "Update now" downloads the installer, checks its SHA-256, closes (keeping the label being designed), installs and reopens. **Check for updates**, beside the language menu, looks at once; its tooltip shows the installed version. This uses the [desktop-updater](https://github.com/MohamedSalah-13/desktop-updater) library. A copy run from the IDE or unzipped from an older release has no updater or no version to compare, so it is not offered updates; copies of 0.8.0 and earlier have to install the first installer by hand.
+- `package.ps1 -Type exe` builds a per-user installer (`--win-per-user-install`) with a fixed upgrade code, so a newer installer replaces the installed version instead of installing beside it. The release workflow builds it and makes sure WiX 3 is on the runner.
+
 ## [0.8.0] - 2026-11-17
 
 ### Added
