@@ -1,0 +1,103 @@
+{
+  "schemaVersion" : 2,
+  "id" : "3f58c1af-90e6-4a3e-bff0-1de3b075a265",
+  "name" : "Dual preview",
+  "page" : {
+    "mode" : "ROLL",
+    "pageSize" : {
+      "width" : 40.0,
+      "height" : 25.0
+    },
+    "margins" : {
+      "top" : 0.0,
+      "right" : 0.0,
+      "bottom" : 0.0,
+      "left" : 0.0
+    },
+    "orientation" : "PORTRAIT",
+    "sheetLayout" : null
+  },
+  "elements" : [ {
+    "type" : "text",
+    "frame" : {
+      "id" : "55e18054-48d6-460a-bfd4-2b46d02cbaf6",
+      "name" : "اسم المنتج",
+      "bounds" : {
+        "x" : 0.0,
+        "y" : 0.0,
+        "width" : 23.56,
+        "height" : 2.5
+      },
+      "rotationDegrees" : 0.0,
+      "zIndex" : 0,
+      "visible" : true,
+      "locked" : false
+    },
+    "textTemplate" : "منتج تجريبي",
+    "fontFamily" : "Arial",
+    "fontSizePoints" : 6.5,
+    "color" : "#000000",
+    "bold" : true,
+    "italic" : false,
+    "alignment" : "LEFT"
+  }, {
+    "type" : "text",
+    "frame" : {
+      "id" : "6f25953e-eb3a-4acc-aae7-16ca04cb8cae",
+      "name" : "السعر",
+      "bounds" : {
+        "x" : 24.32,
+        "y" : 0.0,
+        "width" : 13.68,
+        "height" : 2.5
+      },
+      "rotationDegrees" : 0.0,
+      "zIndex" : 1,
+      "visible" : true,
+      "locked" : false
+    },
+    "textTemplate" : "250 ج.م",
+    "fontFamily" : "Arial",
+    "fontSizePoints" : 6.5,
+    "color" : "#000000",
+    "bold" : true,
+    "italic" : false,
+    "alignment" : "RIGHT"
+  }, {
+    "type" : "barcode",
+    "frame" : {
+      "id" : "2492fc1a-8e4a-4404-94d0-46b44a504b87",
+      "name" : "باركود",
+      "bounds" : {
+        "x" : 0.0,
+        "y" : 2.75,
+        "width" : 38.0,
+        "height" : 8.75
+      },
+      "rotationDegrees" : 0.0,
+      "zIndex" : 2,
+      "visible" : true,
+      "locked" : false
+    },
+    "dataTemplate" : "100025",
+    "symbology" : "CODE_128",
+    "moduleWidthMm" : 0.25,
+    "quietZoneMm" : 2.5,
+    "showHumanReadableText" : true
+  } ],
+  "createdAt" : "2026-11-19T18:38:51.670797400Z",
+  "updatedAt" : "2026-11-19T18:38:51.841848700Z",
+  "dualLayout" : {
+    "margins" : {
+      "top" : 0.5,
+      "right" : 1.0,
+      "bottom" : 0.5,
+      "left" : 1.0
+    },
+    "splitPositionMm" : null,
+    "gapMm" : 1.0,
+    "showGuide" : true,
+    "guideColor" : "#94A3B8",
+    "dashedGuide" : true
+  }
+}

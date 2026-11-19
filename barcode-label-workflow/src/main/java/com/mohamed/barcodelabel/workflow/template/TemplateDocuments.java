@@ -39,7 +39,6 @@ public final class TemplateDocuments {
 
     public LabelTemplate withPage(LabelTemplate source, com.mohamed.barcodelabel.model.page.PageDefinition page) {
         Objects.requireNonNull(source, "source");
-        return new LabelTemplate(source.schemaVersion(), source.id(), source.name(), Objects.requireNonNull(page, "page"),
-                source.elements(), source.createdAt(), java.time.Instant.now());
+        return source.withLayout(Objects.requireNonNull(page, "page"), source.dualLayout());
     }
 }

@@ -178,12 +178,23 @@ public final class LabelDesignerPane extends BorderPane {
             updateHistoryButtons();
             refreshProperties();
             int selected = session.selection().size();
+            if (session.template().dualLayout() != null && !session.template().contentFits()) {
+                status.setText(t("layout.overflow"));
+                return;
+            }
             status.setText(selected == 0 ? t("designer.noSelection")
                     : t("designer.selected", texts.count(Counted.ELEMENTS, selected)));
         });
         template.set(value);
         updateHistoryButtons();
         refreshProperties();
+    }
+
+    /** Opens the shared layout settings; applying them is one undoable edit. */
+    public void editLayout() {
+        var dialog = new LabelLayoutDialog(getTemplate(), texts);
+        if (getScene() != null) dialog.initOwner(getScene().getWindow());
+        dialog.showAndWait().ifPresent(session::changeLayout);
     }
 
     /** The panel that edits the selected element, inside its scroll pane. */
@@ -370,7 +381,9 @@ public final class LabelDesignerPane extends BorderPane {
         setButtonIcon(rectangle, Feather.SQUARE);
         setButtonIcon(image, Feather.IMAGE);
         for (Button button : List.of(text, barcode, qr, rectangle, image)) button.setMaxWidth(Double.MAX_VALUE);
-        VBox toolbox = new VBox(8, title, text, barcode, qr, rectangle, image, new Separator(),
+        Button layout = button(t("layout.title"), this::editLayout);
+        layout.setMaxWidth(Double.MAX_VALUE);
+        VBox toolbox = new VBox(8, layout, hint(t("layout.editHint")), new Separator(), title, text, barcode, qr, rectangle, image, new Separator(),
                 hint(t("designer.hintMultiSelect")),
                 hint(t("designer.hintArrows")),
                 hint(t("designer.hintShiftArrows")));

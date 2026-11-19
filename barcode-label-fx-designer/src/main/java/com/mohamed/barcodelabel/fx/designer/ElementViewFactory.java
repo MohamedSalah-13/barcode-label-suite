@@ -39,7 +39,7 @@ final class ElementViewFactory {
         double height = element.frame().bounds().height() * pixelsPerMm;
         Node content = switch (element) {
             case TextElement text -> textView(text, width, height, pixelsPerMm);
-            case BarcodeElement barcode -> barcodeView(barcode, width, height);
+            case BarcodeElement barcode -> barcodeView(barcode, width, height, pixelsPerMm);
             case ShapeElement shape -> shapeView(shape, width, height, pixelsPerMm);
             case ImageElement image -> imageView(image, width, height);
         };
@@ -85,7 +85,7 @@ final class ElementViewFactory {
         return frame;
     }
 
-    private Node barcodeView(BarcodeElement element, double width, double height) {
+    private Node barcodeView(BarcodeElement element, double width, double height, double pixelsPerMm) {
         try {
             double dpi = 150;
             int rasterWidth = Math.max(1, (int) Math.round(element.frame().bounds().width() * dpi / 25.4));
@@ -94,8 +94,9 @@ final class ElementViewFactory {
             ImageView image = new ImageView(SwingFXUtils.toFXImage(buffered, null));
             image.setPreserveRatio(true);
             image.setSmooth(false);
-            image.setFitWidth(width);
-            image.setFitHeight(height);
+            // Match the printer: centre the encoded symbol at its physical module width.
+            image.setFitWidth(buffered.getWidth() * 25.4 / dpi * pixelsPerMm);
+            image.setFitHeight(buffered.getHeight() * 25.4 / dpi * pixelsPerMm);
             return image;
         } catch (Exception exception) {
             Label error = new Label(element.symbology() + "\n" + element.dataTemplate());

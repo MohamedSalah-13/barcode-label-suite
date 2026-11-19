@@ -57,6 +57,10 @@ public final class BatchPreparationService {
 
     private List<BatchValidationIssue> validateConfiguration(LabelTemplate template, CsvDataset dataset, ColumnMapping mapping) {
         List<BatchValidationIssue> issues = new ArrayList<>();
+        if (template.dualLayout() != null && !template.contentFits()) {
+            issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.INVALID_LAYOUT,
+                    1, "", "", "Content does not fit both halves of the dual label"));
+        }
         for (String field : templateFields.scan(template)) {
             String column = mapping.fields().get(field);
             if (column == null) issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.UNMAPPED_FIELD,

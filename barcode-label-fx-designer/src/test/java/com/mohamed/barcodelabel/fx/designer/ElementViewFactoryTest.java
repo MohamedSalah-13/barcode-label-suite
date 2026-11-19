@@ -169,7 +169,8 @@ class ElementViewFactoryTest {
         assertNotNull(view.getImage());
         assertTrue(view.getImage().getWidth() > 0);
         assertTrue(view.isPreserveRatio());
-        assertEquals(30 * PX_PER_MM, view.getFitWidth(), 0.001);
+        assertEquals(view.getImage().getWidth() * 25.4 / 150 * PX_PER_MM, view.getFitWidth(), 0.001);
+        assertTrue(view.getFitWidth() < 30 * PX_PER_MM, "A narrow symbol must not stretch to fill the frame");
     }
 
     @Test

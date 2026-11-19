@@ -229,7 +229,7 @@ public final class TemplateEditSession {
         if (selection.isEmpty()) return;
         List<LabelElement> selected = template.elements().stream()
                 .filter(element -> selection.contains(element.frame().id())).toList();
-        var labelSize = template.page().labelSize();
+        var labelSize = template.designSize();
         boolean alignToLabel = selected.size() == 1;
         double minX = alignToLabel ? 0 : selected.stream().mapToDouble(e -> e.frame().bounds().x()).min().orElse(0);
         double maxX = alignToLabel ? labelSize.width()
@@ -253,6 +253,11 @@ public final class TemplateEditSession {
             };
             return ElementCopies.withBounds(element, fit(new RectMm(x, y, b.width(), b.height())));
         });
+    }
+
+    public void changeLayout(LabelTemplate value) {
+        apply(EditAction.CHANGE_LAYOUT, "Change label layout", current -> value);
+        pruneSelection();
     }
 
     public void undo() {
@@ -288,9 +293,9 @@ public final class TemplateEditSession {
     private void apply(EditAction action, String description, UnaryOperator<LabelTemplate> operation) {
         LabelTemplate before = template;
         LabelTemplate after = Objects.requireNonNull(operation.apply(before));
-        // Compare elements, not templates: withElements always stamps a new updatedAt, so whole templates
-        // never compare equal and an edit that changes nothing would still notify and add an undo step.
-        if (before.elements().equals(after.elements())) return;
+        // Compare editable content and settings, ignoring the timestamp so no-op edits do not enter history.
+        if (before.elements().equals(after.elements()) && before.page().equals(after.page())
+                && Objects.equals(before.dualLayout(), after.dualLayout())) return;
         template = after;
         undo.push(new HistoryEntry(action, description, before, after));
         redo.clear();
@@ -298,7 +303,7 @@ public final class TemplateEditSession {
     }
 
     private RectMm fit(RectMm requested) {
-        var size = template.page().labelSize();
+        var size = template.designSize();
         double width = Math.min(requested.width(), size.width());
         double height = Math.min(requested.height(), size.height());
         double x = Math.max(0, Math.min(requested.x(), size.width() - width));

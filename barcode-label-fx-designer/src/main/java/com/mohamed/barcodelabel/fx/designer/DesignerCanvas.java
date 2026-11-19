@@ -146,6 +146,7 @@ final class DesignerCanvas extends Pane {
                 .filter(element -> element.frame().visible())
                 .sorted((left, right) -> Integer.compare(left.frame().zIndex(), right.frame().zIndex()))
                 .forEach(this::addElementView);
+        addDuplicatePreview();
         getChildren().addAll(rubberBand, verticalGuide, horizontalGuide);
         refreshSelectionStyles();
     }
@@ -173,6 +174,9 @@ final class DesignerCanvas extends Pane {
         // The wrapper is unmanaged, so no layout pass sizes it: without this it stays 0 x 0, which hides
         // its content, its selection border and its resize handle, and breaks rubber-band hit testing.
         wrapper.autosize();
+        var origin = renderedTemplate.contentAreas().getFirst();
+        wrapper.setTranslateX(origin.x() * pixelsPerMm());
+        wrapper.setTranslateY(origin.y() * pixelsPerMm());
         wrapper.setRotate(element.frame().rotationDegrees());
         if (element.frame().locked()) wrapper.getStyleClass().add("locked-element");
 
@@ -197,6 +201,38 @@ final class DesignerCanvas extends Pane {
         });
         elementViews.put(element.frame().id(), wrapper);
         getChildren().add(wrapper);
+    }
+
+    private void addDuplicatePreview() {
+        var layout = renderedTemplate.dualLayout();
+        if (layout == null) return;
+        var areas = renderedTemplate.contentAreas();
+        for (LabelElement element : renderedTemplate.elements().stream()
+                .filter(e -> e.frame().visible()).sorted(java.util.Comparator.comparingInt(e -> e.frame().zIndex())).toList()) {
+            var source = elementViews.get(element.frame().id());
+            var copy = new StackPane(viewFactory.create(element, pixelsPerMm()));
+            copy.getStyleClass().add("dual-label-copy");
+            copy.setManaged(false);
+            copy.setMouseTransparent(true);
+            copy.layoutXProperty().bind(source.layoutXProperty());
+            copy.layoutYProperty().bind(source.layoutYProperty());
+            copy.setTranslateX(areas.get(1).x() * pixelsPerMm());
+            copy.setTranslateY(areas.get(1).y() * pixelsPerMm());
+            copy.setPrefSize(source.getPrefWidth(), source.getPrefHeight());
+            copy.resize(source.getPrefWidth(), source.getPrefHeight());
+            copy.setRotate(element.frame().rotationDegrees());
+            getChildren().add(copy);
+        }
+        if (layout.showGuide()) {
+            double y = layout.splitAt(renderedTemplate.page().labelSize()) * pixelsPerMm();
+            Line divider = new Line(0, y, getPrefWidth(), y);
+            divider.setId("dual-label-guide");
+            divider.setManaged(false);
+            divider.setMouseTransparent(true);
+            divider.setStroke(Color.web(layout.guideColor()));
+            if (layout.dashedGuide()) divider.getStrokeDashArray().setAll(5.0, 4.0);
+            getChildren().add(divider);
+        }
     }
 
     private ContextMenu buildElementContextMenu(UUID id) {
@@ -292,7 +328,7 @@ final class DesignerCanvas extends Pane {
         Double snapDeltaY = null;
         Double guideYmm = null;
 
-        var labelSize = renderedTemplate.page().labelSize();
+        var labelSize = renderedTemplate.designSize();
         double[][] horizontalTargets = {
                 {left, 0},
                 {centerX, labelSize.width() / 2},
@@ -339,14 +375,14 @@ final class DesignerCanvas extends Pane {
 
         if (snapDeltaX != null) {
             currentDeltaX += snapDeltaX;
-            double x = guideXmm * pixelsPerMm();
+            double x = (guideXmm + renderedTemplate.contentAreas().getFirst().x()) * pixelsPerMm();
             verticalGuide.setStartX(x); verticalGuide.setEndX(x);
             verticalGuide.setStartY(0); verticalGuide.setEndY(getHeight());
             verticalGuide.setVisible(true);
         }
         if (snapDeltaY != null) {
             currentDeltaY += snapDeltaY;
-            double y = guideYmm * pixelsPerMm();
+            double y = (guideYmm + renderedTemplate.contentAreas().getFirst().y()) * pixelsPerMm();
             horizontalGuide.setStartY(y); horizontalGuide.setEndY(y);
             horizontalGuide.setStartX(0); horizontalGuide.setEndX(getWidth());
             horizontalGuide.setVisible(true);

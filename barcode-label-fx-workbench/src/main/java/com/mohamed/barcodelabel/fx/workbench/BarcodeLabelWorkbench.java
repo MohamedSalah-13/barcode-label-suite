@@ -155,10 +155,12 @@ public final class BarcodeLabelWorkbench extends BorderPane {
         });
         presetBox.setPromptText(t("workbench.paperPrompt")); presetBox.setPrefWidth(290);
         Button applyPreset = iconButton(Feather.CHECK_SQUARE, "workbench.applyPaper");
+        Button labelLayout = iconButton(Feather.LAYOUT, "workbench.labelLayout");
+        labelLayout.setOnAction(event -> designer.editorPane().editLayout());
         Button customPaper = iconButton(Feather.SLIDERS, "workbench.customPaper");
         openButton.setOnAction(event -> chooseOpen()); saveButton.setOnAction(event -> save(false)); saveAsButton.setOnAction(event -> save(true));
         importButton.setOnAction(event -> chooseCsv()); applyPreset.setOnAction(event -> applyPreset()); customPaper.setOnAction(event -> customPaper());
-        HBox bar = new HBox(8, openButton, saveButton, saveAsButton, new Separator(), presetBox, applyPreset, customPaper,
+        HBox bar = new HBox(8, openButton, saveButton, saveAsButton, new Separator(), presetBox, applyPreset, customPaper, labelLayout,
                 deletePaper, new Separator(), importButton);
         bar.setAlignment(Pos.CENTER_LEFT); bar.setPadding(new Insets(10)); bar.getStyleClass().add("workbench-toolbar"); return bar;
     }
@@ -225,8 +227,12 @@ public final class BarcodeLabelWorkbench extends BorderPane {
     private void applyPreset() {
         PaperPreset selected = presetBox.getValue();
         if (selected == null) { status.setText(t("workbench.choosePaperFirst")); return; }
-        designer.setTemplate(documents.withPage(getTemplate(), selected.page()));
-        status.setText(t("workbench.paperApplied", presetName(selected)));
+        try {
+            designer.setTemplate(documents.withPage(getTemplate(), selected.page()));
+            status.setText(t("workbench.paperApplied", presetName(selected)));
+        } catch (IllegalArgumentException exception) {
+            status.setText(t("workbench.layoutDoesNotFit"));
+        }
     }
 
     private void customPaper() {
@@ -237,12 +243,19 @@ public final class BarcodeLabelWorkbench extends BorderPane {
 
     /** Adds the size to the paper list, or replaces the one with its name, saves the list and applies the size. */
     void saveCustomPaper(PaperPreset preset) {
+        LabelTemplate updated;
+        try {
+            updated = documents.withPage(getTemplate(), preset.page());
+        } catch (IllegalArgumentException exception) {
+            status.setText(t("workbench.layoutDoesNotFit"));
+            return;
+        }
         List<PaperPreset> next = new java.util.ArrayList<>(savedPapers);
         int existing = indexOf(next, preset.id());
         if (existing >= 0) next.set(existing, preset); else next.add(preset);
         storePapers(next);
         refreshPresets(preset);
-        designer.setTemplate(documents.withPage(getTemplate(), preset.page()));
+        designer.setTemplate(updated);
         status.setText(t("workbench.customSaved", preset.displayName()));
     }
 

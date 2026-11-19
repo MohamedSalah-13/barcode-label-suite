@@ -65,6 +65,8 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
     public BufferedImage render(RenderRequest request) throws RenderException {
         Objects.requireNonNull(request, "request");
         LabelTemplate template = resolveTemplate(request.template(), request.data());
+        if (template.dualLayout() != null && !template.contentFits())
+            throw new RenderException("Content does not fit both halves of the dual label");
         var labelSize = template.page().labelSize();
         int width = positivePixels(labelSize.width(), request.dpi());
         int height = positivePixels(labelSize.height(), request.dpi());
@@ -75,10 +77,19 @@ public final class BufferedImageLabelRenderer implements LabelRenderer<BufferedI
             configure(graphics);
             graphics.setColor(Color.WHITE);
             graphics.fillRect(0, 0, width, height);
-            template.elements().stream()
+            for (var area : template.contentAreas()) {
+                Graphics2D copy = (Graphics2D) graphics.create();
+                try {
+                    copy.translate(UnitConversions.mmToPixels(area.x(), request.dpi()),
+                            UnitConversions.mmToPixels(area.y(), request.dpi()));
+                    copy.clip(new Rectangle2D.Double(0, 0, UnitConversions.mmToPixels(area.width(), request.dpi()),
+                            UnitConversions.mmToPixels(area.height(), request.dpi())));
+                    template.elements().stream()
                     .filter(element -> element.frame().visible())
                     .sorted(Comparator.comparingInt(element -> element.frame().zIndex()))
-                    .forEach(element -> renderUnchecked(graphics, element, request.dpi()));
+                    .forEach(element -> renderUnchecked(copy, element, request.dpi()));
+                } finally { copy.dispose(); }
+            }
         } catch (UncheckedRenderException exception) {
             throw exception.cause;
         } finally {

@@ -319,6 +319,12 @@ public final class UniversalPrintPane extends BorderPane {
             updatePrintAvailability();
             return;
         }
+        if (getTemplate().dualLayout() != null && !getTemplate().contentFits()) {
+            generation.incrementAndGet();
+            sheetPlan = null; pages = List.of(); preview.setImage(null);
+            status.setText(t("print.dualOverflow"));
+            updateNavigation(); updatePrintAvailability(); return;
+        }
         previewRecords = getRecords().isEmpty() ? List.of(manualRecord(true)) : getRecords();
         try {
             sheetPlan = planner.layout(getTemplate().page(), previewRecords.size(), startSlotIndex());
@@ -350,7 +356,7 @@ public final class UniversalPrintPane extends BorderPane {
         Thread.ofVirtual().name("universal-label-preview").start(() -> {
             try {
                 BufferedImage image = renderPage(currentTemplate, currentRecords, page, 96, true);
-                Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(SwingFXUtils.toFXImage(image, null)); status.setText(t(manual ? "print.manualPreview" : "print.previewReady")); } });
+                Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(SwingFXUtils.toFXImage(image, null)); status.setText(t(currentTemplate.dualLayout() != null ? "print.dualReady" : manual ? "print.manualPreview" : "print.previewReady")); } });
             } catch (Exception exception) {
                 Platform.runLater(() -> { if (generation.get() == request) { preview.setImage(null); status.setText(t("print.previewError", rootMessage(exception))); } });
             }

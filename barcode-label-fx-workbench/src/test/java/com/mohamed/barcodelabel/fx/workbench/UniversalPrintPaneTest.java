@@ -60,6 +60,27 @@ class UniversalPrintPaneTest {
     }
 
     @Test
+    void dualOverflowClearsPreviewAndDisablesPrinting() {
+        onFx(() -> {
+            var page = new com.mohamed.barcodelabel.model.page.PageDefinition(
+                    com.mohamed.barcodelabel.model.page.PageMode.ROLL,
+                    new com.mohamed.barcodelabel.model.geometry.DimensionsMm(40, 25),
+                    com.mohamed.barcodelabel.model.geometry.InsetsMm.ZERO,
+                    com.mohamed.barcodelabel.model.page.PageOrientation.PORTRAIT, null);
+            var element = new TextElement(ElementFrame.create("Too tall", new RectMm(0, 0, 20, 20), 0),
+                    "Test", "Arial", 10, "#000000", false, false, TextAlignment.LEFT);
+            var template = LabelTemplate.create("Dual", page, List.of(element))
+                    .withLayout(page, com.mohamed.barcodelabel.model.page.DualLabelLayout.standard());
+            var pane = new UniversalPrintPane(UiLanguage.ENGLISH);
+            pane.setTemplate(template);
+            assertNotNull(labelOrNull(pane, ENGLISH.get("print.dualOverflow")));
+            assertTrue(imageView(pane).getImage() == null);
+            assertTrue(button(pane, ENGLISH.get("print.print")).isDisabled());
+            return null;
+        });
+    }
+
+    @Test
     void rendersAndNavigatesAPlannedMultiPageSheet() {
         UniversalPrintPane pane = onFx(UniversalPrintPane::new);
         List<Map<String, ?>> records = java.util.stream.IntStream.range(0, 22)

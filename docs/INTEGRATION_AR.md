@@ -115,6 +115,21 @@ LabelTemplate resolved = new TemplateFieldResolver().resolve(template, product, 
 
 ## 7. حفظ القالب واستعادته
 
+يدعم `LabelTemplate` إعدادًا اختياريًا `dualLayout` من النوع `DualLabelLayout` لتكرار تصميم واحد أعلى وأسفل الملصق. يبقى المنشئ القديم ذو المعاملات السبعة متاحًا. من يستخدم record patterns يحتاج إلى إضافة المكوّن الثامن.
+
+```java
+var page = new PageDefinition(PageMode.ROLL, new DimensionsMm(40, 25),
+        InsetsMm.ZERO, PageOrientation.PORTRAIT, null);
+var template = LabelTemplate.create("Dual product", page, elements)
+        .withLayout(page, DualLabelLayout.standard());
+```
+
+إحداثيات `elements` محلية لمساحة التصميم المشتركة التي يعيدها `designSize()`؛ تعيد `contentAreas()` موضعيها داخل الملصق الكامل. يستخدم الإعداد الافتراضي هامشًا علويًا وسفليًا 0.5 مم، ويمينًا ويسارًا 1 مم، وفراغًا مركزيًا 1 مم، فتكون مساحة التصميم المشترك 38 × 11.5 مم. `splitPositionMm == null` يتابع منتصف الملصق عند تغيير ارتفاعه؛ والقيمة العددية تحدد مسافة ثابتة من أعلاه. عند اختلاف مساحة الجزأين يحدد الجزء الأصغر مساحة التصميم لكليهما.
+
+يكرر `BufferedImageLabelRenderer` العناصر بعد ربط بيانات السجل مرة واحدة، دون تغيير عدد السجلات أو المواضع في مخطط الطباعة. `contentFits()` يفحص إطارات العناصر الظاهرة مع الدوران؛ يرفض المصيّر تجاوز مساحة الجزأين، ويعيد إعداد الدفعات مشكلة `INVALID_LAYOUT`. تبقى صلاحية ترميز الباركود ومقاسه مسؤولية فاحص الباركود الموجود. إعدادات دليل التقسيم تخص المصمم فقط.
+
+تستخدم القوالب المزدوجة `schemaVersion = 2`، وتظل قوالب الإصدار 1 قابلة للقراءة. تُحفظ خاصية التخطيط عند استبدال العناصر أو حل الحقول أو تغيير الصفحة؛ الإصدارات القديمة من البرنامج ترفض الإصدار 2 بدل طباعة نصف واحد بصمت.
+
 ```java
 TemplateJsonService json = new TemplateJsonService();
 json.write(Path.of("product-label.json"), template);

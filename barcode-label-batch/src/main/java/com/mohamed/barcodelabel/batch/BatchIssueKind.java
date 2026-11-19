@@ -19,7 +19,9 @@ public enum BatchIssueKind {
     /** The printer's encoder rejected the resolved barcode. */
     INVALID_BARCODE(false),
     /** Anything else; only {@code message} describes it. */
-    OTHER(false);
+    OTHER(false),
+    /** The shared design cannot fit both halves of the label. */
+    INVALID_LAYOUT(true);
 
     private final boolean configuration;
 

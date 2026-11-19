@@ -47,6 +47,7 @@ final class BatchTexts {
             case EMPTY_BARCODE, INVALID_BARCODE -> barcodeTexts.describe(issue);
             case TOTAL_LIMIT_EXCEEDED -> get("issue.TOTAL_LIMIT_EXCEEDED", issue.value());
             case OTHER -> issue.message();
+            case INVALID_LAYOUT -> get("issue.INVALID_LAYOUT");
         };
         return issue.kind().configuration() ? get("issue.configuration", severity, what)
                 : get("issue.inRow", severity, issue.sourceRow(), what);
