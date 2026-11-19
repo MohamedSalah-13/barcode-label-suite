@@ -48,3 +48,14 @@ python scripts/benchmarks/compare_batch.py docs/benchmarks/batch-baseline-2026-1
 ```
 
 The runner also saves `source-hashes.json` and Git status so a run on uncommitted production changes can be identified. Snapshot those files with the results before another run overwrites `target/batch-benchmark` or `clean` deletes it. The benchmark Java source, input generation, scenario matrix and measurement settings were unchanged between the saved baseline and optimized runs.
+
+
+For the barcode-cache experiment, `prepare` starts with a fresh `BarcodeValidationCache` and
+`expandedPreflight` shares that cache, matching the composed desktop workbench. The cache remains
+strongly reachable for the whole measurement, including the last post-GC reading. Each warm-up
+iteration uses its own preparation service, preserving the original cold encoding work during
+warm-up; warm-up diagnostics never enter the measured cache. Input generation, six scenarios,
+three forks and JVM flags remain unchanged. Compare this run with
+`docs/benchmarks/batch-optimized-2026-11-18.jsonl` (the compressed-record implementation).
+The second check still resolves every expanded row, including blank-field checks and current row
+provenance; this experiment measures reuse of encoding diagnostics, not skipping CSV validation.

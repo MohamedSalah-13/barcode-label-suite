@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.fx.workbench;
 
+import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
+
 import com.mohamed.barcodelabel.fx.designer.VisualLabelDesigner;
 import com.mohamed.barcodelabel.fx.i18n.Counted;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
@@ -94,9 +96,13 @@ public final class BarcodeLabelWorkbench extends BorderPane {
 
     /** A workbench in this language: Arabic right to left, English left to right. */
     public BarcodeLabelWorkbench(LabelTemplate initialTemplate, UiLanguage language) {
+        this(initialTemplate, language, new BarcodeValidationCache());
+    }
+
+    public BarcodeLabelWorkbench(LabelTemplate initialTemplate, UiLanguage language, BarcodeValidationCache cache) {
         texts = UiTexts.load(BarcodeLabelWorkbench.class, "messages", language);
         designer = new VisualLabelDesigner(initialTemplate, language);
-        printPane = new UniversalPrintPane(language);
+        printPane = new UniversalPrintPane(language, cache);
         setNodeOrientation(language.orientation());
         openButton.setText(t("workbench.open")); saveButton.setText(t("workbench.save"));
         saveAsButton.setText(t("workbench.saveAs")); importButton.setText(t("workbench.importCsv"));

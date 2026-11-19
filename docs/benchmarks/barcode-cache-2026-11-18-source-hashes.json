@@ -1,0 +1,410 @@
+[
+  {
+    "Hash": "4D3EA80B7DF959737012AAFD27CAA5C8D7D298F65814F5CE60BCDF1D874A547A",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-app\\src\\main\\java\\com\\mohamed\\barcodelabel\\app\\BarcodeLabelSuiteApp.java"
+  },
+  {
+    "Hash": "7E9D85A535EF5898AF46930E41711D2D1D745D5864AE0EE6061371226C91389E",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-app\\src\\main\\java\\com\\mohamed\\barcodelabel\\app\\BarcodeLabelSuiteLauncher.java"
+  },
+  {
+    "Hash": "34A556892141C4531FFA58A1BB6340A72609BD169DA2E316CA74339B64E58D57",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-app\\src\\main\\java\\com\\mohamed\\barcodelabel\\app\\LanguageSetting.java"
+  },
+  {
+    "Hash": "7A30B5CE76471EA0FA1994692179A832B2A338C44E1C72B25AD0D51A741DC6A2",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-app\\src\\main\\java\\com\\mohamed\\barcodelabel\\app\\LastDesign.java"
+  },
+  {
+    "Hash": "31FE611071FE581FC268FF8E9503185B1413CF39753C70D5544E1E08D7DC1452",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\BarcodePreflight.java"
+  },
+  {
+    "Hash": "7C6BFB3800A90B694BF7593197C9FEE8484EECE462E9380E92AA910EAFA39F46",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\BarcodeValidationCache.java"
+  },
+  {
+    "Hash": "A9802FD0597EC0CB22661540E2D4C256F7D91D69F53E101240CB1B1109F57954",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\BatchIssueKind.java"
+  },
+  {
+    "Hash": "12D0E0E099E8FD5306DD7367E20CF582C7F3BE85FCECAF1083BBCD43F1C467DF",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\BatchPreparationResult.java"
+  },
+  {
+    "Hash": "B61BB4E16D4B125E75DA716369399E74BF73E8A192184F35C35753073FB02C3E",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\BatchPreparationService.java"
+  },
+  {
+    "Hash": "D1A14C76134B7B60C2302357EAA086233C05E66EDB710C6639B6FED9C75EA03B",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\BatchValidationIssue.java"
+  },
+  {
+    "Hash": "0C05610767AFC81109DCD95A00CEE44886EA3D69570419DA74DB1F3ADE32ACAA",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\ColumnMapping.java"
+  },
+  {
+    "Hash": "7B6C3A672E87FD53D8421895D043184F9CE2E06AAA1D7C8A55035AF66C41B299",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\ColumnMatcher.java"
+  },
+  {
+    "Hash": "9460802804031857CC047FA1987562A15DEAC01B7CF740AEA40F31EA856D75BD",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\MappingProfileStore.java"
+  },
+  {
+    "Hash": "8EB7466C82FB3E23F7CF71749299A92AD7557B164D6E1E65E41788F8AF4196C9",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\TemplateFields.java"
+  },
+  {
+    "Hash": "541CA6531AF14850049289C94C6158202093EC71B48AB2A15AFA81F4344CB789",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\batch\\ValidationSeverity.java"
+  },
+  {
+    "Hash": "89251323331C04CB561A883A74EB5519FF8A208D50653C8E7DAD177FED64FFF5",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-data\\src\\main\\java\\com\\mohamed\\barcodelabel\\data\\MissingFieldPolicy.java"
+  },
+  {
+    "Hash": "2E74DA71902645EA408491E4165819196EAD0FB17AE75F0BB686083CF43022B1",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-data\\src\\main\\java\\com\\mohamed\\barcodelabel\\data\\TemplateFieldResolver.java"
+  },
+  {
+    "Hash": "6EE4E66A93619C648176CF2C2BB5D264B67B4B2CC73A43082C9B39ACFFF57A4A",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-data\\src\\main\\java\\com\\mohamed\\barcodelabel\\data\\TemplateJsonService.java"
+  },
+  {
+    "Hash": "0DFE55165CA5C25929110491A5AB826E58B0E0408B0EAA15A564CC5FD3D30E99",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-data\\src\\main\\java\\module-info.java"
+  },
+  {
+    "Hash": "414819AE327D32B452561E0941DC14B75A19E46C58529CCDE1351DCD74783F5C",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\batch\\BatchDataMappingPane.java"
+  },
+  {
+    "Hash": "C2746CECD8E0073B82896C5B1FF2453B078942230B1E74DA2D5DAF62C84CF216",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\batch\\BatchProductionWorkbench.java"
+  },
+  {
+    "Hash": "B2E4E1F9BBA68560B0840C46A53C37F1E0EB1CF8BB5BF1336F1675F555BD3711",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-batch\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\batch\\BatchTexts.java"
+  },
+  {
+    "Hash": "99BA77DC9B32FF2DE9494E189B058B9360F75FB69EA1C8BA1655BE87DBC290A8",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\DesignerCanvas.java"
+  },
+  {
+    "Hash": "691C991B33B7271C82971936F2028AF676D0FE484E13F0FFCB5F48C359213C42",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\ElementViewFactory.java"
+  },
+  {
+    "Hash": "30969D7C531AAD3E6659431E19FD0177F9B30742571289D544A7A5F194ED8A2A",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\LabelDesignerPane.java"
+  },
+  {
+    "Hash": "24FAE8A2C3DD54ADEA051649412E851F2A0A25F0EB846F6F6C2642682B753C8D",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\model\\EditAction.java"
+  },
+  {
+    "Hash": "0A8274AB9A3E3DC0280E8C962E01889742D19B84EB1A8487892BDD1419FC2313",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\model\\EditorAlignment.java"
+  },
+  {
+    "Hash": "76A6D3DC21A26E3401DB6AEA3AE90ADF04FAD9C5F7EE96CA77DA45EAD91DF030",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\model\\ElementCopies.java"
+  },
+  {
+    "Hash": "92B99BE2530B6C2117D8618F9A390752626E9B79E65CFFB1E8B07C56DC72E153",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\model\\TemplateEditSession.java"
+  },
+  {
+    "Hash": "837175E83F2D68CC2A296C4687F5D7524FFA26D3600EDDBE75EA1F9C19E34756",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\designer\\VisualLabelDesigner.java"
+  },
+  {
+    "Hash": "0AC6F799B756ED44B70CABE4D43478A717C6E2B3BA1EFDE0267E1C78405E91CA",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\i18n\\ArabicCount.java"
+  },
+  {
+    "Hash": "72085F17845EC514A9BA35D3775FC8599DD31B60E24945EF224C871A3A46D40B",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\i18n\\Counted.java"
+  },
+  {
+    "Hash": "C4594EAD9473A4FCF374E0E5B785C3252C881746381700F4D99C2CEAC98DEB43",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\i18n\\UiLanguage.java"
+  },
+  {
+    "Hash": "031568CFC582FDF9FA045903227BB32DBAEC585F811AC2BFCBD6F1E7D8EA4A44",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-designer\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\i18n\\UiTexts.java"
+  },
+  {
+    "Hash": "8AB51956E066473B1A94D0802C5EC78CCC71F393E965C174EFDEBABB65841868",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\BarcodeIssueTexts.java"
+  },
+  {
+    "Hash": "D56A5164627761031959E2984D8F21E5D3ACB72441F7E157A7B088C13BDFCBA7",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\BarcodeLabelWorkbench.java"
+  },
+  {
+    "Hash": "3E4E26DA924AB86B6E773B13AA4C1F88DA198B2AFCFAF0AE2690245236FD72FD",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\CalibrationDialog.java"
+  },
+  {
+    "Hash": "B0173293093BC4704C5A96D62F413752AEB92B6C3AFBB1FFCD2E161B5DE005DE",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\CalibrationSheet.java"
+  },
+  {
+    "Hash": "DD7E8DC1AA9A90ED28DC108A7E588C94AA2E6D8B9D3202986852BF8A1F523C89",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\CalibrationStore.java"
+  },
+  {
+    "Hash": "C94555178268BDB777362C8BF4C73FA8B6661793DB9C33D4C1A91D281127E35F",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\CustomPaperDialog.java"
+  },
+  {
+    "Hash": "1BCDBDBD7FD17100A4D249242D322F20CA85954E5AA1F1010AC2B18DEDF8BE4D",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\CustomPaperStore.java"
+  },
+  {
+    "Hash": "71CFE75D42E59AEE8E8B5A882F17A375CB9633191FFF5942125C81E0AC0DF87F",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\PreferencesPaperStore.java"
+  },
+  {
+    "Hash": "A1408A604EC399772289F77E89FBEA1CA54EE47EEEE74937C0D2453F48F62993",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-fx-workbench\\src\\main\\java\\com\\mohamed\\barcodelabel\\fx\\workbench\\UniversalPrintPane.java"
+  },
+  {
+    "Hash": "048E67B334199C0F8CD00159EA5C405B2B53DEA6EDDD28C1120879F404EBEC85",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\color\\LabelColors.java"
+  },
+  {
+    "Hash": "80D21BE423B842DED7C4D9D47A3C7E3A96C4FE80600ED93DB54B92179878C114",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\BarcodeElement.java"
+  },
+  {
+    "Hash": "245ABA65C27C8187BA817A8B786FFAAD4EB7BDCCD56D1BA76F3D6D0BCD210256",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\ElementFrame.java"
+  },
+  {
+    "Hash": "EFF0D170AF2BA9E9642D4F73FF79C516CCB9B3BC7819BCE87BF289C7541F95FD",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\ImageElement.java"
+  },
+  {
+    "Hash": "8FD713C74558B2A50DE956D3499A0FE2CD87A28C1418E00B395143824F55310F",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\ImageFit.java"
+  },
+  {
+    "Hash": "DCBCB0B331331B7596528BCB359D087034EBB85BAF9FA479DAEFE307D1B41133",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\LabelElement.java"
+  },
+  {
+    "Hash": "80A0A7C934FF4C9975A3BE1DDFA2AA95B5A9B602691029FB1C29028105A89A3A",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\ShapeElement.java"
+  },
+  {
+    "Hash": "6F922D4218B60F2507D0876F583256DE1DB134EBFA88C978B21A733A63D15A53",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\ShapeType.java"
+  },
+  {
+    "Hash": "2089AE81605B73C82D48ADF2DC5B85340B7B36BA9020A473D13AA6B2A21662B8",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\Symbology.java"
+  },
+  {
+    "Hash": "CB12B3A36D0EAE188F63989FBFD3C6208714986EE2F14C19A6287DA0BABDB163",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\TextAlignment.java"
+  },
+  {
+    "Hash": "F3151F6B4B83506A40B35CA035A6863DAB419C8528FC293E288E15C6B6529BB8",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\element\\TextElement.java"
+  },
+  {
+    "Hash": "A8BC21C56299A836567F49C38B2DAF32B8E452AF716C57BD8E6DAA73E005F9AC",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\geometry\\DimensionsMm.java"
+  },
+  {
+    "Hash": "96D569D9D58BC01CE721C0B3C2721D1286EA191DADD3F1F5642A617D590B0F7B",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\geometry\\InsetsMm.java"
+  },
+  {
+    "Hash": "3FB761C4BC95113A11FBCDBA29DAB96CD0AA0A4B0932DF08C1D23C412CA706A3",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\geometry\\RectMm.java"
+  },
+  {
+    "Hash": "0E09D5571FA713F1746FD97A1149E9C66106922CB6F5E96F48D5EEEDF8431B90",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\internal\\Checks.java"
+  },
+  {
+    "Hash": "3D2E262581E4AC015F466835D455490C839645CE736BE674395BC1D98123E2DC",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\LabelTemplate.java"
+  },
+  {
+    "Hash": "6E63C6E7F067F7D3E4B85DA98191691E77C7064B2C8E9C3E40D159B0B04F3F34",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\page\\PageDefinition.java"
+  },
+  {
+    "Hash": "7D3C2308D04D145F8BC515317CC310537A94265E4A64137163B38B206E472419",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\page\\PageMode.java"
+  },
+  {
+    "Hash": "756F91F16558AA14BEA0EA59F52CA43E06E922B335910159AF8361FF2BC940E0",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\page\\PageOrientation.java"
+  },
+  {
+    "Hash": "61F4F02CF91739864C53AACC86864CA0943C1CD435E9E8B85A7E22F24E75AAB5",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\page\\SheetLayout.java"
+  },
+  {
+    "Hash": "A471A7C82F557A6F912D950BC08D2EC4B0173184290C6939B0419FE4C52A5EFC",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\com\\mohamed\\barcodelabel\\model\\unit\\UnitConversions.java"
+  },
+  {
+    "Hash": "9868F1F92825506F811AF5A302EBC53FAAFA4730BDCF592A81D55854B19F864C",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-model\\src\\main\\java\\module-info.java"
+  },
+  {
+    "Hash": "9B11005C9CD81F3AD9CCA067327292F8E821C53E860924B83A5427D1113C6310",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\Java2DLabelPrinter.java"
+  },
+  {
+    "Hash": "B83545CF3DF3471A483B3CF2FAA4E5A3B4C1C2C5D4D61A7E5524D0B9593DE052",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\Java2DPrintException.java"
+  },
+  {
+    "Hash": "B9EC1268AB0BAD84A0E0B85E87FCD2DD061EE8A60BF827DF9B3AEEEC33B89737",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\PrintCancelledException.java"
+  },
+  {
+    "Hash": "8B4FCB379F2C1639DCB81ED7F622354AD6B2572678E17BE67BDAFAC0A0395692",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\PrinterCatalog.java"
+  },
+  {
+    "Hash": "FE72499CC5C58D2C3F58F92CD1BBE80D6965CF2B76EDDC11FCDB0C5C4D3507E5",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\PrinterDescriptor.java"
+  },
+  {
+    "Hash": "EB1B0179BB945449A04CF4D277A437B4CA81C5A29DAEA10CD5FA6CB468416ABB",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\PrinterNotFoundException.java"
+  },
+  {
+    "Hash": "C83AD91FA5BF9745DB3FD238EB93D9C164B6CECD407A4E8B13F7FC2E44743E68",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\PrintJobFailedException.java"
+  },
+  {
+    "Hash": "4BF2554AE54357D1EDD35C76352B4DD8F04A05AACF866F4E10112E72A26D03DF",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\SheetPageRenderer.java"
+  },
+  {
+    "Hash": "83A5D61D48A83F22D4690128DF69F491955D987746E993A8032685043597AFAF",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\SheetPreviewRequest.java"
+  },
+  {
+    "Hash": "FB8611F7B1E7FDF8504E1042ADB98CDFE63329248A5D62DCF9B6911F4395E8F5",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\java2d\\SheetPrintable.java"
+  },
+  {
+    "Hash": "1194B18A752F52A03BEC694F069681AE9B815EE8E01C2A23D6777EC6516485E4",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\LabelPlacement.java"
+  },
+  {
+    "Hash": "D104F56D5A3686B35B381A8851494260BA0232008624F5E070303604FC557F39",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\LabelPrinter.java"
+  },
+  {
+    "Hash": "828795C333605694E8C21DCA35F8982762B35D692F52C6E45EC8BA30C8BD1C6C",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\LabelPrintRequest.java"
+  },
+  {
+    "Hash": "B247EF8FE91AB99176C2D8A3990E545410A5371465002E10E88BEE7E62FFB603",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\PrintOffset.java"
+  },
+  {
+    "Hash": "57BFD1FD1E2BC60240ACFDF8B273B88CC666DD6A60ED41AD0A199F7CB5D2849A",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\PrintResult.java"
+  },
+  {
+    "Hash": "920268D6D7E3438630F607FCD5CC02958A3DFBB881C32125E313A1FA4C690AC9",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\SheetLayoutEngine.java"
+  },
+  {
+    "Hash": "8256A15AF9F9EE36FC03A19B63FE16D9ABA00722F3E55581A01E9B6723489CAA",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\com\\mohamed\\barcodelabel\\print\\SheetPage.java"
+  },
+  {
+    "Hash": "B8F4C6C03B3474045A348C364C4D62E5124E292A70B8A1BB8CFD023BE6F5058F",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-print\\src\\main\\java\\module-info.java"
+  },
+  {
+    "Hash": "6396026CA402C864AA13B278F3134F733A32C7C9375EDAFDBE41C5B621AC9AFE",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\java2d\\Barcode4jRasterizer.java"
+  },
+  {
+    "Hash": "849D34010B45CD90BD376B625C060D34F51FE2B2C59A66CC5CA76BE582651721",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\java2d\\BarcodeRasterizer.java"
+  },
+  {
+    "Hash": "A7ACFB55100DC92C2A5AD76D92BE3573F7C14221283B0290E0A54FE3D28DEEB2",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\java2d\\BufferedImageLabelRenderer.java"
+  },
+  {
+    "Hash": "41EB56A570572E91C219BCB66E21E12A18D52D84A2CB9CECA294ADD90C3A51CC",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\java2d\\CompositeBarcodeRasterizer.java"
+  },
+  {
+    "Hash": "0F4793FDA35EA9757A42C5BD7E5D4B402D828B4283A400E080BF91E09FAD230B",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\java2d\\FontFallback.java"
+  },
+  {
+    "Hash": "5A9566A2FCC80BF0E8F93CB58AD2AB5ECBFD6C9A665860C2A8F2E37894C51EFE",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render-java2d\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\java2d\\ZxingRasterizer.java"
+  },
+  {
+    "Hash": "02BF4BA0AF5A746C4CA880F39BA3C3CC596354EC264F8B009FBA810670B0B2BF",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\LabelRenderer.java"
+  },
+  {
+    "Hash": "F94FBB7841D63662CE9B4C55A459AA89F6472E21711D6E8D9F0CA247F74E70DD",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\RenderException.java"
+  },
+  {
+    "Hash": "B84E4C8AA9B06E51F65B773FEA5E39212A320A244E2FC93887D7E61077A8DFC0",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render\\src\\main\\java\\com\\mohamed\\barcodelabel\\render\\RenderRequest.java"
+  },
+  {
+    "Hash": "CD2E0E1DBFE0E5D54BF02861350AA86A6F9F29D8A7094CD538FA2574321099C9",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-render\\src\\main\\java\\module-info.java"
+  },
+  {
+    "Hash": "4AEBD99316BF20802C8C2C05103FF4655FBA7E979F56D735DC0D9B0E3D0D9F10",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\csv\\CsvDataset.java"
+  },
+  {
+    "Hash": "624F21AA92B872719C4F44D6746D185E98329469A0F2F4D2192B7CD0868BAB5C",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\csv\\CsvImportService.java"
+  },
+  {
+    "Hash": "FF35224A3E76A343CE6695203555D1A6CC9B83F74FCC4993D1A87EED52657ECD",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\data\\RepeatedList.java"
+  },
+  {
+    "Hash": "BD5AF0C117F39F557E624B9418ABF8B1D5EF3110BAB0780F1442294B2AE1D68B",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\paper\\PaperPreset.java"
+  },
+  {
+    "Hash": "AEB2DA3220195DACDE4F03BF342F76A732A66490ECEFE331231CE00859F0692F",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\paper\\PaperPresetRegistry.java"
+  },
+  {
+    "Hash": "D98F01D1707D184CC5ED1CA440777CCBB2699485418129A05066B8F42BB2C7D2",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\print\\PlannedPage.java"
+  },
+  {
+    "Hash": "B7CDF6979CBF8670800EEF9A9339BE852A9DAE9305052EE49713C2BC0479AA24",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\print\\PlannedPlacement.java"
+  },
+  {
+    "Hash": "B1BA38F2D6AE44D808DA02906F04B88DD62B62D9ECF52A1EE0F7BCACA890A08E",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\print\\UniversalPagePlanner.java"
+  },
+  {
+    "Hash": "2E55F86FFA46D3E6C797E7254A8843596C8847DB914D17DE33624D14430F78E9",
+    "Path": "J:\\java\\git\\barcode-label-suite\\barcode-label-workflow\\src\\main\\java\\com\\mohamed\\barcodelabel\\workflow\\template\\TemplateDocuments.java"
+  }
+]
