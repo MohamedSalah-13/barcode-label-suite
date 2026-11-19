@@ -48,6 +48,30 @@ class BarcodeValidationCacheTest {
         assertNotSame(old, cache.scope(template));
     }
 
+    @Test void copiesReportOneIssuePerLogicalRowEvenWhenValuesAreIdentical() {
+        var check = new BarcodePreflight(template(barcode()), Map.of());
+        var blank = Map.of("sku", "");
+        var copies = List.of(900_000, 100_000);
+        var records = com.mohamed.barcodelabel.workflow.data.RepeatedList.of(List.of(blank, blank), copies);
+        var numbers = com.mohamed.barcodelabel.workflow.data.RepeatedList.of(List.of(8, 19), copies);
+        var issues = check.checkRecords(records, numbers, () -> false);
+        assertEquals(List.of(8, 19), issues.stream().map(BatchValidationIssue::sourceRow).toList());
+        assertEquals(List.of(2, 3), check.checkRecords(records, List.of(), () -> false).stream()
+                .map(BatchValidationIssue::sourceRow).toList());
+        assertTrue(check.checkRecords(records, numbers, () -> true).isEmpty());
+    }
+
+    @Test void plainAndDifferentlyGroupedCsvRowsKeepTheirLineNumbers() {
+        var check = new BarcodePreflight(template(barcode()), Map.of());
+        var blank = Map.of("sku", "");
+        var records = com.mohamed.barcodelabel.workflow.data.RepeatedList.of(List.of(blank), List.of(3));
+        var numbers = com.mohamed.barcodelabel.workflow.data.RepeatedList.of(List.of(7, 12), List.of(2, 1));
+        assertEquals(List.of(7, 12), check.checkRecords(records, numbers, () -> false).stream()
+                .map(BatchValidationIssue::sourceRow).toList());
+        assertEquals(List.of(7, 12), check.checkRecords(List.of(blank, blank), numbers.values(), () -> false).stream()
+                .map(BatchValidationIssue::sourceRow).toList());
+    }
+
     @Test void boundedCacheEvictsLeastRecentlyUsedEntry() {
         assertThrows(IllegalArgumentException.class, () -> new BarcodeValidationCache(0));
         var barcode = barcode();

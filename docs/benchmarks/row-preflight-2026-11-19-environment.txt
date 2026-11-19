@@ -1,0 +1,20 @@
+java version "21.0.1" 2023-10-17 LTS
+Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+161fdcf23c0ddcbbf9449af28c6c08ed9b359ea5
+ M barcode-label-batch/src/main/java/com/mohamed/barcodelabel/batch/BarcodePreflight.java
+ M barcode-label-batch/src/test/java/com/mohamed/barcodelabel/batch/BarcodeValidationCacheTest.java
+ M barcode-label-fx-batch/src/test/java/com/mohamed/barcodelabel/fx/batch/BatchProductionWorkbenchTest.java
+ M barcode-label-fx-workbench/src/main/java/com/mohamed/barcodelabel/fx/workbench/UniversalPrintPane.java
+ M barcode-label-workflow/src/main/java/com/mohamed/barcodelabel/workflow/data/RepeatedList.java
+ M scripts/benchmarks/BatchBenchmark.java
+ M scripts/benchmarks/README.md
+
+Name                                    NumberOfCores NumberOfLogicalProcessors
+----                                    ------------- -------------------------
+Intel(R) Core(TM) i5-3470 CPU @ 3.20GHz             4                         4
+
+
+TotalPhysicalMemory
+-------------------
+         8487256064

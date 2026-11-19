@@ -7,6 +7,9 @@ import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.render.RenderException;
 import com.mohamed.barcodelabel.render.java2d.CompositeBarcodeRasterizer;
 
+import com.mohamed.barcodelabel.workflow.data.RepeatedList;
+import java.util.ArrayList;
+import java.util.function.BooleanSupplier;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +30,39 @@ public final class BarcodePreflight {
         this.cache = cache.scope(template);
         checks = template.elements().stream().filter(BarcodeElement.class::isInstance).map(BarcodeElement.class::cast)
                 .filter(barcode -> barcode.frame().visible()).map(barcode -> new Check(barcode, columns)).toList();
+    }
+
+    /** Check each source row once, keeping equal rows from different CSV lines distinct. */
+    public <T extends Map<String, ?>> List<BatchValidationIssue> checkRecords(List<T> records,
+                                                   List<Integer> sourceRows, BooleanSupplier cancelled) {
+        var issues = new ArrayList<BatchValidationIssue>();
+        boolean numbered = sourceRows.size() == records.size();
+        if (records instanceof RepeatedList<T> runs) {
+            if (numbered && sourceRows instanceof RepeatedList<Integer> numbers && runs.hasSameRuns(numbers)) {
+                return checkRecords(runs.values(), numbers.values(), cancelled);
+            }
+            int start = 0;
+            for (int run = 0; run < runs.values().size() && !cancelled.getAsBoolean(); run++) {
+                int end = runs.runEnd(run);
+                var record = runs.values().get(run);
+                if (!numbered) {
+                    checkRow(record, run + 2, issues);
+                } else {
+                    // A caller may supply ordinary provenance or split a data run across CSV lines.
+                    int i = start;
+                    while (i < end && !cancelled.getAsBoolean()) {
+                        int row = sourceRows.get(i++);
+                        checkRow(record, row, issues);
+                        while (i < end && sourceRows.get(i) == row && !cancelled.getAsBoolean()) i++;
+                    }
+                }
+                start = end;
+            }
+        } else {
+            for (int i = 0; i < records.size() && !cancelled.getAsBoolean(); i++)
+                checkRow(records.get(i), numbered ? sourceRows.get(i) : i + 2, issues);
+        }
+        return issues;
     }
 
     public void checkRow(Map<String, ?> record, int row, List<BatchValidationIssue> issues) {

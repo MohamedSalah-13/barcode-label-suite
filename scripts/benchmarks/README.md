@@ -59,3 +59,8 @@ three forks and JVM flags remain unchanged. Compare this run with
 `docs/benchmarks/batch-optimized-2026-11-18.jsonl` (the compressed-record implementation).
 The second check still resolves every expanded row, including blank-field checks and current row
 provenance; this experiment measures reuse of encoding diagnostics, not skipping CSV validation.
+
+For the logical-row preflight run, compare against `docs/benchmarks/barcode-cache-2026-11-18.jsonl`.
+The phase name `expandedPreflight` stays the same for the comparison script. It now calls the
+production preflight on the compact records and original CSV row numbers from the prepared batch.
+All six scenarios use the previous inputs, warm-up, JVM flags and three independent forks.

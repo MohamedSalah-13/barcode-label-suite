@@ -68,9 +68,8 @@ class BatchProductionWorkbenchTest {
         var invalidBarcode = new BarcodeElement(ElementFrame.create("EAN", new RectMm(1, 1, 60, 24), 0),
                 "{{sku}}", Symbology.EAN_13, 0.25, 2, false);
         var check = new com.mohamed.barcodelabel.batch.BarcodePreflight(template().withElements(List.of(invalidBarcode)), Map.of());
-        var issues = new java.util.ArrayList<com.mohamed.barcodelabel.batch.BatchValidationIssue>();
-        check.checkRow(converted.rows().get(25), converted.sourceRow(25), issues);
-        assertEquals(5, issues.getFirst().sourceRow());
+        var issues = check.checkRecords(converted.printRecords(), converted.sourceRows(), () -> false);
+        assertEquals(List.of(2, 5, 9), issues.stream().map(issue -> issue.sourceRow()).toList());
     }
 
     @BeforeAll

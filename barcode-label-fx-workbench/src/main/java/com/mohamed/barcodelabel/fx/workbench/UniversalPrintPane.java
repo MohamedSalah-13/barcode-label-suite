@@ -4,7 +4,6 @@ import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
 
 import com.mohamed.barcodelabel.batch.TemplateFields;
 import com.mohamed.barcodelabel.batch.BarcodePreflight;
-import com.mohamed.barcodelabel.batch.BatchValidationIssue;
 import com.mohamed.barcodelabel.fx.i18n.Counted;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.fx.i18n.UiTexts;
@@ -210,10 +209,7 @@ public final class UniversalPrintPane extends BorderPane {
         List<Integer> rows = sourceRows;
         var task = new Task<List<String>>() {
             @Override protected List<String> call() {
-                List<BatchValidationIssue> issues = new ArrayList<>();
-                for (int i = 0; i < data.size() && !isCancelled(); i++) {
-                    check.checkRow(data.get(i), rows.size() == data.size() ? rows.get(i) : i + 2, issues);
-                }
+                var issues = check.checkRecords(data, rows, this::isCancelled);
                 return issues.stream().map(issue -> t("barcode.inRow", issue.sourceRow(), barcodeTexts.describe(issue))).toList();
             }
         };
