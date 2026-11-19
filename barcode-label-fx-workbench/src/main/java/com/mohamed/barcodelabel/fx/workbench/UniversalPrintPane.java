@@ -1,5 +1,6 @@
 package com.mohamed.barcodelabel.fx.workbench;
 
+import com.mohamed.barcodelabel.print.SheetPlan;
 import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
 
 import com.mohamed.barcodelabel.batch.TemplateFields;
@@ -90,6 +91,7 @@ public final class UniversalPrintPane extends BorderPane {
     private final ReadOnlyBooleanWrapper printing = new ReadOnlyBooleanWrapper(this, "printing");
     private final AtomicLong generation = new AtomicLong();
     private int pageIndex;
+    private SheetPlan sheetPlan;
     private List<PlannedPage> pages = List.of();
     private List<Map<String, ?>> previewRecords = List.of();
 
@@ -298,6 +300,7 @@ public final class UniversalPrintPane extends BorderPane {
         pageIndex = 0;
         if (getTemplate() == null) {
             generation.incrementAndGet();
+            sheetPlan = null;
             pages = List.of();
             previewRecords = List.of();
             preview.setImage(null);
@@ -308,9 +311,11 @@ public final class UniversalPrintPane extends BorderPane {
         }
         previewRecords = getRecords().isEmpty() ? List.of(manualRecord(true)) : getRecords();
         try {
-            pages = planner.plan(getTemplate().page(), previewRecords.size(), startSlotIndex());
+            sheetPlan = planner.layout(getTemplate().page(), previewRecords.size(), startSlotIndex());
+            pages = planner.pages(sheetPlan);
         } catch (RuntimeException exception) {
             generation.incrementAndGet();
+            sheetPlan = null;
             pages = List.of();
             preview.setImage(null);
             status.setText(t("print.planFailed", rootMessage(exception)));
@@ -405,7 +410,7 @@ public final class UniversalPrintPane extends BorderPane {
         }
         int firstIndex = restrictRange ? first - 1 : 0;
         int lastIndex = restrictRange ? last - 1 : pages.size() - 1;
-        int labelsPerCopy = pages.subList(firstIndex, lastIndex + 1).stream().mapToInt(page -> page.placements().size()).sum();
+        int labelsPerCopy = sheetPlan.placementCount(firstIndex, lastIndex);
         ButtonType ok = new ButtonType(t("dialog.ok"), ButtonBar.ButtonData.OK_DONE);
         ButtonType cancel = new ButtonType(t("dialog.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
         var request = new LabelPrintRequest(getTemplate(), printRecords, printers.getValue(),
