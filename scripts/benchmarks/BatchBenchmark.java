@@ -82,7 +82,7 @@ public final class BatchBenchmark {
         var source=measure("source",()->data(rows,quantity,unique));
         var prepared=measure("prepare",()->service.prepare(template,source,mapping));
         if(!prepared.ready() || prepared.labelCount()!=rows*quantity) throw new AssertionError(prepared.issues());
-        var converted=measure("asDataset",()->BatchProductionWorkbench.asDataset(prepared.printRecords()));
+        var converted=measure("asDataset",()->BatchProductionWorkbench.asDataset(prepared));
         if(converted.rows().size()!=prepared.labelCount()) throw new AssertionError("Conversion count");
         measure("plan",()->new UniversalPagePlanner().plan(template.page(),prepared.labelCount(),0));
         // Diagnostic probe, NOT an extra production stage; isolates the defensive copies inside prepare().
@@ -91,8 +91,7 @@ public final class BatchBenchmark {
         // Mirrors the second preflight in UniversalPrintPane, without JavaFX or preview image rendering.
         measure("expandedPreflight",()-> {
             var check=new BarcodePreflight(template,Map.of(),cache);
-            var issues=new ArrayList<BatchValidationIssue>();
-            for(int i=0;i<converted.rows().size();i++) check.checkRow(converted.rows().get(i),i+2,issues);
+            var issues=check.checkRecords(converted.rows(),converted.sourceRows(),()->false);
             if(!issues.isEmpty()) throw new AssertionError(issues);
             return issues;
         });

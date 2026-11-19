@@ -37,6 +37,11 @@ public final class RepeatedList<T> extends AbstractList<T> implements RandomAcce
     /** Values in source order, once per run (even if two runs happen to have equal values). */
     public List<T> values() { return values; }
 
+    /** Exclusive expanded index at the end of this run. */
+    public int runEnd(int run) { return ends[run]; }
+
+    public boolean hasSameRuns(RepeatedList<?> other) { return Arrays.equals(ends, other.ends); }
+
     public <R> RepeatedList<R> map(Function<? super T, ? extends R> mapper) {
         List<R> mapped = values.stream().<R>map(mapper).toList();
         return new RepeatedList<>(mapped, ends);
