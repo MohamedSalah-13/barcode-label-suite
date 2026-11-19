@@ -40,7 +40,7 @@
 
 ## التحميل
 
-في كل إصدار على [صفحة الإصدارات](https://github.com/MohamedSalah-13/barcode-label-suite/releases) نسخة Windows باسم `BarcodeLabelSuite-<version>-windows.zip`. فك الضغط وشغّل `BarcodeLabelSuite\BarcodeLabelSuite.exe`؛ النسخة تحمل Java الخاصة بها، فلا تحتاج إلى تثبيت Java.
+في كل إصدار على [صفحة الإصدارات](https://github.com/MohamedSalah-13/barcode-label-suite/releases) مثبّت Windows باسم `BarcodeLabelSuite-<version>-setup.exe` ونسخة محمولة باسم `BarcodeLabelSuite-<version>-windows.zip`، وكلاهما يحمل Java الخاصة به فلا تحتاج إلى تثبيت Java. المثبّت يثبّت البرنامج للمستخدم الحالي دون صلاحيات مدير، والنسخة المثبّتة تحدّث نفسها: تبحث عن إصدار جديد بعد التشغيل بقليل ثم كل ست ساعات، وزر **التحقق من التحديثات** بجانب قائمة اللغة يبحث فورًا. عند التحديث يُنزَّل المثبّت ويُتحقق من SHA-256 الخاص به ثم يُثبَّت ويُفتح البرنامج من جديد. أما النسخة المحمولة ففك ضغطها وشغّل `BarcodeLabelSuite\BarcodeLabelSuite.exe`.
 
 ## المتطلبات
 

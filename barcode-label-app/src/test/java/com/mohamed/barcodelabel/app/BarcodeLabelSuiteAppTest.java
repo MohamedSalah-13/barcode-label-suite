@@ -128,6 +128,26 @@ class BarcodeLabelSuiteAppTest {
     }
 
     @Test
+    void theUpdateButtonSitsBesideTheLanguageMenuInTheWindowLanguage() throws Exception {
+        MemorySetting setting = new MemorySetting(UiLanguage.ARABIC);
+        BarcodeLabelSuiteApp app = started(setting);
+        onFx(() -> {
+            assertEquals("التحقق من التحديثات", app.checkUpdatesButton().getText());
+            assertSame(app.languagePicker().getParent(), app.checkUpdatesButton().getParent());
+            // The tests run without the jpackage launcher, so the copy has no installed version.
+            assertEquals("نسخة تطوير: التحديث يعمل في النسخة المثبتة فقط.",
+                    app.checkUpdatesButton().getTooltip().getText());
+
+            app.languagePicker().setValue(UiLanguage.ENGLISH);
+            assertEquals("Check for updates", app.checkUpdatesButton().getText());
+            assertEquals("A development copy: only an installed copy is updated.",
+                    app.checkUpdatesButton().getTooltip().getText());
+            return null;
+        });
+        closeWindows();
+    }
+
+    @Test
     void switchingLanguagesKeepsTheSampleMappingQuantitiesAndSecondPage() throws Exception {
         BarcodeLabelSuiteApp app = started(new MemorySetting(UiLanguage.ARABIC));
         try {

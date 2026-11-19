@@ -11,14 +11,19 @@ import com.mohamed.barcodelabel.model.element.*;
 import com.mohamed.barcodelabel.model.geometry.RectMm;
 import com.mohamed.barcodelabel.workflow.paper.PaperPresetRegistry;
 import atlantafx.base.theme.PrimerLight;
+import com.hamza.updater.AppUpdater;
+import com.hamza.updater.ReleaseSource;
+import com.hamza.updater.fx.UpdatePrompt;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -43,6 +48,11 @@ public final class BarcodeLabelSuiteApp extends Application {
     private LabelTemplate startingTemplate;
     private BatchProductionWorkbench workbench;
     private ComboBox<UiLanguage> languagePicker;
+    private Button checkUpdates;
+    /** Knows the installed version and where the releases are. */
+    private AppUpdater updater;
+    /** Offers a new release in a window, downloads it and installs it. */
+    private UpdatePrompt updates;
 
     public BarcodeLabelSuiteApp() {
         this(LanguageSetting.preferences(),
@@ -62,19 +72,28 @@ public final class BarcodeLabelSuiteApp extends Application {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         language = languageSetting.load();
         startingTemplate = template(language);
+        updater = AppUpdater.builder("Barcode Label Suite")
+                .source(ReleaseSource.github("MohamedSalah-13/barcode-label-suite").asset("*-setup.exe"))
+                .build();
+        updates = UpdatePrompt.create(updater, stage).language(language.tag());
         // The label from the last run, if there is one; it is the user's, so a language switch keeps it as it is.
         LabelTemplate first = lastDesign.load().orElse(startingTemplate);
         stage.setScene(new Scene(root(first), 1480, 940));
         stage.setTitle("Barcode Label Suite");
         stage.getIcons().setAll(icons());
         stage.setMinWidth(1150); stage.setMinHeight(750); stage.show();
+        // Only an installed copy knows its version (the jpackage launcher passes it); one run from the IDE or the
+        // tests has nothing to compare, so it does not look on its own. The button still answers.
+        if (updater.currentVersion().isPresent()) updates.start();
     }
 
     /**
      * Keeps the label being designed for the next run, unless it is still the untouched starting label, which the
-     * next run makes again in its own language.
+     * next run makes again in its own language. An update closes the app through here too (Platform.exit), so the
+     * label is kept before the installer replaces the program.
      */
     @Override public void stop() {
+        if (updates != null) updates.stop();
         if (workbench == null) return;
         LabelTemplate current = workbench.getTemplate();
         if (current != startingTemplate) lastDesign.save(current);
@@ -95,6 +114,7 @@ public final class BarcodeLabelSuiteApp extends Application {
     UiLanguage language() { return language; }
     BatchProductionWorkbench workbench() { return workbench; }
     ComboBox<UiLanguage> languagePicker() { return languagePicker; }
+    Button checkUpdatesButton() { return checkUpdates; }
 
     /**
      * Rebuilds the window in another language. The label being designed is kept; if it is still the untouched
@@ -110,6 +130,8 @@ public final class BarcodeLabelSuiteApp extends Application {
         LabelTemplate current = workbench.getTemplate();
         language = next;
         languageSetting.save(next);
+        // The update window reads its words when it opens, so this is all it needs.
+        updates.language(next.tag());
         if (current == startingTemplate) current = startingTemplate = template(next);
         stage.getScene().setRoot(root(current));
         workbench.restoreSession(session);
@@ -128,11 +150,19 @@ public final class BarcodeLabelSuiteApp extends Application {
         languagePicker.setTooltip(new Tooltip(texts.get("app.language")));
         languagePicker.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         languagePicker.valueProperty().addListener((obs, oldValue, value) -> switchLanguage(value));
+        checkUpdates = new Button(texts.get("app.updates.check"));
+        checkUpdates.setTooltip(new Tooltip(updater.currentVersion()
+                .map(version -> texts.get("app.updates.version", version))
+                .orElse(texts.get("app.updates.dev"))));
+        checkUpdates.setOnAction(event -> updates.checkNow());
         // At the end of the tab bar, where the tabs leave room: top left in Arabic, top right in English.
-        StackPane root = new StackPane(workbench, languagePicker);
+        HBox tools = new HBox(6, checkUpdates, languagePicker);
+        tools.setAlignment(Pos.CENTER);
+        tools.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        StackPane root = new StackPane(workbench, tools);
         root.setNodeOrientation(language.orientation());
-        StackPane.setAlignment(languagePicker, Pos.TOP_RIGHT);
-        StackPane.setMargin(languagePicker, new Insets(3, 8, 0, 8));
+        StackPane.setAlignment(tools, Pos.TOP_RIGHT);
+        StackPane.setMargin(tools, new Insets(3, 8, 0, 8));
         return root;
     }
 

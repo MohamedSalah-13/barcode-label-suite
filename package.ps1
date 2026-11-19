@@ -101,11 +101,20 @@ $arguments = @(
     '--main-jar', $mainJar,
     '--main-class', $mainClass,
     '--icon', $iconFile,
+    # No --add-modules: for a classpath app jpackage puts the JDK's whole module set in the runtime, which already
+    # has jdk.crypto.ec, the TLS provider the update check needs to reach GitHub over HTTPS on JDK 21. Naming
+    # modules here would replace that set, not add to it.
     '--java-options', '-Dfile.encoding=UTF-8'
 )
 
 if ($Type -in @('exe', 'msi')) {
-    $arguments += @('--win-menu', '--win-shortcut')
+    $arguments += @(
+        '--win-menu', '--win-shortcut',
+        # Installed for the current user only, so an update installs without asking for an administrator.
+        '--win-per-user-install',
+        # Never change this: a new installer replaces an older one only when both carry the same upgrade code.
+        '--win-upgrade-uuid', 'f5cf66fa-17c3-433c-87e8-c04a29dc00e6'
+    )
 }
 
 & $jpackage @arguments

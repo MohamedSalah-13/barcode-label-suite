@@ -40,7 +40,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for what changed in each version.
 
 ## Download
 
-Each release on the [Releases page](https://github.com/MohamedSalah-13/barcode-label-suite/releases) has a Windows build, `BarcodeLabelSuite-<version>-windows.zip`. Unzip it and run `BarcodeLabelSuite\BarcodeLabelSuite.exe`; it includes its own Java runtime.
+Each release on the [Releases page](https://github.com/MohamedSalah-13/barcode-label-suite/releases) has a Windows installer, `BarcodeLabelSuite-<version>-setup.exe`, and a portable build, `BarcodeLabelSuite-<version>-windows.zip`. Both include their own Java runtime. The installer installs for the current user without asking for an administrator, and an installed copy updates itself: it looks for a new release shortly after it starts and every six hours, and **Check for updates** beside the language menu looks at once. Updating downloads the installer, checks its SHA-256, installs it and opens the app again. To use the zip, unzip it and run `BarcodeLabelSuite\BarcodeLabelSuite.exe`.
 
 ## Requirements
 
