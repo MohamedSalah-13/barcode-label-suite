@@ -71,6 +71,9 @@ class BatchDataMappingPaneTest {
             assertFalse(pane.getResult().ready());
             assertEquals(List.of("خطأ — الحقل {{product_name}} غير مربوط بأي عمود",
                     "خطأ — الحقل {{price}} غير مربوط بأي عمود"), issueLines(pane));
+            var list = all(pane).filter(ListView.class::isInstance).map(ListView.class::cast).findFirst().orElseThrow();
+            list.getSelectionModel().select(0);
+            assertFalse(all(pane).filter(IssuePreview.class::isInstance).findFirst().orElseThrow().isVisible());
             return null;
         });
     }
@@ -258,6 +261,74 @@ class BatchDataMappingPaneTest {
             assertFalse(pane.getResult().ready());
             assertTrue(issueLines(pane).getFirst().contains("صف 2: عمود Code"));
             assertTrue(issueLines(pane).getFirst().contains("EAN_13"));
+            return null;
+        });
+    }
+
+    @Test
+    void selectingAnIssuePreviewsTheMappedSourceRowBeyondTheCsvSampleWithoutUnlockingPrint() {
+        var text = textWith("{{description}}");
+        var design = template(text, barcode("{{sku}}"));
+        var workbench = onFx(() -> new BatchProductionWorkbench(design));
+        var pane = workbench.batchPane();
+        var print = workbench.labelWorkbench().printPane();
+        var rows = new ArrayList<Map<String, String>>();
+        for (int i = 0; i < 10; i++)
+            rows.add(Map.of("Name", "Item " + i, "Code", i >= 8 ? "" : "VALID", "Qty", "5"));
+        var csv = new CsvDataset(List.of("Name", "Code", "Qty"), rows, ',',
+                List.of(2, 4, 6, 8, 10, 12, 14, 16, 21, 35));
+        onFx(() -> {
+            pane.setDataset(csv);
+            fieldBox(pane, 0).setValue("Name");
+            return null;
+        });
+        prepareAndWait(pane);
+        var preview = onFx(() -> all(pane).filter(IssuePreview.class::isInstance)
+                .map(IssuePreview.class::cast).findFirst().orElseThrow());
+        var view = onFx(() -> (javafx.scene.image.ImageView) preview.getChildren().getLast());
+        onFx(() -> {
+            var list = all(pane).filter(ListView.class::isInstance).map(ListView.class::cast).findFirst().orElseThrow();
+            assertEquals(2, list.getItems().size());
+            list.getSelectionModel().select(0);
+            list.getSelectionModel().select(1);
+            return null;
+        });
+        await(Duration.ofSeconds(10), () -> onFx(() -> view.getImage() != null));
+        onFx(() -> {
+            assertTrue(preview.isVisible());
+            assertTrue(((Label) preview.getChildren().getFirst()).getText().contains("35"));
+            var image = view.getImage();
+            // Compare the text region to the normal renderer for the tenth row after applying the custom mapping.
+            try {
+                var expected = new com.mohamed.barcodelabel.render.java2d.BufferedImageLabelRenderer().render(
+                        new com.mohamed.barcodelabel.render.RenderRequest(template(text), Map.of("description", "Item 9"), 150));
+                for (int y = 0; y < 50; y++)
+                    for (int x = 0; x < expected.getWidth(); x++)
+                        assertEquals(expected.getRGB(x, y), image.getPixelReader().getArgb(x, y));
+                boolean marked = false;
+                for (int y = 50; y < (int) image.getHeight() && !marked; y++)
+                    for (int x = 0; x < (int) image.getWidth(); x++)
+                        if (image.getPixelReader().getArgb(x, y) == java.awt.Color.RED.getRGB()) { marked = true; break; }
+                assertTrue(marked, "the unrenderable barcode is marked inside the label");
+            } catch (com.mohamed.barcodelabel.render.RenderException error) {
+                throw new AssertionError(error);
+            }
+            assertFalse(pane.getResult().ready());
+            assertNull(workbench.labelWorkbench().getDataset());
+            assertNotNull(print.getTop());
+            assertTrue(findButton(print, "طباعة").isDisabled());
+            fieldBox(pane, 1).setValue("Name");
+            assertFalse(preview.isVisible());
+            assertNull(view.getImage());
+            assertNull(pane.getResult());
+            assertNotNull(print.getTop());
+            return null;
+        });
+        prepareAndWait(pane);
+        await(Duration.ofSeconds(10), () -> onFx(() -> print.getTop() == null));
+        onFx(() -> {
+            assertEquals(50, pane.getResult().labelCount());
+            assertTrue(pane.getResult().ready());
             return null;
         });
     }

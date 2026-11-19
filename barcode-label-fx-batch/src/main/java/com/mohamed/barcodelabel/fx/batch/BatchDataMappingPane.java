@@ -38,6 +38,7 @@ public final class BatchDataMappingPane extends BorderPane {
     private static final double PREVIEW_ROW_HEIGHT = 30;
     private static final double PREVIEW_HEADER_HEIGHT = 36;
     private final BatchTexts texts;
+    private final IssuePreview issuePreview;
     /** The quantity choice meaning "no quantity column": every row prints the default number of copies. */
     private final String noQuantity;
     private final ObjectProperty<LabelTemplate> template = new SimpleObjectProperty<>(this, "template");
@@ -117,6 +118,7 @@ public final class BatchDataMappingPane extends BorderPane {
     public BatchDataMappingPane(UiLanguage language, BarcodeValidationCache cache) {
         preparation = new BatchPreparationService(cache);
         texts = new BatchTexts(language);
+        issuePreview = new IssuePreview(texts);
         noQuantity = t("batch.noQuantity");
         fileSummary.setText(t("batch.chooseFile"));
         resultSummary.setText(t("batch.notPrepared"));
@@ -162,7 +164,9 @@ public final class BatchDataMappingPane extends BorderPane {
         VBox mappingSide = new VBox(8, new Label(t("batch.previewTitle", PREVIEW_ROWS)), preview, mappingScroll);
         mappingSide.setPadding(new Insets(12)); VBox.setVgrow(mappingScroll, Priority.ALWAYS);
         issues.setPlaceholder(new Label(t("batch.noErrors")));
-        VBox validation = new VBox(8, new Label(t("batch.validationTitle")), resultSummary, issues);
+        issues.getSelectionModel().selectedIndexProperty().addListener((obs, previous, selected) ->
+                previewIssue(selected.intValue()));
+        VBox validation = new VBox(8, new Label(t("batch.validationTitle")), resultSummary, issues, issuePreview);
         validation.setPadding(new Insets(12)); VBox.setVgrow(issues, Priority.ALWAYS);
         SplitPane split = new SplitPane(mappingSide, validation); split.setDividerPositions(0.6); return split;
     }
@@ -193,6 +197,8 @@ public final class BatchDataMappingPane extends BorderPane {
                 && templateFields.scan(getTemplate()).equals(mappedFields)) {
             if (previous == null || !barcodes(previous).equals(barcodes(getTemplate()))) {
                 clearResult("batch.notPrepared");
+            } else {
+                previewIssue(issues.getSelectionModel().getSelectedIndex());
             }
             return;
         }
@@ -257,7 +263,17 @@ public final class BatchDataMappingPane extends BorderPane {
         resultSummary.setText(texts.suggested(suggested, fields.size()));
     }
 
+    private void previewIssue(int index) {
+        var prepared = getResult();
+        if (prepared == null || index < 0 || index >= prepared.issues().size()) {
+            issuePreview.clear();
+            return;
+        }
+        issuePreview.show(prepared.issues().get(index), getDataset(), currentMapping(), getTemplate());
+    }
+
     private void clearResult(String key) {
+        issuePreview.clear();
         summaryKey = key;
         suggestedMapping = false;
         result.set(null); issues.getItems().clear();
@@ -299,6 +315,8 @@ public final class BatchDataMappingPane extends BorderPane {
     }
 
     private void applyPreparationResult(BatchPreparationResult prepared, ColumnMapping mapping) {
+        issues.getSelectionModel().clearSelection();
+        issuePreview.clear();
         result.set(prepared); issues.setItems(FXCollections.observableArrayList(prepared.issues().stream()
                 .map(issue -> texts.describe(issue, mapping)).toList()));
         resultSummary.setText(prepared.ready()
