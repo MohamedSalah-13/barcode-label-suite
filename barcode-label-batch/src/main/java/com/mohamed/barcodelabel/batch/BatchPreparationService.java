@@ -5,7 +5,6 @@ import com.mohamed.barcodelabel.workflow.csv.CsvDataset;
 import com.mohamed.barcodelabel.workflow.data.RepeatedList;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,8 +35,7 @@ public final class BatchPreparationService {
         for (int index = 0; index < dataset.rows().size(); index++) {
             Map<String, String> source = dataset.rows().get(index);
             int sourceRow = dataset.sourceRow(index);
-            var resolved = new LinkedHashMap<String, String>(source);
-            mapping.fields().forEach((field, column) -> resolved.put(field, source.getOrDefault(column, "")));
+            var resolved = mapping.resolveRow(source);
             barcodes.checkRow(resolved, sourceRow, issues);
             int quantity = quantity(source, mapping, sourceRow, issues);
             if (quantity <= 0) continue;

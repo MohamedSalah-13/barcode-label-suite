@@ -16,6 +16,13 @@ public record ColumnMapping(Map<String, String> fields, String quantityColumn,
         if (maxTotalLabels <= 0) throw new IllegalArgumentException("maxTotalLabels must be positive");
     }
 
+    /** CSV values with the template field aliases applied. */
+    public Map<String, String> resolveRow(Map<String, String> source) {
+        var resolved = new java.util.LinkedHashMap<>(source);
+        fields.forEach((field, column) -> resolved.put(field, source.getOrDefault(column, "")));
+        return resolved;
+    }
+
     /**
      * The mapping the CSV's column names suggest: a likely column for each field, and the quantity column if
      * one is named like one (see {@link ColumnMatcher}). The user reviews it before printing.
