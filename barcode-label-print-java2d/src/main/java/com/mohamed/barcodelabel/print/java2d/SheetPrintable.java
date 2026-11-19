@@ -1,5 +1,6 @@
 package com.mohamed.barcodelabel.print.java2d;
 
+import com.mohamed.barcodelabel.print.SheetPlan;
 import com.mohamed.barcodelabel.model.unit.UnitConversions;
 import com.mohamed.barcodelabel.print.LabelPrintRequest;
 import com.mohamed.barcodelabel.print.SheetLayoutEngine;
@@ -18,7 +19,7 @@ final class SheetPrintable implements Printable {
     private final LabelPrintRequest request;
     private final double renderDpi;
     private final BufferedImageLabelRenderer renderer;
-    private final java.util.List<com.mohamed.barcodelabel.print.SheetPage> pages;
+    private final SheetPlan pages;
 
     SheetPrintable(LabelPrintRequest request, double renderDpi) {
         this(request, renderDpi, new BufferedImageLabelRenderer(), new SheetLayoutEngine());
@@ -28,31 +29,27 @@ final class SheetPrintable implements Printable {
         this.request = request;
         this.renderDpi = renderDpi;
         this.renderer = renderer;
-        this.pages = engine.plan(request.template().page(), request.records().size(), request.startSlotIndex());
+        this.pages = engine.layout(request.template().page(), request.records().size(), request.startSlotIndex());
     }
 
     int pageCount() {
-        return pages.size();
+        return pages.pageCount();
     }
 
     /** Total label placements across the 0-based, inclusive page-index range {@code [fromPageIndex, toPageIndex]}. */
     int placementCount(int fromPageIndex, int toPageIndex) {
-        int count = 0;
-        for (int index = Math.max(0, fromPageIndex); index <= toPageIndex && index < pages.size(); index++) {
-            count += pages.get(index).placements().size();
-        }
-        return count;
+        return pages.placementCount(fromPageIndex, toPageIndex);
     }
 
     @Override
     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-        if (pageIndex < 0 || pageIndex >= pages.size()) return NO_SUCH_PAGE;
+        if (pageIndex < 0 || pageIndex >= pages.pageCount()) return NO_SUCH_PAGE;
         Graphics2D g2 = (Graphics2D) graphics.create();
         try {
             g2.translate(UnitConversions.mmToPoints(request.offset().horizontalMm()),
                     UnitConversions.mmToPoints(request.offset().verticalMm()));
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-            for (var placement : pages.get(pageIndex).placements()) {
+            for (var placement : pages.pageAt(pageIndex).placements()) {
                 var label = renderer.render(new RenderRequest(request.template(),
                         request.records().get(placement.recordIndex()), renderDpi));
                 double x = UnitConversions.mmToPoints(placement.bounds().x());

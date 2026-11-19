@@ -64,3 +64,18 @@ For the logical-row preflight run, compare against `docs/benchmarks/barcode-cach
 The phase name `expandedPreflight` stays the same for the comparison script. It now calls the
 production preflight on the compact records and original CSV row numbers from the prepared batch.
 All six scenarios use the previous inputs, warm-up, JVM flags and three independent forks.
+
+For the million-label page benchmark, install the production modules being measured, then run:
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
+.\mvnw.cmd -pl barcode-label-fx-batch -am '-DskipTests' install
+.\scripts\benchmarks\run-page-benchmark.ps1 target/page-results.jsonl
+```
+
+Each of three JVMs warms the renderer and planner, then measures the workflow plan, first/last
+page lookup, and independent Java2D renders of those pages (96 DPI, guides, including each
+renderer call's own layout). Requests and data are already resident. The A4 sheet has 21 slots,
+five already used on the first page. All one million labels share a representative record, so
+the test isolates pagination and preview rendering. Timing excludes the JavaFX event queue
+and display. Use the median of each phase; post-GC retained heap differences are approximate.

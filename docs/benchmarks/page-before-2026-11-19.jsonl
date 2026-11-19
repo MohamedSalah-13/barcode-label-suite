@@ -1,0 +1,15 @@
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":1,"phase":"plan","ms":206.569,"allocatedBytes":149617848,"retainedDeltaBytes":79441992,"liveHeapBytes":88161928,"gcCount":1,"gcMs":45}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":1,"phase":"lookupFirst","ms":0.033,"allocatedBytes":0,"retainedDeltaBytes":0,"liveHeapBytes":88416384,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":1,"phase":"lookupLast","ms":0.037,"allocatedBytes":0,"retainedDeltaBytes":0,"liveHeapBytes":88416360,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":1,"phase":"renderFirst","ms":119.368,"allocatedBytes":104250848,"retainedDeltaBytes":4196232,"liveHeapBytes":92614112,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":1,"phase":"renderLast","ms":59.959,"allocatedBytes":102595464,"retainedDeltaBytes":4195584,"liveHeapBytes":96810320,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":2,"phase":"plan","ms":219.191,"allocatedBytes":149617760,"retainedDeltaBytes":79441448,"liveHeapBytes":88160712,"gcCount":1,"gcMs":47}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":2,"phase":"lookupFirst","ms":0.029,"allocatedBytes":0,"retainedDeltaBytes":0,"liveHeapBytes":88414184,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":2,"phase":"lookupLast","ms":0.039,"allocatedBytes":0,"retainedDeltaBytes":0,"liveHeapBytes":88414568,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":2,"phase":"renderFirst","ms":95.618,"allocatedBytes":104250784,"retainedDeltaBytes":4195920,"liveHeapBytes":92612008,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":2,"phase":"renderLast","ms":71.930,"allocatedBytes":102595408,"retainedDeltaBytes":4195496,"liveHeapBytes":96808128,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":3,"phase":"plan","ms":204.112,"allocatedBytes":149617928,"retainedDeltaBytes":79441808,"liveHeapBytes":88161776,"gcCount":1,"gcMs":46}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":3,"phase":"lookupFirst","ms":0.034,"allocatedBytes":0,"retainedDeltaBytes":0,"liveHeapBytes":88416016,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":3,"phase":"lookupLast","ms":0.037,"allocatedBytes":0,"retainedDeltaBytes":0,"liveHeapBytes":88416240,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":3,"phase":"renderFirst","ms":95.993,"allocatedBytes":104250784,"retainedDeltaBytes":4195960,"liveHeapBytes":92613720,"gcCount":0,"gcMs":0}
+{"rows":10000,"quantity":100,"uniqueBarcodes":1,"fork":3,"phase":"renderLast","ms":53.431,"allocatedBytes":102595408,"retainedDeltaBytes":4195528,"liveHeapBytes":96809872,"gcCount":0,"gcMs":0}
