@@ -1,0 +1,63 @@
+{
+  "schemaVersion" : 1,
+  "id" : "fbeb35b6-fa39-4aba-ae39-1358a6988e8d",
+  "name" : "Calibration + (roll-40x25)",
+  "page" : {
+    "mode" : "SINGLE",
+    "pageSize" : {
+      "width" : 40.0,
+      "height" : 25.0
+    },
+    "margins" : {
+      "top" : 6.0,
+      "right" : 26.0,
+      "bottom" : 11.0,
+      "left" : 6.0
+    },
+    "orientation" : "PORTRAIT",
+    "sheetLayout" : null
+  },
+  "elements" : [ {
+    "type" : "shape",
+    "frame" : {
+      "id" : "56554977-e092-44d6-95dd-08f8f3307d76",
+      "name" : "Calibration + (roll-40x25)",
+      "bounds" : {
+        "x" : 0.0,
+        "y" : 3.85,
+        "width" : 8.0,
+        "height" : 0.3
+      },
+      "rotationDegrees" : 0.0,
+      "zIndex" : 0,
+      "visible" : true,
+      "locked" : false
+    },
+    "shapeType" : "RECTANGLE",
+    "strokeColor" : "black",
+    "fillColor" : "black",
+    "strokeWidthMm" : 0.0
+  }, {
+    "type" : "shape",
+    "frame" : {
+      "id" : "1bcfb29e-4ab9-4a7a-a77d-e8bffbf5d9bc",
+      "name" : "Calibration + (roll-40x25)",
+      "bounds" : {
+        "x" : 3.85,
+        "y" : 0.0,
+        "width" : 0.3,
+        "height" : 8.0
+      },
+      "rotationDegrees" : 0.0,
+      "zIndex" : 0,
+      "visible" : true,
+      "locked" : false
+    },
+    "shapeType" : "RECTANGLE",
+    "strokeColor" : "black",
+    "fillColor" : "black",
+    "strokeWidthMm" : 0.0
+  } ],
+  "createdAt" : "2026-11-19T08:52:09.790942500Z",
+  "updatedAt" : "2026-11-19T08:52:09.790942500Z"
+}
