@@ -7,7 +7,6 @@ import com.mohamed.barcodelabel.model.element.BarcodeElement;
 import com.mohamed.barcodelabel.render.RenderException;
 import com.mohamed.barcodelabel.render.java2d.CompositeBarcodeRasterizer;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,8 +17,14 @@ public final class BarcodePreflight {
     private final TemplateFieldResolver resolver = new TemplateFieldResolver();
     private final CompositeBarcodeRasterizer encoder = CompositeBarcodeRasterizer.standard();
     private final List<Check> checks;
+    private final BarcodeValidationCache.Scope cache;
 
     public BarcodePreflight(LabelTemplate template, Map<String, String> columns) {
+        this(template, columns, new BarcodeValidationCache());
+    }
+
+    public BarcodePreflight(LabelTemplate template, Map<String, String> columns, BarcodeValidationCache cache) {
+        this.cache = cache.scope(template);
         checks = template.elements().stream().filter(BarcodeElement.class::isInstance).map(BarcodeElement.class::cast)
                 .filter(barcode -> barcode.frame().visible()).map(barcode -> new Check(barcode, columns)).toList();
     }
@@ -40,7 +45,7 @@ public final class BarcodePreflight {
                 issues.add(empty(row, check.source(), barcode));
                 continue;
             }
-            String reason = check.diagnostics().computeIfAbsent(value, data -> encode(barcode, data));
+            String reason = cache.diagnostic(barcode, value, () -> encode(barcode, value));
             if (!reason.isEmpty()) {
                 issues.add(new BatchValidationIssue(ValidationSeverity.ERROR, BatchIssueKind.INVALID_BARCODE,
                         row, check.source(), barcode.symbology().name(), reason));
@@ -69,14 +74,14 @@ public final class BarcodePreflight {
 
     private record Field(String expression, String column) {}
 
-    private record Check(BarcodeElement barcode, List<Field> fields, String source, Map<String, String> diagnostics) {
+    private record Check(BarcodeElement barcode, List<Field> fields, String source) {
         Check(BarcodeElement barcode, Map<String, String> columns) {
             this(barcode, TemplateFields.fieldsIn(barcode.dataTemplate()).stream()
                     .map(name -> new Field("{{" + name + "}}", columns.getOrDefault(name, name))).toList());
         }
 
         Check(BarcodeElement barcode, List<Field> fields) {
-            this(barcode, fields, String.join(", ", fields.stream().map(Field::column).distinct().toList()), new HashMap<>());
+            this(barcode, fields, String.join(", ", fields.stream().map(Field::column).distinct().toList()));
         }
     }
 }

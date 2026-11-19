@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.app;
 
+import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
+
 import com.mohamed.barcodelabel.fx.batch.BatchProductionWorkbench;
 import com.mohamed.barcodelabel.fx.workbench.CustomPaperStore;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
@@ -29,6 +31,7 @@ import java.util.prefs.Preferences;
  * the tab bar. The language is remembered between runs.
  */
 public final class BarcodeLabelSuiteApp extends Application {
+    private final BarcodeValidationCache barcodeCache = new BarcodeValidationCache();
     private final LanguageSetting languageSetting;
     /** The paper sizes the user named, kept between runs. */
     private final CustomPaperStore paperSizes;
@@ -114,7 +117,7 @@ public final class BarcodeLabelSuiteApp extends Application {
 
     private Parent root(LabelTemplate template) {
         texts = UiTexts.load(BarcodeLabelSuiteApp.class, "messages", language);
-        workbench = new BatchProductionWorkbench(template, language);
+        workbench = new BatchProductionWorkbench(template, language, barcodeCache);
         workbench.labelWorkbench().setCustomPaperStore(paperSizes);
         languagePicker = new ComboBox<>();
         // Finish file operations and batch preparation before replacing their UI callbacks.

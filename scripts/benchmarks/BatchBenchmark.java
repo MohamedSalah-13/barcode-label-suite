@@ -67,15 +67,18 @@ public final class BatchBenchmark {
         THREADS.setThreadAllocatedMemoryEnabled(true);
         var template=template();
         var mapping=new ColumnMapping(Map.of("product_name","Name","sku","Code","price","Retail Price"),"Qty",1,100000,5000000);
-        var service=new BatchPreparationService();
         // Warm class loading, barcode/font caches and all measured paths. Each measurement is a fresh JVM.
         for(int i=0;i<3;i++) {
-            var warm=service.prepare(template,data(200,10,200),mapping);
+            var warm=new BatchPreparationService().prepare(template,data(200,10,200),mapping);
             if(!warm.ready()) throw new AssertionError(warm.issues());
             BatchProductionWorkbench.asDataset(warm.printRecords());
             new UniversalPagePlanner().plan(template.page(),warm.labelCount(),0);
             new BatchPreparationResult(200,warm.printRecords(),List.of());
         }
+        // Keep the session cache alive, as the desktop workbench does, including after the final phase.
+        var cache=new BarcodeValidationCache();
+        LIVE.add(cache);
+        var service=new BatchPreparationService(cache);
         var source=measure("source",()->data(rows,quantity,unique));
         var prepared=measure("prepare",()->service.prepare(template,source,mapping));
         if(!prepared.ready() || prepared.labelCount()!=rows*quantity) throw new AssertionError(prepared.issues());
@@ -87,7 +90,7 @@ public final class BatchBenchmark {
         LIVE.removeLast();
         // Mirrors the second preflight in UniversalPrintPane, without JavaFX or preview image rendering.
         measure("expandedPreflight",()-> {
-            var check=new BarcodePreflight(template,Map.of());
+            var check=new BarcodePreflight(template,Map.of(),cache);
             var issues=new ArrayList<BatchValidationIssue>();
             for(int i=0;i<converted.rows().size();i++) check.checkRow(converted.rows().get(i),i+2,issues);
             if(!issues.isEmpty()) throw new AssertionError(issues);

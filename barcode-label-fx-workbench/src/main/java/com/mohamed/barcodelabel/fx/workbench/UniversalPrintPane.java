@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.fx.workbench;
 
+import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
+
 import com.mohamed.barcodelabel.batch.TemplateFields;
 import com.mohamed.barcodelabel.batch.BarcodePreflight;
 import com.mohamed.barcodelabel.batch.BatchValidationIssue;
@@ -125,7 +127,12 @@ public final class UniversalPrintPane extends BorderPane {
 
     /** A print pane in this language. It takes the orientation of the pane it is placed in. */
     public UniversalPrintPane(UiLanguage language) {
-        this(language, new Java2DLabelPrinter());
+        this(language, new BarcodeValidationCache());
+    }
+
+    public UniversalPrintPane(UiLanguage language, BarcodeValidationCache cache) {
+        this(language, new Java2DLabelPrinter(), new CalibrationStore(Preferences.userNodeForPackage(UniversalPrintPane.class)
+                .node("printCalibration")), cache);
     }
 
     UniversalPrintPane(UiLanguage language, LabelPrinter labelPrinter) {
@@ -134,6 +141,14 @@ public final class UniversalPrintPane extends BorderPane {
     }
 
     UniversalPrintPane(UiLanguage language, LabelPrinter labelPrinter, CalibrationStore calibrations) {
+        this(language, labelPrinter, calibrations, new BarcodeValidationCache());
+    }
+
+    private final BarcodeValidationCache barcodeCache;
+
+    private UniversalPrintPane(UiLanguage language, LabelPrinter labelPrinter, CalibrationStore calibrations,
+                               BarcodeValidationCache cache) {
+        this.barcodeCache = java.util.Objects.requireNonNull(cache);
         this.labelPrinter = labelPrinter;
         this.calibrations = calibrations;
         texts = UiTexts.load(UniversalPrintPane.class, "messages", language);
@@ -160,10 +175,9 @@ public final class UniversalPrintPane extends BorderPane {
     public void setRecords(List<Map<String, ?>> value) { setRecords(value, List.of()); }
 
     void setRecords(List<Map<String, ?>> value, List<Integer> csvRows) {
-        boolean rowsChanged = !sourceRows.equals(csvRows);
         sourceRows = csvRows;
         List<Map<String, ?>> next = value == null ? List.of() : RepeatedList.copyOf(value);
-        if (rowsChanged && next.equals(getRecords())) checkBarcodes();
+        if (next.equals(getRecords())) checkBarcodes();
         if (!next.equals(getRecords())) records.set(next);
     }
     public ObjectProperty<List<Map<String, ?>>> recordsProperty() { return records; }
@@ -188,7 +202,7 @@ public final class UniversalPrintPane extends BorderPane {
             showValidation(List.of());
             return;
         }
-        var check = new BarcodePreflight(getTemplate(), Map.of());
+        var check = new BarcodePreflight(getTemplate(), Map.of(), barcodeCache);
         if (!check.hasBarcodes()) {
             showValidation(List.of());
             return;

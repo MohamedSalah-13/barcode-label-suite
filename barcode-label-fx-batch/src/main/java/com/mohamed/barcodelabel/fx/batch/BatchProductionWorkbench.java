@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.fx.batch;
 
+import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
+
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.fx.i18n.UiTexts;
 import com.mohamed.barcodelabel.fx.workbench.BarcodeLabelWorkbench;
@@ -30,9 +32,13 @@ public final class BatchProductionWorkbench extends BorderPane {
 
     /** A production workbench in this language: Arabic right to left, English left to right. */
     public BatchProductionWorkbench(LabelTemplate template, UiLanguage language) {
+        this(template, language, new BarcodeValidationCache());
+    }
+
+    public BatchProductionWorkbench(LabelTemplate template, UiLanguage language, BarcodeValidationCache cache) {
         UiTexts texts = UiTexts.load(BatchProductionWorkbench.class, "messages", language);
-        labelWorkbench = new BarcodeLabelWorkbench(template, language);
-        batchPane = new BatchDataMappingPane(language);
+        labelWorkbench = new BarcodeLabelWorkbench(template, language, cache);
+        batchPane = new BatchDataMappingPane(language, cache);
         setNodeOrientation(language.orientation());
         Tab production = tab(texts.get("production.designTab"), labelWorkbench);
         Tab batch = tab(texts.get("production.batchTab"), batchPane);

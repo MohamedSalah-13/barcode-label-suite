@@ -210,6 +210,33 @@ class UniversalPrintPaneTest {
     }
 
     @Test
+    void cachedChecksRevalidateMutableInputAndChangedSymbology() {
+        var pane = onFx(() -> new UniversalPrintPane(UiLanguage.ENGLISH));
+        var row = new java.util.HashMap<String, String>();
+        row.put("Code", "ABC");
+        var records = List.<Map<String, ?>>of(row);
+        var barcode = new BarcodeElement(ElementFrame.create("SKU", new RectMm(1, 1, 55, 20), 0),
+                "{{Code}}", Symbology.CODE_128, .25, 2, true);
+        var initial = template().withElements(List.of(barcode));
+        onFx(() -> { pane.setTemplate(initial); pane.setRecords(records); return null; });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() == null));
+        onFx(() -> { row.put("Code", " "); pane.setRecords(records); return null; });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() instanceof ListView<?> list
+                && list.getItems().contains("Row 2: Column Code — the CODE_128 barcode value is blank")));
+        onFx(() -> { row.put("Code", "ABC"); pane.setRecords(records); return null; });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() == null));
+        onFx(() -> {
+            var numeric = new BarcodeElement(barcode.frame(), "{{Code}}", Symbology.EAN_13, .25, 2, true);
+            pane.setTemplate(initial.withElements(List.of(numeric)));
+            return null;
+        });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() instanceof ListView<?> list
+                && list.getItems().stream().anyMatch(item -> item.toString().contains("EAN_13"))));
+        onFx(() -> { pane.setTemplate(initial); return null; });
+        await(Duration.ofSeconds(10), () -> onFx(() -> pane.getTop() == null));
+    }
+
+    @Test
     void changingTheStartSlotCannotEnableAnotherPrintWhileAJobIsActive() {
         var pending = new CompletableFuture<PrintResult>();
         var submissions = new AtomicInteger();

@@ -1,0 +1,26 @@
+java version "21.0.1" 2023-10-17 LTS
+Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+fe0e319c036f6388e8a1f8cabedae19278e122ec
+ M barcode-label-app/src/main/java/com/mohamed/barcodelabel/app/BarcodeLabelSuiteApp.java
+ M barcode-label-batch/src/main/java/com/mohamed/barcodelabel/batch/BarcodePreflight.java
+ M barcode-label-batch/src/main/java/com/mohamed/barcodelabel/batch/BatchPreparationService.java
+ M barcode-label-fx-batch/src/main/java/com/mohamed/barcodelabel/fx/batch/BatchDataMappingPane.java
+ M barcode-label-fx-batch/src/main/java/com/mohamed/barcodelabel/fx/batch/BatchProductionWorkbench.java
+ M barcode-label-fx-workbench/src/main/java/com/mohamed/barcodelabel/fx/workbench/BarcodeLabelWorkbench.java
+ M barcode-label-fx-workbench/src/main/java/com/mohamed/barcodelabel/fx/workbench/UniversalPrintPane.java
+ M barcode-label-fx-workbench/src/test/java/com/mohamed/barcodelabel/fx/workbench/UniversalPrintPaneTest.java
+ M docs/INTEGRATION_AR.md
+ M scripts/benchmarks/BatchBenchmark.java
+ M scripts/benchmarks/README.md
+?? barcode-label-batch/src/main/java/com/mohamed/barcodelabel/batch/BarcodeValidationCache.java
+?? barcode-label-batch/src/test/java/com/mohamed/barcodelabel/batch/BarcodeValidationCacheTest.java
+
+Name                                    NumberOfCores NumberOfLogicalProcessors
+----                                    ------------- -------------------------
+Intel(R) Core(TM) i5-3470 CPU @ 3.20GHz             4                         4
+
+
+TotalPhysicalMemory
+-------------------
+         8487256064

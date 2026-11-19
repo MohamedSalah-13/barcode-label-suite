@@ -1,5 +1,7 @@
 package com.mohamed.barcodelabel.fx.batch;
 
+import com.mohamed.barcodelabel.batch.BarcodeValidationCache;
+
 import com.mohamed.barcodelabel.batch.*;
 import com.mohamed.barcodelabel.fx.i18n.UiLanguage;
 import com.mohamed.barcodelabel.model.LabelTemplate;
@@ -42,7 +44,7 @@ public final class BatchDataMappingPane extends BorderPane {
     private final ObjectProperty<CsvDataset> dataset = new SimpleObjectProperty<>(this, "dataset");
     private final ReadOnlyObjectWrapper<BatchPreparationResult> result = new ReadOnlyObjectWrapper<>(this, "result");
     private final TemplateFields templateFields = new TemplateFields();
-    private final BatchPreparationService preparation = new BatchPreparationService();
+    private final BatchPreparationService preparation;
     private final CsvImportService csv = new CsvImportService();
     private final MappingProfileStore profiles = new MappingProfileStore();
     private final GridPane mappings = new GridPane();
@@ -109,6 +111,11 @@ public final class BatchDataMappingPane extends BorderPane {
 
     /** A mapping pane in this language. It takes the orientation of the pane it is placed in. */
     public BatchDataMappingPane(UiLanguage language) {
+        this(language, new BarcodeValidationCache());
+    }
+
+    public BatchDataMappingPane(UiLanguage language, BarcodeValidationCache cache) {
+        preparation = new BatchPreparationService(cache);
         texts = new BatchTexts(language);
         noQuantity = t("batch.noQuantity");
         fileSummary.setText(t("batch.chooseFile"));

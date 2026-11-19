@@ -11,6 +11,14 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class BatchPreparationService {
+    private final BarcodeValidationCache barcodeCache;
+
+    public BatchPreparationService() { this(new BarcodeValidationCache()); }
+
+    public BatchPreparationService(BarcodeValidationCache barcodeCache) {
+        this.barcodeCache = Objects.requireNonNull(barcodeCache);
+    }
+
     private final TemplateFields templateFields = new TemplateFields();
 
     public BatchPreparationResult prepare(LabelTemplate template, CsvDataset dataset, ColumnMapping mapping) {
@@ -23,7 +31,7 @@ public final class BatchPreparationService {
         List<Map<String, ?>> records = new ArrayList<>();
         List<Integer> copies = new ArrayList<>();
         List<Integer> sourceRows = new ArrayList<>();
-        var barcodes = new BarcodePreflight(template, mapping.fields());
+        var barcodes = new BarcodePreflight(template, mapping.fields(), barcodeCache);
         long totalLabels = 0;
         for (int index = 0; index < dataset.rows().size(); index++) {
             Map<String, String> source = dataset.rows().get(index);
