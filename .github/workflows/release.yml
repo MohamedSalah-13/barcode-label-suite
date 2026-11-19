@@ -50,6 +50,10 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path dist/BarcodeLabelSuite -DestinationPath "dist/BarcodeLabelSuite-$env:VERSION-windows.zip"
 
+      - name: Zip the calibration templates
+        shell: pwsh
+        run: Compress-Archive -Path calibration-templates -DestinationPath "dist/BarcodeLabelSuite-$env:VERSION-calibration-templates.zip"
+
       # jpackage on JDK 21 builds .exe installers with WiX 3, which newer runner images may not carry.
       - name: Make sure WiX 3 is available
         shell: pwsh
@@ -78,5 +82,6 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" "dist/BarcodeLabelSuite-$VERSION-setup.exe" \
             "dist/BarcodeLabelSuite-$VERSION-windows.zip" \
+            "dist/BarcodeLabelSuite-$VERSION-calibration-templates.zip" \
             --title "Barcode Label Suite $VERSION" \
             --notes-file release-notes.md

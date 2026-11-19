@@ -6,9 +6,23 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-19
+
 ### Added
 - **The installed app updates itself.** Each release now carries a Windows installer, `BarcodeLabelSuite-<version>-setup.exe`, beside the zip. An installed copy looks for a newer release shortly after it starts and every six hours, offers it in the interface language, and on "Update now" downloads the installer, checks its SHA-256, closes (keeping the label being designed), installs and reopens. **Check for updates**, beside the language menu, looks at once; its tooltip shows the installed version. This uses the [desktop-updater](https://github.com/MohamedSalah-13/desktop-updater) library. A copy run from the IDE or unzipped from an older release has no updater or no version to compare, so it is not offered updates; copies of 0.8.0 and earlier have to install the first installer by hand.
 - `package.ps1 -Type exe` builds a per-user installer (`--win-per-user-install`) with a fixed upgrade code, so a newer installer replaces the installed version instead of installing beside it. The release workflow builds it and makes sure WiX 3 is on the runner.
+- **Print calibration** saves horizontal and vertical offsets per printer and paper size. Five downloadable calibration templates cover A4 and rolls in 40 × 25, 50 × 30, 58 × 40 and 100 × 50 mm. Each draws a cross centered 10 mm from the top and left edges.
+- **Batch validation** checks CSV barcodes before printing and lets you preview the label for the selected validation error.
+
+### Changed
+- **Ikonli icons with localized tooltips** replace action labels in the designer, the element palette, the main toolbar, print preview and CSV mapping. The update button uses a refresh icon, and the language menu opens from a globe icon and lists each language by name.
+- Switching languages preserves the CSV, mappings, quantities and print session. Large batches use less memory, reuse barcode validation results and generate label placements as needed.
+
+### بالعربية
+- **الواجهة:** أيقونات Ikonli وتلميحات بالعربية والإنجليزية في أشرطة الأدوات والمصمّم والمعاينة والطباعة ومطابقة CSV. زر التحديث يعرض أيقونة تحديث، وأيقونة الكرة الأرضية تفتح قائمة اللغات.
+- **الطباعة:** حفظ إزاحتي المعايرة لكل طابعة ومقاس ورق، وخمسة قوالب معايرة قابلة للتنزيل لمقاس A4 وأربعة مقاسات رول.
+- **الدفعات:** التحقق من الباركود قبل الطباعة ومعاينة ملصق الصف الذي فيه خطأ، والاحتفاظ بجلسة المطابقة والطباعة عند تبديل اللغة، وتقليل الذاكرة المستخدمة في الدفعات الكبيرة.
+- **التحديثات:** يتوفر مثبّت Windows، ويمكن للتطبيق المثبّت التحقق من الإصدارات الجديدة وتثبيتها.
 
 ## [0.8.0] - 2026-11-17
 
