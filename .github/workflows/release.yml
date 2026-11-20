@@ -8,6 +8,20 @@ name: release
 on:
   push:
     tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and publish (for example v0.9.0)
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+# Serialize publishing attempts for the same version, including manual retries.
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 # Creating the release needs write access to the repository's contents; nothing else.
 permissions:
@@ -19,13 +33,15 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
 
       - name: Check the tag matches the project version and has release notes
         shell: bash
         run: |
           version=$(scripts/project-version.sh)
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match the version in pom.xml ($version)"
+          if [ "v$version" != "$RELEASE_TAG" ]; then
+            echo "::error::Tag $RELEASE_TAG does not match the version in pom.xml ($version)"
             exit 1
           fi
           scripts/release-notes.sh "$version" > release-notes.md
@@ -80,8 +96,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "dist/BarcodeLabelSuite-$VERSION-setup.exe" \
-            "dist/BarcodeLabelSuite-$VERSION-windows.zip" \
-            "dist/BarcodeLabelSuite-$VERSION-calibration-templates.zip" \
-            --title "Barcode Label Suite $VERSION" \
-            --notes-file release-notes.md
+          assets=(
+            "dist/BarcodeLabelSuite-$VERSION-setup.exe"
+            "dist/BarcodeLabelSuite-$VERSION-windows.zip"
+            "dist/BarcodeLabelSuite-$VERSION-calibration-templates.zip"
+          )
+          if gh release view "$RELEASE_TAG" > /dev/null; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --verify-tag \
+              --title "Barcode Label Suite $VERSION" \
+              --notes-file release-notes.md
+          fi
