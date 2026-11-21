@@ -6,6 +6,9 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- The Windows icon, `BarcodeLabelSuite.ico`, stores its sizes below 256 px as 32-bit bitmaps instead of PNG, the form every packaging tool reads. The artwork and the seven sizes are unchanged. `scripts/AppIcon.java` keeps the drawing and writes the files with the shared [app-icons](https://github.com/MohamedSalah-13/app-icons) library, which the packaged app does not carry.
+
 ## [0.9.0] - 2026-11-19
 
 ### Added

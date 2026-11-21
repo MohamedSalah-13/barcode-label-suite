@@ -61,7 +61,7 @@ if ($LASTEXITCODE -ne 0 -or -not ($jpackageVersion -match '^21(?:\.|$)')) {
 }
 
 if (-not (Test-Path -LiteralPath $iconFile -PathType Leaf)) {
-    throw "Application icon was not found: $iconFile. Run: java scripts/AppIcon.java"
+    throw "Application icon was not found: $iconFile. Run scripts/AppIcon.java; the command is in its header."
 }
 
 $inputDirectory = Assert-ProjectPath $inputDirectory
