@@ -51,6 +51,7 @@
         <atlantafx.version>2.1.0</atlantafx.version>
         <ikonli.version>12.4.0</ikonli.version>
         <desktop-updater.version>v0.4.0</desktop-updater.version>
+        <app-icons.version>v0.1.0</app-icons.version>
         <junit.version>5.10.3</junit.version>
 
         <maven.compiler.version>3.13.0</maven.compiler.version>
@@ -117,6 +118,11 @@
                 <groupId>com.github.MohamedSalah-13</groupId>
                 <artifactId>desktop-updater</artifactId>
                 <version>${desktop-updater.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.MohamedSalah-13</groupId>
+                <artifactId>app-icons</artifactId>
+                <version>${app-icons.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.kordamp.ikonli</groupId>

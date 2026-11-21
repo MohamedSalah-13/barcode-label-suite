@@ -9,7 +9,7 @@
              JitPack answers some coordinates it does not have (xml-apis:xml-apis-ext, for one) with an empty file
              instead of 404: Maven keeps the empty jar and a build with an empty local repository fails. -->
         <repository><id>central</id><url>https://repo.maven.apache.org/maven2</url><snapshots><enabled>false</enabled></snapshots></repository>
-        <!-- Serves desktop-updater straight from its GitHub tags; only the app needs it. -->
+        <!-- Serves desktop-updater and app-icons straight from their GitHub tags; only the app needs them. -->
         <repository><id>jitpack.io</id><url>https://jitpack.io</url></repository>
     </repositories>
     <dependencies>
@@ -19,6 +19,9 @@
         <dependency><groupId>org.kordamp.ikonli</groupId><artifactId>ikonli-feather-pack</artifactId></dependency>
         <!-- Offers new releases of the installed app and installs them (BarcodeLabelSuiteApp.start). -->
         <dependency><groupId>com.github.MohamedSalah-13</groupId><artifactId>desktop-updater</artifactId></dependency>
+        <!-- Writes the icon files; only scripts/AppIcon.java uses it. Test scope keeps it out of the packaged app, and
+             Maven still downloads the jar that script runs with. -->
+        <dependency><groupId>com.github.MohamedSalah-13</groupId><artifactId>app-icons</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     </dependencies>
     <build>

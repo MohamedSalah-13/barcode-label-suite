@@ -1,4 +1,5 @@
-import javax.imageio.ImageIO;
+import com.hamza.icons.IconSet;
+
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.GradientPaint;
@@ -7,24 +8,20 @@ import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Draws the application icon: a white barcode label, with its price line, on the blue tile of the app's primary
- * colour. Run from the project root after changing it:
+ * colour. Only the drawing is here; the files are written by the app-icons library the programs share
+ * (github.com/MohamedSalah-13/app-icons), a test-scope dependency of barcode-label-app, so Maven has already
+ * downloaded its jar. Run from the project root after changing the drawing:
  *
- * <pre>java scripts/AppIcon.java</pre>
+ * <pre>java -cp ~/.m2/repository/com/github/MohamedSalah-13/app-icons/v0.1.0/app-icons-v0.1.0.jar scripts/AppIcon.java</pre>
  *
- * It writes the window icons the app loads, the Windows .ico jpackage uses and the README image. Small sizes are
- * drawn with fewer, pixel-aligned bars and no tilt, so they stay sharp in the taskbar and title bar.
+ * (on Windows the jar is under {@code %USERPROFILE%\.m2}). It writes the window icons the app loads, the Windows .ico
+ * and the Linux .png jpackage uses, and the README image. Small sizes are drawn with fewer, pixel-aligned bars and no
+ * tilt, so they stay sharp in the taskbar and title bar.
  */
 public final class AppIcon {
     private static final Color TILE_TOP = new Color(0x3B82F6);
@@ -32,37 +29,25 @@ public final class AppIcon {
     private static final Color INK = new Color(0x0F172A);
     private static final Color PRICE = new Color(0xF59E0B);
     private static final Color MUTED = new Color(0xCBD5E1);
+    /** The window's sizes, and the installer icon's: BarcodeLabelSuiteAppTest holds the two to the same list. */
     private static final int[] WINDOW_SIZES = {16, 24, 32, 48, 64, 128, 256};
     /** Bar and gap widths, in modules, of the large icon's barcode: bar, gap, bar, gap... */
     private static final int[] PATTERN = {3, 1, 1, 2, 2, 1, 1, 1, 3, 2, 1, 1, 2, 1, 1, 2, 3, 1, 1, 1, 2};
 
     public static void main(String[] args) throws IOException {
         Path root = Path.of(args.length > 0 ? args[0] : ".");
-        Path icons = root.resolve("barcode-label-app/src/main/resources/com/mohamed/barcodelabel/app/icons");
-        Files.createDirectories(icons);
-        List<byte[]> pngs = new ArrayList<>();
-        for (int size : WINDOW_SIZES) {
-            byte[] png = png(draw(size));
-            Files.write(icons.resolve("app-" + size + ".png"), png);
-            pngs.add(png);
-        }
-        Path packaging = root.resolve("barcode-label-app/src/main/package");
-        Files.createDirectories(packaging);
-        Files.write(packaging.resolve("BarcodeLabelSuite.ico"), ico(WINDOW_SIZES, pngs));
-        Files.write(packaging.resolve("BarcodeLabelSuite.png"), png(draw(512)));
-        Files.write(root.resolve("docs/images/app-icon.png"), png(draw(256)));
+        IconSet.of(AppIcon::draw)
+                .pngs("barcode-label-app/src/main/resources/com/mohamed/barcodelabel/app/icons/app-%d.png", WINDOW_SIZES)
+                .ico("barcode-label-app/src/main/package/BarcodeLabelSuite.ico", WINDOW_SIZES)
+                .png("barcode-label-app/src/main/package/BarcodeLabelSuite.png", 512)
+                .png("docs/images/app-icon.png", 256)
+                .write(root);
         System.out.println("Icons written under " + root.toAbsolutePath().normalize());
     }
 
-    static BufferedImage draw(int size) {
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = image.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+    /** In pixels of the size asked for: the small sizes have a drawing of their own. */
+    static void draw(Graphics2D g, int size) {
         if (size <= 48) drawSmall(g, size); else drawLarge(g, size);
-        g.dispose();
-        return image;
     }
 
     /** The full icon, drawn on a 256-unit grid: a tilted label with a shadow, a punched hole and a long barcode. */
@@ -150,29 +135,5 @@ public final class AppIcon {
         int total = 0;
         for (int width : pattern) total += width;
         return total;
-    }
-
-    private static byte[] png(BufferedImage image) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", out);
-        return out.toByteArray();
-    }
-
-    /** A Windows icon holding each size as a PNG, which Windows Vista and later read. */
-    private static byte[] ico(int[] sizes, List<byte[]> pngs) {
-        int offset = 6 + 16 * sizes.length;
-        int total = offset;
-        for (byte[] png : pngs) total += png.length;
-        ByteBuffer ico = ByteBuffer.allocate(total).order(ByteOrder.LITTLE_ENDIAN);
-        ico.putShort((short) 0).putShort((short) 1).putShort((short) sizes.length);
-        for (int i = 0; i < sizes.length; i++) {
-            byte side = (byte) (sizes[i] >= 256 ? 0 : sizes[i]);
-            ico.put(side).put(side).put((byte) 0).put((byte) 0);
-            ico.putShort((short) 1).putShort((short) 32);
-            ico.putInt(pngs.get(i).length).putInt(offset);
-            offset += pngs.get(i).length;
-        }
-        for (byte[] png : pngs) ico.put(png);
-        return ico.array();
     }
 }
