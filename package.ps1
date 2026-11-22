@@ -5,9 +5,13 @@ param(
     [switch]$SkipBuild
 )
 
+# The steps every program's packaging script repeats (finding the JDK, Maven, the version, the input
+# folder, WiX, the installer's options) come from desktop-updater's tools/Packaging.psm1, found in a
+# clone of desktop-updater beside this repository or where DESKTOP_UPDATER_HOME points. What is
+# Barcode Label Suite's own stays here.
+
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\')
-$mavenWrapper = Join-Path $projectRoot 'mvnw.cmd'
 $demoDirectory = Join-Path $projectRoot 'barcode-label-app'
 $targetDirectory = Join-Path $demoDirectory 'target'
 $inputDirectory = Join-Path $targetDirectory 'package-input'
@@ -17,8 +21,21 @@ $mainJar = 'barcode-label-app.jar'
 $mainClass = 'com.mohamed.barcodelabel.app.BarcodeLabelSuiteLauncher'
 # Drawn by scripts/AppIcon.java; the window icons inside the app come from the same drawing.
 $iconFile = Join-Path $demoDirectory 'src\main\package\BarcodeLabelSuite.ico'
+
+$updaterHome = $env:DESKTOP_UPDATER_HOME
+if (-not $updaterHome) {
+    $repository = & git -C $projectRoot rev-parse --show-toplevel 2>$null
+    if (-not $repository) { $repository = $projectRoot }
+    $updaterHome = Join-Path (Split-Path -Parent $repository) 'desktop-updater'
+}
+$packaging = Join-Path $updaterHome 'tools/Packaging.psm1'
+if (-not (Test-Path -LiteralPath $packaging)) {
+    throw "desktop-updater was not found at $updaterHome. Clone https://github.com/MohamedSalah-13/desktop-updater beside this repository, or set DESKTOP_UPDATER_HOME."
+}
+Import-Module $packaging -Force
+
 # The version comes from the root POM, so the installer never drifts from the build.
-$appVersion = ([xml](Get-Content -LiteralPath (Join-Path $projectRoot 'pom.xml') -Raw)).project.version
+$appVersion = (Get-PomVersion -Pom (Join-Path $projectRoot 'pom.xml') -Platform windows).Raw
 if (-not ($appVersion -match '^\d+\.\d+\.\d+$')) {
     throw "jpackage needs a numeric version such as 1.2.3; pom.xml has '$appVersion'."
 }
@@ -33,93 +50,71 @@ function Assert-ProjectPath {
     return $resolved
 }
 
-function Invoke-Maven {
-    param([Parameter(Mandatory)][string[]]$Arguments)
-
-    & $mavenWrapper @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Maven failed with exit code ${LASTEXITCODE}: $($Arguments -join ' ')"
+# The Maven wrapper reads its settings from the project, wherever the script was started from.
+Push-Location $projectRoot
+try {
+    if (-not $SkipBuild) {
+        Invoke-MavenBuild -Pom (Join-Path $projectRoot 'pom.xml') -Arguments @('clean', 'install')
     }
-}
 
-if (-not $SkipBuild) {
-    Invoke-Maven @('clean', 'install')
-}
+    # The runtime is the JDK jpackage comes from, and the update check's TLS needs JDK 21's module set.
+    $jpackage = (Find-JPackage -ExactVersion 21).Path
 
-$jpackage = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin\jpackage.exe' } else { $null }
-if (-not $jpackage -or -not (Test-Path -LiteralPath $jpackage -PathType Leaf)) {
-    $jpackageCommand = Get-Command jpackage.exe -ErrorAction SilentlyContinue
-    if (-not $jpackageCommand) {
-        throw 'jpackage.exe was not found. Set JAVA_HOME to a JDK 21 installation.'
+    if (-not (Test-Path -LiteralPath $iconFile -PathType Leaf)) {
+        throw "Application icon was not found: $iconFile. Run scripts/AppIcon.java; the command is in its header."
     }
-    $jpackage = $jpackageCommand.Source
-}
 
-$jpackageVersion = & $jpackage --version
-if ($LASTEXITCODE -ne 0 -or -not ($jpackageVersion -match '^21(?:\.|$)')) {
-    throw "JDK 21 jpackage is required; found version '$jpackageVersion'."
-}
+    $inputDirectory = Assert-ProjectPath $inputDirectory
+    $outputDirectory = Assert-ProjectPath $outputDirectory
+    $packagedApplication = Assert-ProjectPath (Join-Path $outputDirectory $appName)
 
-if (-not (Test-Path -LiteralPath $iconFile -PathType Leaf)) {
-    throw "Application icon was not found: $iconFile. Run scripts/AppIcon.java; the command is in its header."
-}
-
-$inputDirectory = Assert-ProjectPath $inputDirectory
-$outputDirectory = Assert-ProjectPath $outputDirectory
-$packagedApplication = Assert-ProjectPath (Join-Path $outputDirectory $appName)
-
-if (Test-Path -LiteralPath $inputDirectory) {
-    Remove-Item -LiteralPath $inputDirectory -Recurse -Force
-}
-New-Item -ItemType Directory -Path $inputDirectory | Out-Null
-
-Invoke-Maven @(
-    '-f', (Join-Path $demoDirectory 'pom.xml'),
-    'dependency:copy-dependencies',
-    "-DoutputDirectory=$inputDirectory",
-    '-DincludeScope=runtime'
-)
-
-$builtJar = Join-Path $targetDirectory $mainJar
-if (-not (Test-Path -LiteralPath $builtJar -PathType Leaf)) {
-    throw "Application JAR was not found: $builtJar"
-}
-Copy-Item -LiteralPath $builtJar -Destination $inputDirectory
-
-if ($Type -eq 'app-image' -and (Test-Path -LiteralPath $packagedApplication)) {
-    Remove-Item -LiteralPath $packagedApplication -Recurse -Force
-}
-New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
-
-$arguments = @(
-    '--type', $Type,
-    '--dest', $outputDirectory,
-    '--name', $appName,
-    '--app-version', $appVersion,
-    '--vendor', 'Mohamed',
-    '--input', $inputDirectory,
-    '--main-jar', $mainJar,
-    '--main-class', $mainClass,
-    '--icon', $iconFile,
-    # No --add-modules: for a classpath app jpackage puts the JDK's whole module set in the runtime, which already
-    # has jdk.crypto.ec, the TLS provider the update check needs to reach GitHub over HTTPS on JDK 21. Naming
-    # modules here would replace that set, not add to it.
-    '--java-options', '-Dfile.encoding=UTF-8'
-)
-
-if ($Type -in @('exe', 'msi')) {
-    $arguments += @(
-        '--win-menu', '--win-shortcut',
-        # Installed for the current user only, so an update installs without asking for an administrator.
-        '--win-per-user-install',
-        # Never change this: a new installer replaces an older one only when both carry the same upgrade code.
-        '--win-upgrade-uuid', 'f5cf66fa-17c3-433c-87e8-c04a29dc00e6'
+    $builtJar = Join-Path $targetDirectory $mainJar
+    if (-not (Test-Path -LiteralPath $builtJar -PathType Leaf)) {
+        throw "Application JAR was not found: $builtJar"
+    }
+    [void](New-JPackageInput -Path $inputDirectory -Item $builtJar)
+    Invoke-MavenBuild -Pom (Join-Path $demoDirectory 'pom.xml') -ClearReadOnly @() -Arguments @(
+        'dependency:copy-dependencies',
+        "-DoutputDirectory=$inputDirectory",
+        '-DincludeScope=runtime'
     )
-}
 
-& $jpackage @arguments
-if ($LASTEXITCODE -ne 0) {
-    throw "jpackage failed with exit code $LASTEXITCODE. MSI/EXE packaging also requires WiX Toolset."
+    if ($Type -eq 'app-image' -and (Test-Path -LiteralPath $packagedApplication)) {
+        [void](Clear-ReadOnly -Path $packagedApplication)
+        Remove-Item -LiteralPath $packagedApplication -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+
+    $arguments = @(
+        '--type', $Type,
+        '--dest', $outputDirectory,
+        '--name', $appName,
+        '--app-version', $appVersion,
+        '--vendor', 'Mohamed',
+        '--input', $inputDirectory,
+        '--main-jar', $mainJar,
+        '--main-class', $mainClass,
+        '--icon', $iconFile,
+        # No --add-modules: for a classpath app jpackage puts the JDK's whole module set in the runtime, which already
+        # has jdk.crypto.ec, the TLS provider the update check needs to reach GitHub over HTTPS on JDK 21. Naming
+        # modules here would replace that set, not add to it.
+        '--java-options', '-Dfile.encoding=UTF-8'
+    )
+
+    if ($Type -in @('exe', 'msi')) {
+        [void](Find-WiX)
+        # Installed for the current user only, so an update installs without asking for an administrator.
+        # Never change the upgrade code: a new installer replaces an older one only when both carry the same one.
+        $arguments += @(Get-WinInstallerArgument -Menu -Shortcut -PerUser -UpgradeUuid 'f5cf66fa-17c3-433c-87e8-c04a29dc00e6')
+    }
+
+    try {
+        Invoke-Native -FilePath $jpackage -ArgumentList $arguments
+    } catch {
+        throw "jpackage failed: $($_.Exception.Message) MSI/EXE packaging also requires WiX Toolset."
+    }
+} finally {
+    Pop-Location
 }
 
 Write-Host "Package created in $outputDirectory" -ForegroundColor Green

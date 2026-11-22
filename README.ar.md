@@ -114,7 +114,7 @@ Name,Code,Retail Price,Qty
 .\package.ps1
 ```
 
-تجد البرنامج الجاهز في `dist\BarcodeLabelSuite`. يمكن أيضًا إنشاء ملف تثبيت بالخيار `-Type exe` أو `-Type msi`، وهذا يحتاج إلى WiX Toolset على Windows. استخدم `-SkipBuild` فقط بعد نجاح `mvnw clean install` في نفس النسخة من الكود.
+تجد البرنامج الجاهز في `dist\BarcodeLabelSuite`. يمكن أيضًا إنشاء ملف تثبيت بالخيار `-Type exe` أو `-Type msi`، وهذا يحتاج إلى WiX Toolset على Windows. استخدم `-SkipBuild` فقط بعد نجاح `mvnw clean install` في نفس النسخة من الكود. يحتاج السكربت نسخة من [desktop-updater](https://github.com/MohamedSalah-13/desktop-updater) بجوار هذا المستودع (أو المسار في `DESKTOP_UPDATER_HOME`): خطوات التغليف المشتركة بين البرامج في `tools/Packaging.psm1` هناك.
 
 لإضافة شاشات البرنامج إلى برنامج JavaFX آخر راجع [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
 

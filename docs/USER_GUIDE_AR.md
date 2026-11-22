@@ -24,7 +24,8 @@ cd <مسار المشروع>\barcode-label-suite
 ```
 
 ستجد الملف التنفيذي في `dist\BarcodeLabelSuite\BarcodeLabelSuite.exe`. لا تستخدم
-`-SkipBuild` إلا بعد نجاح `mvnw.cmd clean install` على النسخة الحالية من الكود.
+`-SkipBuild` إلا بعد نجاح `mvnw.cmd clean install` على النسخة الحالية من الكود. ويحتاج السكربت نسخة من
+[desktop-updater](https://github.com/MohamedSalah-13/desktop-updater) بجوار هذا المستودع (أو المسار في `DESKTOP_UPDATER_HOME`).
 
 ## تجربة سريعة
 

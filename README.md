@@ -114,7 +114,7 @@ Create a self-contained application image (including a private Java runtime) wit
 .\package.ps1
 ```
 
-The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful `mvnw clean install` in the current checkout.
+The runnable application is created under `dist\BarcodeLabelSuite`. Installer formats are also supported with `-Type exe` or `-Type msi`; those formats require WiX Toolset on Windows. Use `-SkipBuild` only after a successful `mvnw clean install` in the current checkout. The script needs a clone of [desktop-updater](https://github.com/MohamedSalah-13/desktop-updater) beside this repository (or `DESKTOP_UPDATER_HOME`): the packaging steps the programs share are its `tools/Packaging.psm1`.
 
 An Arabic user guide is in [`docs/USER_GUIDE_AR.md`](docs/USER_GUIDE_AR.md), and Arabic instructions for embedding the modules in another JavaFX app are in [`docs/INTEGRATION_AR.md`](docs/INTEGRATION_AR.md).
 

@@ -36,6 +36,16 @@ jobs:
         with:
           ref: refs/tags/${{ inputs.tag || github.ref_name }}
 
+      # package.ps1 imports desktop-updater's tools/Packaging.psm1, pinned to a commit so nothing changes
+      # here without a pull request in this repository. Inside the workspace, after this repository's own
+      # checkout, which would clean it away.
+      - name: Check out desktop-updater's packaging module
+        uses: actions/checkout@v4
+        with:
+          repository: MohamedSalah-13/desktop-updater
+          ref: 2a6177177e6cf275f0d79986a70e41037a13e6bf
+          path: .desktop-updater
+
       - name: Check the tag matches the project version and has release notes
         shell: bash
         run: |
@@ -60,6 +70,8 @@ jobs:
 
       - name: Package the Windows application
         shell: pwsh
+        env:
+          DESKTOP_UPDATER_HOME: ${{ github.workspace }}/.desktop-updater
         run: .\package.ps1 -SkipBuild
 
       - name: Zip the application
@@ -87,6 +99,8 @@ jobs:
       # asset matching *-setup.exe, so keep that ending.
       - name: Build the Windows installer
         shell: pwsh
+        env:
+          DESKTOP_UPDATER_HOME: ${{ github.workspace }}/.desktop-updater
         run: |
           .\package.ps1 -SkipBuild -Type exe
           Move-Item "dist/BarcodeLabelSuite-$env:VERSION.exe" "dist/BarcodeLabelSuite-$env:VERSION-setup.exe"
