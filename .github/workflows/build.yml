@@ -26,6 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # package.ps1 imports desktop-updater's tools/Packaging.psm1, pinned to a commit so nothing changes
+      # here without a pull request in this repository. Inside the workspace, after this repository's own
+      # checkout, which would clean it away.
+      - name: Check out desktop-updater's packaging module
+        uses: actions/checkout@v4
+        with:
+          repository: MohamedSalah-13/desktop-updater
+          ref: 2a6177177e6cf275f0d79986a70e41037a13e6bf
+          path: .desktop-updater
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -39,6 +49,8 @@ jobs:
 
       - name: Package Windows application image
         shell: pwsh
+        env:
+          DESKTOP_UPDATER_HOME: ${{ github.workspace }}/.desktop-updater
         run: .\package.ps1 -SkipBuild
 
       - name: Upload application and coverage reports

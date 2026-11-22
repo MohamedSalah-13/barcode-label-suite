@@ -7,6 +7,7 @@ All notable changes to Barcode Label Suite are listed here. The format follows
 ## [Unreleased]
 
 ### Changed
+- `package.ps1` takes the packaging steps the programs share from desktop-updater's `tools/Packaging.psm1`, so it now needs a clone of [desktop-updater](https://github.com/MohamedSalah-13/desktop-updater) beside this repository (or `DESKTOP_UPDATER_HOME`); the build and release workflows check it out. It runs from any folder, finds WiX for `-Type exe` and `-Type msi` where it is installed, and makes the same application image and installer as before.
 - The Windows icon, `BarcodeLabelSuite.ico`, stores its sizes below 256 px as 32-bit bitmaps instead of PNG, the form every packaging tool reads. The artwork and the seven sizes are unchanged. `scripts/AppIcon.java` keeps the drawing and writes the files with the shared [app-icons](https://github.com/MohamedSalah-13/app-icons) library, which the packaged app does not carry.
 
 ## [0.9.0] - 2026-11-19
